@@ -57,6 +57,7 @@ for (const kind of ["behavior_packs", "resource_packs"]) {
 	mergeTree(join(generated, kind, PACK), out);
 	mergeTree(join(root, kind, PACK), out);
 }
+stampPackVersion();
 const withMsd = !clean && existsSync(join(generated, "behavior_packs", MSD_PACK));
 if (privateBuild && (!withMsd || !existsSync(join(root, "scripts", "extensions", "megaShowdown", "index.ts")))) {
 	console.error("--private precisa do pack MSD em generated/ (`npm run import` com upstream/mega-showdown) e da extensão em scripts/extensions/megaShowdown/");
@@ -97,6 +98,26 @@ function buildMsdPacks() {
 		dependencies: [{ uuid: MSD_UUID.bp, version }, { uuid: base.rp.header.uuid, version: base.rp.header.version }],
 	}, null, "\t"));
 	console.log(`Mega Showdown: ${MSD_PACK} (BP + RP) em ${dist}`);
+}
+
+/**
+ * Versão dos packs = `packVersion` do package.json (ex.: "1.0.2"). O Bedrock identifica o pack por UUID + versão: sem
+ * subir a versão a cada release, importar o .mcaddon novo por cima do antigo é ignorado ("já instalado").
+ * Vale para o cabeçalho, os módulos e a dependência entre o BP e o RP do base.
+ */
+function stampPackVersion() {
+	const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+	const version = String(pkg.packVersion ?? "0.0.1").split(".").map((n) => Number(n) || 0);
+	const files = [join(bpOut, "manifest.json"), join(rpOut, "manifest.json")];
+	const manifests = files.map((f) => readJson(f));
+	const own = new Set(manifests.map((m) => m.header.uuid));
+	for (const [i, m] of manifests.entries()) {
+		m.header.version = version;
+		for (const mod of m.modules ?? []) mod.version = version;
+		for (const dep of m.dependencies ?? []) if (dep.uuid && own.has(dep.uuid)) dep.version = version;
+		writeFileSync(files[i], JSON.stringify(m, null, "\t"));
+	}
+	console.log(`packs na versão ${version.join(".")}`);
 }
 
 /** Copia `src` sobre `dest`. JSON presente nos dois lados é mesclado; .lang é concatenado. */
