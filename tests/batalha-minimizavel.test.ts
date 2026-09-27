@@ -120,7 +120,7 @@ function evalBindings(bindings: any[], preserved: string, props: Record<string, 
 {
 	assert.deepEqual(
 		(({ min, pr, cur }) => ({ min, pr, cur }))(fieldOffsets(BATTLE_HEAD_FIELDS, HEADER_BYTES)),
-		{ min: 54, pr: 55, cur: 56 },
+		{ min: 55, pr: 57, cur: 59 },
 		"offsets do cabeçalho usados pelo cenário E2E 10",
 	);
 	const tile = { texture: "textures/sprites/pikachu", name: "Pikachu", level: 30, hpRatio: 1, hpText: "60/60" };
@@ -133,9 +133,10 @@ function evalBindings(bindings: any[], preserved: string, props: Record<string, 
 	const title = header(CHANNEL.BATTLE, 7) + body + tail;
 	const headPanel = hud.battle_overlay.controls[0].cbhud_battle_head;
 	const head = evalBindings(headPanel.bindings, title);
-	assert.equal(head["#min"], "1");
-	assert.equal(head["#pr"], "3");
-	assert.equal(head["#cur"], "1");
+	// Frente ui-cliente: campos numéricos com o prefixo NUM_LEAD ("_").
+	assert.equal(head["#min"], "_1");
+	assert.equal(head["#pr"], "_3");
+	assert.equal(head["#cur"], "_1");
 	const prompt = hud.battle_overlay.controls.find((c: any) => c.cbhud_battle_prompt).cbhud_battle_prompt;
 	assert.equal(evalBindings(prompt.bindings, title)["#tail"], tail, "a cauda começa em BATTLE_TAIL_OFFSET");
 	assert.ok(prompt.bindings.some((b: any) => b.source_property_name.includes(`'%.${BATTLE_TAIL_OFFSET}s'`)));
@@ -144,13 +145,13 @@ function evalBindings(bindings: any[], preserved: string, props: Record<string, 
 	assert.equal(m0["#id"], "thunderbolt");
 	assert.equal(m0["#type"], "electric");
 	assert.equal(m0["#pp"], "15/24");
-	assert.equal(m0["#use"], "1");
-	assert.equal(evalBindings(hud.battle_move_1.controls[0].cbhud_bm1.bindings, title)["#use"], "0");
+	assert.equal(m0["#use"], "_1");
+	assert.equal(evalBindings(hud.battle_move_1.controls[0].cbhud_bm1.bindings, title)["#use"], "_0");
 	assert.equal(evalBindings(hud.battle_move_2.controls[0].cbhud_bm2.bindings, title)["#id"], "");
 	// Fora do menu os golpes vão vazios e o cursor em branco.
 	const plain = encodeBattleBody({ slotsPerActor: 1, left: [tile], right: [tile], ui: { minimised: true, prompt: BATTLE_PROMPT.ACTIONS, moves } });
 	const plainHead = evalBindings(headPanel.bindings, header(CHANNEL.BATTLE, 1) + plain);
-	assert.equal(plainHead["#pr"], "1");
+	assert.equal(plainHead["#pr"], "_1");
 	assert.equal(plainHead["#cur"], "");
 	assert.equal(evalBindings(move0.bindings, header(CHANNEL.BATTLE, 1) + plain)["#id"], "");
 	// Caixas: cópia opaca e cópia esmaecida (0,5, propagada aos filhos) escolhidas pelo `min`.
@@ -159,7 +160,7 @@ function evalBindings(bindings: any[], preserved: string, props: Record<string, 
 	assert.equal(bright.alpha, 1);
 	assert.equal(dim.alpha, 0.5);
 	assert.equal(dim.propagate_alpha, true);
-	assert.equal(dim.bindings[0].source_property_name, "(#min = '1')");
+	assert.equal(dim.bindings[0].source_property_name, "(#min = '_1')");
 	assert.equal(dim.bindings[0].source_control_name, "cbhud_battle_head");
 	// Aviso: pulsa com uma animação alpha em laço de 4 s (2 s para cada lado).
 	const actions = hud.battle_overlay.controls.find((c: any) => c.prompt_actions).prompt_actions;
@@ -167,7 +168,7 @@ function evalBindings(bindings: any[], preserved: string, props: Record<string, 
 	assert.equal(hud.prompt_fade_out.next, "@cobblemon_hud.prompt_fade_in");
 	assert.equal(hud.prompt_fade_in.next, "@cobblemon_hud.prompt_fade_out");
 	assert.equal(hud.prompt_fade_out.duration + hud.prompt_fade_in.duration, 4);
-	assert.ok(actions.bindings.some((b: any) => b.source_property_name === "(#pr = '1')"));
+	assert.ok(actions.bindings.some((b: any) => b.source_property_name === "(#pr = '_1')"));
 	const hide = hud.battle_overlay.controls.find((c: any) => c.prompt_hide).prompt_hide;
 	assert.equal(hide.alpha, 0.75, "hide_label com 0,75 como a BattleGUI");
 
@@ -462,8 +463,8 @@ const waitAnimating = (h: Harness) => advanceUntil(() => h.actor.mustChoose && h
 	const battleBody = getHudChannel(h.player as never, CHANNEL.BATTLE) ?? "";
 	const bodyHead = header(CHANNEL.BATTLE, 0) + battleBody;
 	const head = evalBindings(hud.battle_overlay.controls[0].cbhud_battle_head.bindings, bodyHead);
-	assert.equal(head["#min"], "1", "canal B: minimizado");
-	assert.equal(head["#pr"], "1", "canal B: aviso pulsando");
+	assert.equal(head["#min"], "_1", "canal B: minimizado");
+	assert.equal(head["#pr"], "_1", "canal B: aviso pulsando");
 	h.actor.promptPlayerForRequest("toggle");
 	assert.ok(await advanceUntil(() => h.battle.ended, 200_000));
 	await advance(20);

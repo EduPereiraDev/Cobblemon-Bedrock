@@ -7,6 +7,8 @@
 import { existsSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { BEDROCK_MATH, BEDROCK_QUERIES, scanMolang } from "./molang.ts";
+import { checkParticle, checkSoundDefinitions } from "./clientRules.ts";
+import { validateClientModels } from "./validateClientModels.ts"; // frente cliente-modelos
 import { HAND_BP, HAND_RP, OUT, OUT_BP, OUT_FINAL, OUT_RP, OUT_SCRIPTS, parseLenient, rel, walk } from "./util.ts";
 import { comboKey, loadResolvers, resolveCombo } from "./variants.ts";
 import { validateContent } from "./validateContent.ts";
@@ -42,7 +44,6 @@ const handCounterpart = (f: string) => {
 	const hand = f.startsWith(OUT_RP) ? HAND_RP + f.slice(OUT_RP.length) : f.startsWith(OUT_BP) ? HAND_BP + f.slice(OUT_BP.length) : undefined;
 	return hand && existsSync(hand) ? hand : undefined;
 };
-const generatedOnly = new Map(docs);
 for (const [f, j] of mergedDocs(docs, handCounterpart, load)) docs.set(f, j);
 
 // 2. Índices (gerado + escrito à mão, como o build junta).
@@ -87,25 +88,24 @@ for (const root of [OUT_RP, HAND_RP]) {
 const VANILLA_TEXTURES = new Set(["textures/entity/steve", "textures/entity/alex", "textures/misc/enchanted_item_glint"]);
 const textureExists = (ref: string) => VANILLA_TEXTURES.has(ref) || [OUT_RP, HAND_RP].some((r) => [".png", ".tga", ".jpg"].some((e) => existsSync(`${r}/${ref}${e}`)));
 const soundDefs = new Set<string>();
+// Frente cliente-log: o cliente acusa "Invalid asset path" para QUALQUER definição (gerada ou escrita à mão) cujo
+// arquivo não exista no pack montado. Checa a árvore MESCLADA (gerado + à mão, como em dist/).
+const soundFileExists = (name: string) => [OUT_RP, HAND_RP].some((r) => [".ogg", ".wav", ".fsb"].some((e) => existsSync(`${r}/${name}${e}`)));
 for (const f of [`${OUT_RP}/sounds/sound_definitions.json`, `${HAND_RP}/sounds/sound_definitions.json`]) {
 	if (!existsSync(f)) continue;
+	// docs já tem o gerado mesclado com o à mão; o à mão sozinho só entra se não houver gerado.
+	if (f.startsWith(HAND_RP) && docs.has(`${OUT_RP}/sounds/sound_definitions.json`)) continue;
 	const j = f.startsWith(OUT_RP) ? docs.get(f) : load(f);
-	// Arquivo de som: só as definições geradas (as escritas à mão apontam para o RP à mão; checagem antiga).
-	const own = f.startsWith(OUT_RP) ? generatedOnly.get(f)?.sound_definitions ?? {} : {};
-	for (const [k, v] of Object.entries<any>(j?.sound_definitions ?? {})) {
-		soundDefs.add(k);
-		if (k in own) {
-			for (const s of own[k]?.sounds ?? []) {
-				const name = typeof s === "string" ? s : s.name;
-				if (![".ogg", ".wav", ".fsb"].some((e) => existsSync(`${OUT_RP}/${name}${e}`))) err(`som sem arquivo: ${k} → ${name}`);
-			}
-		}
-	}
+	for (const k of Object.keys(j?.sound_definitions ?? {})) soundDefs.add(k);
+	for (const p of checkSoundDefinitions(j?.sound_definitions ?? {}, soundFileExists)) err(p);
 }
 const particleIds = new Set<string>();
 for (const f of walk(`${HAND_RP}/particles`, (n) => n.endsWith(".json"))) {
-	const id = load(f)?.particle_effect?.description?.identifier;
+	const j = load(f);
+	const id = j?.particle_effect?.description?.identifier;
 	if (id) particleIds.add(id);
+	// Frente cliente-log: o que o cliente recusa na partícula (componentes, colisão, flipbook, sons de evento).
+	for (const p of checkParticle(j)) err(`${rel(f)}: ${p}`);
 }
 // Partículas geradas (frente animacao: particles.ts): ids, componentes, eventos, texturas e Molang.
 let generatedParticles = 0;
@@ -118,6 +118,7 @@ for (const [f, j] of genParticles) {
 		particleIds.add(id);
 	}
 	generatedParticles++;
+	for (const p of checkParticle(j)) err(`${rel(f)}: ${p}`);
 }
 
 // 3. Molang: só queries/funções conhecidas do Bedrock.
@@ -264,6 +265,18 @@ for (const [f, j] of docs) {
 	}
 }
 
+// 6a. Frente cliente-log: client entities escritas à mão (barcos, pesca, máquinas) também precisam de geometria que
+// exista no pack ou no vanilla como JSON ("geometry.boat" é do renderer nativo do barco: o cliente acusa "geometry not
+// found?" e a entidade fica invisível). Vanilla aceita: só as que existem em models/ do bedrock-samples.
+const VANILLA_ENTITY_GEOMETRIES = new Set(["geometry.villager_v2", "geometry.villager.baby"]);
+for (const f of walk(`${HAND_RP}/entity`, (n) => n.endsWith(".json"))) {
+	if (docs.has(OUT_RP + f.slice(HAND_RP.length))) continue; // overlay de uma gerada: já conferida acima
+	const d = load(f)?.["minecraft:client_entity"]?.description;
+	if (!d) continue;
+	for (const [k, g] of Object.entries<string>(d.geometry ?? {})) if (!geometryIds.has(g) && !VANILLA_ENTITY_GEOMETRIES.has(g)) err(`${rel(f)}: geometria ${k}=${g} não existe (o cliente acusa "geometry not found?")`);
+	// Texturas não: as escritas à mão podem citar as do RP vanilla (aldeão v2), que o cliente resolve.
+}
+
 // 6b. Attachables (frente mundo-detalhes: vestíveis): geometria, textura e render controller existem.
 const VANILLA_GEOMETRIES = new Set(["geometry.bow_standby"]);
 const VANILLA_RENDER_CONTROLLERS = new Set(["controller.render.item_default"]);
@@ -351,6 +364,9 @@ for (const [k, n] of molangIssues) err(`Molang desconhecido: ${k}${n > 1 ? ` ×$
 	for (const s of missing) err(`spawn de espécie inexistente em species.ts: ${s}`);
 }
 
+// 8c. Frente cliente-modelos: o que o cliente recusa em modelos, animações, controllers e client entities.
+const clientModels = validateClientModels(docs, err, rel);
+
 // 9. Itens, blocos, receitas, loot e worldgen.
 const contentSummary = await validateContent(err, warnMsg);
 
@@ -361,6 +377,7 @@ for (const h of hiddenFromCommands) err(`${h.id}: /give não aceita o item (${h.
 console.log(`Partículas geradas: ${generatedParticles}`);
 console.log(`Validação: ${docs.size} JSON, ${entities} client entities, ${serverEntities} entidades BP, ${geometryIds.size} geometrias, ${animationIds.size} animações, ${controllerIds.size} animation controllers, ${renderControllerIds.size} render controllers, ${attachables} attachables, ${checks} checagens de resolveVariant`);
 console.log(`Conteúdo: ${contentSummary}`);
+console.log(`Cliente (modelos): ${Object.entries(clientModels).map(([k, v]) => `${k} ${v}`).join(", ")}`);
 for (const w of warnings.slice(0, 50)) console.log(`  aviso: ${w}`);
 if (errors.length) {
 	for (const e of errors.slice(0, 80)) console.log(`  ERRO: ${e}`);

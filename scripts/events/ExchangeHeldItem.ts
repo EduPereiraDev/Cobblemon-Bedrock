@@ -4,6 +4,7 @@ import { PokemonData } from "../Pokemon";
 import { ItemUtils } from "../utils";
 import { itemName } from "../GUI/common";
 import { FORBIDDEN_HELD_ITEM_LANG, isForbiddenHeldItem } from "../pokemon/HeldItems";
+import { CobblemonEvents } from "./CobblemonEvents"; // frente msd-fase4: HELD_ITEM_POST
 
 /** Uma unidade do item, mantendo lore (TMs) e demais dados da pilha. */
 function single(item: ItemStack): ItemStack {
@@ -59,7 +60,14 @@ export default function exchangeHeldItem(player: Player, pokemon: Entity) {
   }
 
   //Ensures that the pokemon's held item is updated in data.
+  const previous = pokemonData.minecraftItem;
   pokemonData.loadFromCobblemon(pokemon);
+  // Frente msd-fase4: HELD_ITEM_POST também na troca por agachar + usar (o Mega Showdown aplica/desfaz placas,
+  // memórias, máscaras...). Ouvinte com erro não impede a troca; o Pokémon é gravado logo abaixo.
+  if (previous !== pokemonData.minecraftItem) {
+    try { CobblemonEvents.emit("HELD_ITEM_POST", pokemonData, previous, pokemonData.minecraftItem); }
+    catch (e) { console.warn(`HELD_ITEM_POST: ${e}`); }
+  }
   pokemonData.tryUpdatePokemonInTeam(player);
   pokemonData.tryUpdatePokemonOut();
 }

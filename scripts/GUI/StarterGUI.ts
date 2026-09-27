@@ -101,7 +101,7 @@ export function buildStarterForm(categories: StarterCategory[], view: StarterVie
  * Mostra a tela do inicial e a confirmação.
  * @returns a entrada escolhida (PokemonProperties em texto) ou undefined se o jogador desistiu.
  */
-export async function showStarterGUI(player: Player): Promise<string | undefined> {
+export async function showStarterGUI(player: Player, opts: { busyRetries?: number; outcome?: { busy?: boolean } } = {}): Promise<string | undefined> {
   const categories = getStarterCategories();
   if (categories.length === 0) return undefined;
   const view: StarterView = { category: 0, position: 0, page: 0, studio: false, studioToggle: false };
@@ -113,7 +113,10 @@ export async function showStarterGUI(player: Player): Promise<string | undefined
       view.studioToggle = hasStudio(player) || studioAvailable(player);
       view.studio = wantStudio && view.studioToggle ? openStudio(player, { species: starterSpecies(entry)! }, FRAMING.starter) : false;
       if (!view.studio && hasStudio(player)) closeStudio(player);
-      const result = await buildStarterForm(categories, view).show(player);
+      // Só a 1ª tela espera mais: no login o cliente pode passar muito tempo carregando o pacote (UserBusy).
+      const first = opts.busyRetries !== undefined;
+      const result = await buildStarterForm(categories, view).show(player, first ? opts.busyRetries : undefined, opts.outcome);
+      opts.busyRetries = undefined;
       if (!result) return undefined;
       const action = result.action;
       if (!action) continue;

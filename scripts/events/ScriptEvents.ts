@@ -41,6 +41,8 @@ const scriptIDDictionary: { [key: string]: Function } = {
   "cobblemon:battle_ui_mode": function () { },
   // Tratado em scripts/world/index.ts (setRideCameraMode); aqui só não avisa "inválido".
   "cobblemon:ride_camera": function () { },
+  // Tratado em scripts/debug/SelfTest.ts (alias do /cobblemon:selftest); aqui só não avisa "inválido".
+  "cobblemon:selftest": function () { },
   "cobblemon:interacted": function (event: ScriptEventCommandMessageAfterEvent) {
     let player = event.sourceEntity!.dimension.getPlayers({ location: event.sourceEntity!.location, tags: ["interacter"], closest: 1 })[0]!
     player.removeTag("interacter");

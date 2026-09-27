@@ -264,6 +264,16 @@ else {
 	if (run.status !== 0) fail(`cobblemon_hud.json desatualizado: ${run.stderr.trim()}`);
 }
 
+// 7. Regras do carregador do CLIENTE (frente ui-cliente; tools/ui/uiRules.mjs): item de controls sem nome, controle sem
+// tipo/@base, collection_name fora de grid/stack_panel/collection_panel, collection_index sem pai de coleção e
+// propriedade que a vanilla nunca usa naquele tipo. São os erros que o content log do cliente mostrou e o BDS não vê.
+{
+	const { checkUiRules, deriveVanillaRules } = await import("./ui/uiRules.mjs");
+	const vanillaJsons = [...vanillaByFile.values()];
+	const rules = deriveVanillaRules(vanillaJsons);
+	for (const e of checkUiRules(portParsed, { vanilla: rules, vanillaFileNames: new Set(vanillaByFile.keys()) })) fail(`cliente: ${e}`);
+}
+
 for (const w of warnings) console.warn(`AVISO: ${w}`);
 if (errors.length) {
 	for (const e of errors) console.error(`ERRO: ${e}`);

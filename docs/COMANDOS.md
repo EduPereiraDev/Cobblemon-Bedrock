@@ -93,6 +93,7 @@ Convenções:
 | — (`BattleGUI` minimizável + tecla R no Java) | `/cobblemon:battleui [java\|hud\|classic\|default\|status]` | Extra do port: o padrão `java` já é o comportamento do Cobblemon; `hud` e `classic` são preferências opcionais |
 | — (roda de interação) | `/cobblemon:pokebattle <jogador> [formato] [nível]` | Extra do port. O "equivalente à roda" é o menu de interação de jogador (interagir com outro jogador): Batalha simples/dupla/tripla, Formar grupo / Batalha Multi / Abandonar grupo e Troca; depois do formato (inclusive Multi) vem a tela da regra de nível (Luta Livre / Nível 50 / 100 / 5 para todos) |
 | — | `/cobblemon:givestarterkit [jogador]` | QA: 16 Poké Balls, 8 Great, 4 Ultra, poções, Revive, Rare Candy, Exp. Candy, Exp. Share, Lucky Egg, PC, Healing Machine (+ um inicial aleatório se não tiver time) |
+| — | `/cobblemon:selftest [quick\|full\|ui\|entities\|movement\|blocks\|particles\|sounds\|battle\|stop\|status]` | Operador + cheats. Teste automático dentro do mundo para o ContentLog do cliente registrar erros de recursos: numa área temporária no céu acima de você (só ar), mostra todos os Pokémon/variantes, NPCs, bolas (paradas e arremessadas), barcos e exibições, solta Pokémon com IA num cercado, numa piscina e num volume aéreo fechados por barreira (andar, correr, nadar, voar) e monta você numa montaria terrestre, aquática e voadora, coloca cada bloco em cada estado, dispara cada partícula e toca cada som, abre cada tela (inicial, time, resumo, PC, Pokédex, diálogo, troca, batalha, conquistas, HUD) e joga uma batalha curta com time temporário. Sem argumento = `quick`. `stop` para e restaura; `status` mostra o progresso. No fim tudo volta (área, água, entidades, posição, modo de jogo, câmera, montaria, inventário, time, Pokédex, estatísticas). Detalhes em [COMO-JOGAR.md](COMO-JOGAR.md#5-teste-automático-para-gerar-o-log) |
 
 ## Ainda não portados
 
@@ -109,6 +110,7 @@ Opções do port que não são *custom commands* (valem para quem executa, salvo
 |---|---|
 | `cobblemon:ride_camera <auto\|always\|boom\|off\|freelook\|roll>` | Câmera da montaria. `freelook` = órbita sempre com a câmera livre no mouse (a montaria vira por A/D); `roll` = câmera perseguidora que inclina no voo, experimental e fora do padrão até ser conferida num cliente |
 | `cobblemon:battle_ui_mode <modo>` | Alias antigo de `/cobblemon:battleui` (pelo console muda o padrão do mundo) |
+| `cobblemon:selftest <modo> [jogador]` | Alias de `/cobblemon:selftest` (operador). Pelo console, informe o jogador que vai rodar o teste; `stop` e `status` valem para o teste em andamento |
 | `cobblemon:battle_music on\|off` | Música de batalha (operador; precisa de um pack com as faixas) |
 | `cobblemon:dynamic_lights on\|off` | Luz dinâmica dos Pokémon luminosos (operador) |
 | `cobblemon:village_pokecenters on\|off` | Pokécenter em vilas novas (operador) |

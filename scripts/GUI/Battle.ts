@@ -207,7 +207,7 @@ async function showMoveMenu(context: MenuContext): Promise<MenuResult<ActionResp
   let gimmicks = availableGimmicks(moveset, context.usedGimmicks).slice(0, BATTLE_MOVES.GIMMICK_SLOTS);
   let toggled: Gimmick | undefined;
   while (true) {
-    let form = moveForm<MoveCell>({ translate: "cobblemon.battle.ui.fight" }, pokemonNameAt(context, slot));
+    let form = moveForm<MoveCell>({ translate: "cobblemon.battle.ui.fight" }, withTeraType(pokemonNameAt(context, slot), self));
     moveset.moves.slice(0, 4).forEach((_, i) => {
       let tile = moveTileInfo(moveset!, i, toggled);
       form.cell(BATTLE_MOVES.MOVES + i, renderMoveTile(tile, self, foes), tileTypeKey(tile, self), { kind: "move", index: i });
@@ -254,6 +254,18 @@ async function showMoveMenu(context: MenuContext): Promise<MenuResult<ActionResp
       context.usedGimmicks.add(toggled);
     return chosen;
   }
+}
+
+/**
+ * Frente msd-fase3: Pokémon terastalizado mostra o tipo Tera no menu de golpes (o Cobblemon mostra o ícone do tipo
+ * Tera no BattleOverlay). Sem Tera (sempre, no mundo sem o Mega Showdown), o texto é o de antes.
+ */
+export function withTeraType(name: RawMessage, self: SimPokemon | undefined): RawMessage {
+  let tera = self?.terastallized;
+  if (!tera)
+    return name;
+  let id = toID(tera);
+  return { rawtext: [name, { text: "\n" }, { translate: "cobblemon.port.battle.ui.tera_type", with: { rawtext: [{ text: `${typeGlyph(id)} ` }, { translate: `cobblemon.type.${id}` }] } }] };
 }
 
 /** Texto do botão de gimmick (não aparece: só deixa a célula visível e marca o estado ligado). */

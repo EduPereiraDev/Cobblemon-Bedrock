@@ -203,7 +203,6 @@ for (const sp of selected) {
 			g = `g${geoKeyOf.size}`;
 			geoKeyOf.set(model.key, g);
 			geometries.set(g, model.geometryId);
-			models.emit(model);
 		}
 		return {
 			poser: splitId(c.poser).path,
@@ -220,6 +219,10 @@ for (const sp of selected) {
 			}),
 		};
 	});
+
+	// Frente cliente-modelos: grava as geometrias na ordem g0, g1... com a tabela de locators da entidade (locators.ts).
+	const locatorRegistry = new Map<string, string>();
+	for (const key of geoKeyOf.keys()) models.emit(models.models.get(key)!, locatorRegistry, geoKeyOf.size > 1);
 
 	const speciesPosers = [...new Set(combos.map((c) => c.poser))].map((p) => poserCache.get(p)!);
 	const soundEffects = new Map<string, string>();

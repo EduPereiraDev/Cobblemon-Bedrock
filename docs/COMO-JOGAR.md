@@ -136,6 +136,70 @@ Cobblemon:
 - Se alguém sai do servidor no meio de uma batalha entre jogadores (1×1 ou Multi), a batalha acaba na hora para
   todos, sem vencedor e sem recompensa, como no Cobblemon.
 
+## 5. Teste automático para gerar o log
+
+O cliente (Windows, celular, console) só registra um erro de recurso quando usa o recurso: um modelo quebrado só
+aparece no ContentLog quando aquele Pokémon é desenhado, um som ausente só quando ele toca, uma tela JSON UI só quando
+abre. Para não precisar fazer tudo à mão, há um teste automático que força esse uso dentro do mundo:
+
+1. Ligue o registro no cliente: **Configurações > Criador**: "Ativar arquivo de registro do conteúdo" (Enable Content
+   Log File) e o nível **"Inform."**. Com o registro desligado durante o teste, rode o teste de novo depois de ligar.
+2. No mundo (operador e cheats ligados), num lugar aberto do Mundo Superior, com o céu livre acima de você, digite:
+
+   ```
+   /cobblemon:selftest quick
+   ```
+
+   Também funciona como `/scriptevent cobblemon:selftest quick` (no console do servidor:
+   `scriptevent cobblemon:selftest quick <jogador>`).
+3. Espere a mensagem **"[Selftest] Concluído em ..."** no chat. O progresso aparece na actionbar. Para parar a qualquer
+   momento: `/cobblemon:selftest stop` (tudo é restaurado do mesmo jeito). `/cobblemon:selftest status` mostra onde está.
+4. Pegue o arquivo `ContentLog__<data>.txt`:
+   - Windows (versão nova): `%APPDATA%\Minecraft Bedrock\logs`;
+   - Windows (versão antiga, UWP): `%LOCALAPPDATA%\Packages\Microsoft.MinecraftUWP_8wekyb3d8bbwe\LocalState\logs`;
+   - celular: a pasta `games/com.mojang/logs` nos dados do Minecraft (no Android, dentro de
+     `Android/data/com.mojang.minecraftpe/files/`). O botão "Histórico do registro de conteúdo" em Configurações >
+     Criador mostra as mesmas linhas no jogo.
+
+| Modo | O que faz | Tempo medido (servidor de teste) |
+|---|---|---|
+| `quick` (padrão) | Tudo, em amostra: 1 Pokémon por família (forma padrão) + todas as variantes dos casos já vistos no log (torchic, altaria, zubat, skarmory, porygon-z, exeggutor/dugtrio/ninetales de Alola, flabébé, unown, furret, blaziken, frillish); NPC, barcos, exibições e 4 bolas (paradas e arremessadas); movimento em amostra (os casos já vistos + outras espécies andando, nadando e voando, e 3 montarias: terra, água e ar); cada bloco no estado padrão e em todos os estágios de crescimento; 160 partículas e 160 sons; todas as telas; batalha curta | ~4 min 10 s |
+| `full` | Tudo, completo: todas as espécies × todas as combinações (shiny, formas regionais, gênero, Alfa, formas como Unown/Flabébé), todas as entidades do pack com cada valor das propriedades e cada animação, todas as bolas arremessadas, o movimento completo, cada bloco em cada estado (um estado por vez), todas as partículas e todos os sons | ~33 min (soma das fases) |
+| `entities` | Só as entidades, completo (a parte mais longa do `full`) | ~22 min |
+| `movement` | Só o movimento, completo. Três caixas fechadas por barreira na frente da câmera: um **cercado** (andar e correr), uma **piscina** de água (nadar e flutuar) e um **volume aberto com teto** (voar e planar). Cada espécie (cada forma com animações próprias, como as de Alola) vai para a caixa do jeito que ela se move, com a IA ligada e empurrões para não ficar parada, em rodadas de 20 + 10 + 12 Pokémon por ~4 s. Antes, você monta cada montaria (terra no cercado, água na piscina, ar decolando do chão com pulo duplo, voando e planando no fim), com a câmera de montaria de verdade | ~7 min 30 s |
+| `blocks` | Só os blocos, cada estado | ~1 min |
+| `particles` | Só as partículas (todas) | ~15 s |
+| `sounds` | Só os sons (todos, volume baixo) | ~40 s |
+| `ui` | Só as telas: inicial (2D e 3D), time, resumo (4 abas e 3D), PC (o seu e uma caixa de exemplo cheia), Pokédex (lista, página, entrada), diálogo de NPC, troca, batalha (menu, golpes, troca, mochila, alvo, desistir), conquistas, estatísticas e o HUD (time, caixas da batalha em simples/duplas/minimizada, toasts). Cada tela fica ~2,5 s e fecha sozinha | ~1 min 10 s |
+| `battle` | Batalha contra um Magikarp selvagem de teste com um time temporário (Pikachu, Charmander, Squirtle nível 5): golpe, troca, item da mochila (X Attack) e golpe; o menu de verdade aparece a cada turno e fecha sozinho | ~30 s |
+
+Como fica o mundo e o jogador:
+
+- O teste roda numa área temporária **no céu, acima de você** (25 × 15 × 31 blocos), que precisa estar só com ar: se
+  houver qualquer bloco (construção, árvore, teto do Nether), o teste procura outra altura ou avisa que não há espaço.
+  Nada fora dessa área é tocado. O chão é de barreira (invisível) e a câmera fica fixa olhando a grade.
+- No movimento, as três caixas (chão, paredes e teto de barreira, invisíveis) ficam dentro dessa área e nada sai delas;
+  os Pokémon soltos ficam imunes a dano (nada morre nem solta item). A piscina seca com as paredes ainda de pé antes de
+  a caixa ser desmontada, então a água nunca escorre para fora (nem depois de uma queda do servidor). Durante as
+  montarias a câmera é a da montaria; no fim você desce, a câmera e a permissão de desmontar voltam ao normal.
+- Você vai para lá no **modo criativo** (sem dano e sem gastar itens na mochila da batalha) e volta no fim para o mesmo
+  lugar, na mesma dimensão e rotação, no modo de jogo de antes, com a câmera normal e desmontado (o teste não começa
+  com você montado).
+- No fim, tudo o que foi criado some: blocos (voltam a ser ar, inclusive as metades de cima e o que o bloco criou ao
+  ser colocado, como o registro das berries), entidades, itens soltos, música e sons.
+- **Progresso não muda**: o time temporário são cópias que nunca entram no seu time; Pokédex, estatísticas, progresso e
+  conquistas voltam ao que eram (o teste guarda as dynamic properties do jogador antes e restaura as que mudaram);
+  inventário conferido e restaurado. As conquistas têm um cache em memória sem como descartar pela API, mas o teste
+  não dispara nenhum critério delas (não mexe no seu time nem no inventário e não vence batalhas).
+- **Se você sair no meio** (ou o jogo fechar), a área é limpa na hora (ou, depois de uma queda do servidor, assim que
+  o chunk carregar) e você é devolvido ao lugar e aos dados de antes quando entrar de novo (mensagem "[Selftest] Um
+  teste foi interrompido..."). Um teste por vez no mundo.
+- Nada roda sem o comando. Os Pokémon exibidos não têm dados de selvagem (não dá para capturar nem batalhar com eles) e
+  somem no fim; o que a batalha de teste marca na Pokédex (o Magikarp "visto") volta ao que era. A distância montada
+  nas estatísticas também volta ao que era.
+- As linhas `[selftest]` do log do servidor dizem quanto cada fase levou, o que falhou no servidor (espécie que não
+  existe, estado de bloco inválido) e a verificação final da área (tem de ser "0 bloco(s) não-ar, 0 entidade(s)").
+
 ## Limitações conhecidas
 
 - Spawns que dependem de estruturas funcionam nas estruturas do Cobblemon (ruínas, habitats, barcos, enseadas)

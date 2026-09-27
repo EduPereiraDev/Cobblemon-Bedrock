@@ -11,6 +11,12 @@
  *
  * Este arquivo não importa nada: o gerador do JSON UI (`tools/ui/gen-hud.ts`) lê as mesmas tabelas de campos, então
  * script e pack nunca divergem.
+ *
+ * Frente ui-cliente: nenhum campo pode chegar ao JSON UI como texto só de dígitos. No cliente real, o resultado de uma
+ * fatia que parece número vira número: `('§r' + #lvl)` deixou de ser texto (o nível da party ficou vazio, embora o
+ * nome, que é texto, aparecesse) e caminhos como `('.../hp_v_' + #hp)` quebram do mesmo jeito. Por isso campos
+ * numéricos levam um prefixo fixo (`lead`) que faz parte do valor: `_` nos que o JSON UI compara ou junta num caminho
+ * de textura (`'_1'`, `hp_v` + `_18`) e um código de formatação invisível (`§r`/`§l`) nos que são exibidos.
  */
 
 export const HUD_PREFIX = "cbH";
@@ -22,8 +28,16 @@ export type HudChannel = (typeof CHANNEL)[keyof typeof CHANNEL];
 
 export interface FieldSpec {
   name: string;
+  /** Largura total em bytes, contando o `lead`. */
   bytes: number;
+  /** Prefixo fixo de valores não vazios (nunca removido no JSON UI): evita texto só de dígitos. */
+  lead?: string;
 }
+
+/** Prefixo dos campos numéricos comparados/concatenados no JSON UI (`(#v = '_1')`, `hp_v` + `_18`). */
+export const NUM_LEAD = "_";
+/** Literal de comparação de um valor de campo com `NUM_LEAD` (usado pelo gerador do JSON UI). */
+export const numLiteral = (value: string | number) => `${NUM_LEAD}${value}`;
 
 /**
  * Slot da party (PartyOverlay.kt). `k`: tipo do slot — `-` escondido, `e` vazio (party_slot_collapsed),
@@ -34,11 +48,12 @@ export const PARTY_FIELDS: FieldSpec[] = [
   /** Caminho da textura do retrato sem o "textures/" inicial. */
   { name: "tex", bytes: 40 },
   { name: "name", bytes: 24 },
-  { name: "lvl", bytes: 3 },
-  /** Altura da barra vertical de HP em px (00..18). */
-  { name: "hp", bytes: 2 },
-  /** Altura da barra vertical de EXP em px (00..18). */
-  { name: "exp", bytes: 2 },
+  /** Nível exibido: `§r` + até 3 dígitos. */
+  { name: "lvl", bytes: 6, lead: "§r" },
+  /** Altura da barra vertical de HP em px (`_00`..`_18`). */
+  { name: "hp", bytes: 3, lead: NUM_LEAD },
+  /** Altura da barra vertical de EXP em px (`_00`..`_18`). */
+  { name: "exp", bytes: 3, lead: NUM_LEAD },
   /** Status persistente ("brn", "par"...) ou vazio. */
   { name: "st", bytes: 3 },
   /** Gênero: m, f ou n. */
@@ -48,28 +63,28 @@ export const PARTY_FIELDS: FieldSpec[] = [
   /** Pop-up ao lado do slot: e (evolução disponível), m (golpe novo) ou vazio. */
   { name: "pop", bytes: 1 },
   /** Frente dados-ui: EXP ganha mostrada ao lado do slot ("+N EXP", PartyOverlay) ou vazio. */
-  { name: "xp", bytes: 7 },
-  /** Frente dados-ui: 1 = rolo de level-up sobre o retrato (party_slot_portrait_level_up). */
-  { name: "lu", bytes: 1 },
+  { name: "xp", bytes: 10, lead: "§l" },
+  /** Frente dados-ui: `_1` = rolo de level-up sobre o retrato (party_slot_portrait_level_up). */
+  { name: "lu", bytes: 2, lead: NUM_LEAD },
 ];
 export const PARTY_SLOTS = 6;
 
 /** Cabeçalho do HUD de batalha: posições por lado e nomes dos treinadores (lado do jogador e oponente). */
 export const BATTLE_HEAD_FIELDS: FieldSpec[] = [
   /** Pokémon em campo por ator (1..3), para o recuo horizontal das caixas (BattleOverlay.HORIZONTAL_SPACING). */
-  { name: "n", bytes: 1 },
+  { name: "n", bytes: 2, lead: NUM_LEAD },
   { name: "la", bytes: 24 },
   { name: "ra", bytes: 24 },
   /** Frente batalha-minimizavel: 1 = batalha minimizada (caixas com opacidade 0,5, BattleOverlay.MIN_OPACITY). */
-  { name: "min", bytes: 1 },
+  { name: "min", bytes: 2, lead: NUM_LEAD },
   /**
    * Aviso no HUD (texto na cauda do título, ver `BATTLE_TAIL_OFFSET`): 0 nada; 1 `cobblemon.battle.ui.actions_label`
    * pulsando (BattleOverlay.kt:143-153); 2 `cobblemon.battle.ui.hide_label` (BattleGUI.kt:123-132); 3 menu de golpes
    * do modo `hud` (título na cauda + registros de golpe).
    */
-  { name: "pr", bytes: 1 },
+  { name: "pr", bytes: 2, lead: NUM_LEAD },
   /** Cursor do menu do modo `hud` (espaço da hotbar 0..8). */
-  { name: "cur", bytes: 1 },
+  { name: "cur", bytes: 2, lead: NUM_LEAD },
 ];
 
 /** Golpe do menu do modo `hud` (BattleMoveSelection.MoveTile: cor do tipo, nome, PP). */
@@ -81,25 +96,26 @@ export const BATTLE_MOVE_FIELDS: FieldSpec[] = [
   /** "pp/max" ou vazio (Struggle). */
   { name: "pp", bytes: 5 },
   /** 1 = pode usar; 0 = sem PP ou desabilitado (tile com opacidade 0,5). */
-  { name: "use", bytes: 1 },
+  { name: "use", bytes: 2, lead: NUM_LEAD },
 ];
 export const BATTLE_MOVES = 4;
 
 /** Caixa de info de um Pokémon em campo (BattleOverlay.drawBattleTile). */
 export const BATTLE_TILE_FIELDS: FieldSpec[] = [
   /** 1 = visível. */
-  { name: "v", bytes: 1 },
+  { name: "v", bytes: 2, lead: NUM_LEAD },
   { name: "tex", bytes: 40 },
   { name: "name", bytes: 24 },
-  { name: "lvl", bytes: 3 },
-  /** Largura da barra de HP em px (00..97). */
-  { name: "hpw", bytes: 2 },
+  /** Nível exibido em negrito: `§l` + até 3 dígitos. */
+  { name: "lvl", bytes: 6, lead: "§l" },
+  /** Largura da barra de HP em px (`_00`..`_97`). */
+  { name: "hpw", bytes: 3, lead: NUM_LEAD },
   /** Texto do HP: "atual/máx" do lado do jogador, "NN%" do oponente. */
   { name: "hpt", bytes: 9 },
   { name: "st", bytes: 3 },
   { name: "g", bytes: 1 },
   /** 1 = espécie já capturada pelo jogador (battle_owned_indicator). */
-  { name: "own", bytes: 1 },
+  { name: "own", bytes: 2, lead: NUM_LEAD },
 ];
 /** Caixas por lado (até triplas). Ordem no payload: esquerda 0..2, direita 0..2. */
 export const BATTLE_TILES_PER_SIDE = 3;
@@ -107,7 +123,7 @@ export const BATTLE_TILES_PER_SIDE = 3;
 /** Toast (CobblemonToast / AdvancementToast): ícone, moldura, cor da 1ª linha e duas linhas (chave ou texto). */
 export const TOAST_FIELDS: FieldSpec[] = [
   /** 1 = visível. */
-  { name: "v", bytes: 1 },
+  { name: "v", bytes: 2, lead: NUM_LEAD },
   /** Caminho da textura do ícone sem o "textures/" inicial. */
   { name: "icon", bytes: 64 },
   /** Moldura: t (task), g (goal), c (challenge). */
@@ -170,7 +186,11 @@ export function padNumber(n: number, width: number): string {
 
 /** Monta um registro na ordem das especificações. */
 export function encodeRecord(fields: FieldSpec[], values: Record<string, string | number | undefined>): string {
-  return fields.map(f => fixed(values[f.name], f.bytes)).join("");
+  return fields.map(f => {
+    const raw = values[f.name];
+    const value = raw === undefined || raw === "" ? "" : `${f.lead ?? ""}${raw}`;
+    return fixed(value, f.bytes);
+  }).join("");
 }
 
 /** Sequência de 1 caractere (muda a cada envio para o receptor preservado aceitar o título mesmo se o corpo repetir). */

@@ -541,6 +541,15 @@ function buildBehaviour(typeId: string): ItemBehaviour | undefined {
 
 const cache = new Map<string, ItemBehaviour | undefined>();
 
+/**
+ * Frente msd-fase3: comportamento de um item de extensão (Tera Shards, Max Soup, Dynamax Candy... do Mega Showdown),
+ * usado pelos mesmos caminhos dos itens do Cobblemon (apontar para o Pokémon ou escolher no time). Sem registro (mundo
+ * sem a extensão), nada muda.
+ */
+export function registerItemBehaviour(behaviour: ItemBehaviour): void {
+  cache.set(behaviour.typeId, behaviour);
+}
+
 /** Comportamento do item fora de batalha, ou undefined se o item não é usado em Pokémon. */
 export function getItemBehaviour(typeId: string): ItemBehaviour | undefined {
   if (!cache.has(typeId)) cache.set(typeId, buildBehaviour(typeId));

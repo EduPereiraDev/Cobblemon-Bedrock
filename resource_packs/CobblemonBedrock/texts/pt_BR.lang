@@ -416,3 +416,45 @@ cobblemon.port.battle_ui.gimmick_off=§7(desligado)
 
 ## msd-fase2 (Mega Showdown, Fase 2: Mega/Primal/Z/Ultra; tipo Stellar da mensagem de Tera)
 cobblemon.type.stellar=Estelar
+
+## msd-fase3 (Mega Showdown, Fase 3: tipo Tera na batalha e no resumo)
+cobblemon.port.battle.ui.tera_type=§eTera: %1$s
+cobblemon.port.summary.tera_type=Tipo Tera
+
+## selftest (/cobblemon:selftest: teste automático no mundo que gera o ContentLog do cliente)
+cobblemon.selftest.usage=§c[Selftest] Uso: /cobblemon:selftest [%1$s]
+cobblemon.selftest.started=§e[Selftest]§r Iniciando o modo §l%1$s§r. Não feche o jogo; pare quando quiser com §e/cobblemon:selftest stop§r.
+cobblemon.selftest.already_running=§c[Selftest] Já há um teste rodando (%1$s).
+cobblemon.selftest.recovering=§c[Selftest] Ainda limpando um teste interrompido. Tente de novo em alguns segundos.
+cobblemon.selftest.in_battle=§c[Selftest] Saia da batalha primeiro.
+cobblemon.selftest.riding=§c[Selftest] Desmonte primeiro.
+cobblemon.selftest.no_space=§c[Selftest] Sem espaço livre acima de você (precisa de 25×15×31 blocos de ar, 16+ blocos acima). Vá para uma área aberta no Mundo Superior.
+cobblemon.selftest.error=§c[Selftest] Não foi possível iniciar: %1$s
+cobblemon.selftest.no_manifest=§6[Selftest] Este build não tem o manifesto dos packs: partículas, sons, blocos e entidades que não são Pokémon ficam de fora.
+cobblemon.selftest.not_running=§7[Selftest] Nenhum teste rodando.
+cobblemon.selftest.stopping=§e[Selftest] Parando e restaurando tudo...
+cobblemon.selftest.status=§e[Selftest]§r %1$s, modo %2$s: %3$s %4$s/%5$s (%6$s)
+cobblemon.selftest.progress=§e[Selftest]§r %1$s: %2$s/%3$s §7(%4$s) - /cobblemon:selftest stop
+cobblemon.selftest.phase.entities=Entidades
+cobblemon.selftest.phase.blocks=Blocos
+cobblemon.selftest.phase.particles=Partículas
+cobblemon.selftest.phase.sounds=Sons
+cobblemon.selftest.phase.ui=Telas
+cobblemon.selftest.phase.battle=Batalha
+cobblemon.selftest.phase.movement=Movimento
+cobblemon.selftest.finished=§a[Selftest] Concluído em %1$s (modo %2$s).
+cobblemon.selftest.interrupted=§6[Selftest] Interrompido depois de %1$s (modo %2$s); tudo foi restaurado.
+cobblemon.selftest.summary.entities=§7- Pokémon: %1$s variantes de %2$s espécies; outras entidades: %3$s; bolas arremessadas: %4$s
+cobblemon.selftest.summary.blocks=§7- Blocos: %1$s estados de %2$s blocos
+cobblemon.selftest.summary.particles=§7- Partículas: %1$s de %2$s
+cobblemon.selftest.summary.sounds=§7- Sons: %1$s de %2$s
+cobblemon.selftest.summary.ui=§7- Telas e HUD: %1$s
+cobblemon.selftest.summary.battle=§7- Batalha: %1$s turnos (golpe, troca, mochila)
+cobblemon.selftest.summary.movement=§7- Movimento: %1$s no cercado (%2$s andaram), %3$s na piscina (%4$s nadaram), %5$s no ar (%6$s voaram); montarias: %7$s de %8$s
+cobblemon.selftest.summary.failures=§6- %1$s item(ns) falharam no servidor (veja as linhas do log com [selftest]).
+cobblemon.selftest.summary.restored=§7- Área, entidades, inventário, time e progresso restaurados.
+cobblemon.selftest.log.header=§b[Selftest] Agora pegue o ContentLog:
+cobblemon.selftest.log.enable=§7- Configurações > Criador: ligue "Ativar arquivo de registro do conteúdo" e o nível "Inform." (se estava desligado, rode o teste de novo).
+cobblemon.selftest.log.windows=§7- Windows: %1$s (versões antigas: %2$s)
+cobblemon.selftest.log.mobile=§7- Celular: pasta %1$s nos dados do Minecraft; arquivo ContentLog__<data>.txt
+cobblemon.selftest.restored_after_crash=§e[Selftest] Um teste foi interrompido; sua posição, modo de jogo e dados foram restaurados.

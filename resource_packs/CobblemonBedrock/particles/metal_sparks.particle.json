@@ -44,7 +44,8 @@
 						"base_UV": [0, 0],
 						"size_UV": [8, 8],
 						"step_UV": [0, 8],
-						"frames_per_second": 1
+						"frames_per_second": 1,
+						"max_frame": 2
 					}
 				}
 			},

@@ -65,9 +65,6 @@
                         "max_frame": 5
                     }
                 }
-            },
-            "cobblemon:emitter_space": {
-                "scaling": "entity"
             }
         }
     }

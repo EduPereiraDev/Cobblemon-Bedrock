@@ -82,8 +82,9 @@ export class CellForm<T = unknown> {
    * Mostra e devolve a célula escolhida. `undefined` = fechado. Chat/inventário aberto (UserBusy): tenta de novo a
    * cada meio segundo, até `retries` vezes.
    */
-  async show(player: Player, retries = 20): Promise<{ index: number; action?: T } | undefined> {
+  async show(player: Player, retries = 20, outcome?: { busy?: boolean }): Promise<{ index: number; action?: T } | undefined> {
     const form = this.build();
+    if (outcome) outcome.busy = false;
     for (let attempt = 0; attempt <= retries; attempt++) {
       if (!player.isValid) return undefined;
       let response: ActionFormResponse;
@@ -96,6 +97,8 @@ export class CellForm<T = unknown> {
       if (response.selection === undefined) return undefined;
       return { index: response.selection, action: this.actionAt(response.selection) };
     }
+    // Todas as tentativas deram UserBusy: a tela nunca apareceu (cliente ainda carregando, outra tela aberta).
+    if (outcome) outcome.busy = true;
     return undefined;
   }
 }

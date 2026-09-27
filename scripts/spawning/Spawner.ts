@@ -35,9 +35,10 @@ import { DespawnSettings, evaluateDespawn, SPAWN_TIME_PROPERTY } from "./Despawn
 import {
   ACTIVATED_MAX_PER_CHUNK, activatedBuckets, activatedInfluence, applyHabitats, currentPhase, habitatSpawnerId, HabitatState, phaseMatches,
 } from "./Habitats";
-import { baseWeight, entryAllowed, FishingInfo, nearbyRange, PositionType, SpawnContext } from "./SpawnConditions";
+import { baseWeight, entryAllowed, FishingInfo, nearbyRange, PositionType, SpawnContext, worldClock } from "./SpawnConditions";
 import {
   alphaTargetLevel, bucketNormalizingInfluence, entriesForBiome, hasSpaceBox, playerLevelRangeInfluence, rollLevel, selectSpawnActions,
+  selectSpawnActionsJob, warmSpawnIndex,
   SelectOptions, SpawnAction, SpawnInfluence,
 } from "./SpawnSelector";
 
@@ -301,8 +302,23 @@ export interface ZoneBounds { minX: number; maxX: number; minY: number; maxY: nu
  * reserva quando o orçamento de leituras acaba. `bounds`: limites da zona ([min, max) em x/y/z).
  */
 export function makeHasSpace(cache: ZoneBlockCache, x: number, blockY: number, z: number, type: PositionType | string, fluid: "water" | "lava" | undefined, columnHeight: number | undefined, bounds?: ZoneBounds): (width: number, height: number) => boolean {
-  const memo = new Map<string, boolean>();
+  const job = makeHasSpaceJob(cache, x, blockY, z, type, fluid, columnHeight, bounds);
   return (width, height) => {
+    const run = job(width, height, Infinity);
+    let step = run.next();
+    while (!step.done) step = run.next();
+    return step.value;
+  };
+}
+
+/**
+ * makeHasSpace como gerador (frente cliente-log): cede o tick entre leituras de bloco quando passa de `budgetMs` (no
+ * BDS emulado a caixa de um Pokémon grande lia ~100 blocos, 40–80 ms, num tick só). Memória e resultado compartilhados
+ * com a versão síncrona (mesmas leituras, na mesma ordem).
+ */
+export function makeHasSpaceJob(cache: ZoneBlockCache, x: number, blockY: number, z: number, type: PositionType | string, fluid: "water" | "lava" | undefined, columnHeight: number | undefined, bounds?: ZoneBounds): (width: number, height: number, budgetMs?: number) => Generator<string, boolean, void> {
+  const memo = new Map<string, boolean>();
+  return function* (width, height, budgetMs = 3) {
     const key = `${width}x${height}`;
     const known = memo.get(key);
     if (known !== undefined) return known;
@@ -314,6 +330,7 @@ export function makeHasSpace(cache: ZoneBlockCache, x: number, blockY: number, z
       const cell = cache.get(bx, by, bz);
       return cell === undefined ? undefined : !isSafeSpace(type, fluid, cell);
     };
+    let start = budgetMs === Infinity ? 0 : Date.now();
     let ok = true;
     // A coluna da própria posição primeiro: já está no cache e rejeita sem ler os vizinhos.
     for (let by = box.minY; ok && by <= box.maxY; by++) {
@@ -325,9 +342,15 @@ export function makeHasSpace(cache: ZoneBlockCache, x: number, blockY: number, z
       for (let by = box.minY; ok && by <= box.maxY; by++) {
         for (let bz = box.minZ; ok && bz < box.maxZ; bz++) {
           if (bx === x && bz === z) continue;
+          const reads = cache.reads;
           const unsafe = unsafeAt(bx, by, bz);
           if (unsafe === undefined) return fallback();
           if (unsafe) ok = false;
+          // Só leituras novas custam; cede entre elas.
+          if (budgetMs !== Infinity && cache.reads !== reads && Date.now() - start >= budgetMs) {
+            yield "espaço";
+            start = Date.now();
+          }
         }
       }
     }
@@ -336,11 +359,41 @@ export function makeHasSpace(cache: ZoneBlockCache, x: number, blockY: number, z
   };
 }
 
+/** hasSpace e hasSpaceJob da posição sobre a mesma memória (um só gerador). */
+function spaceChecks(cache: ZoneBlockCache, x: number, blockY: number, z: number, type: PositionType | string, fluid: "water" | "lava" | undefined, columnHeight: number | undefined, bounds: ZoneBounds): Pick<SpawnContext, "hasSpace" | "hasSpaceJob"> {
+  const job = makeHasSpaceJob(cache, x, blockY, z, type, fluid, columnHeight, bounds);
+  return {
+    hasSpace: (width, height) => {
+      const run = job(width, height, Infinity);
+      let step = run.next();
+      while (!step.done) step = run.next();
+      return step.value;
+    },
+    hasSpaceJob: (width, height) => job(width, height),
+  };
+}
+
 /** Amostra colunas da zona e devolve as posições possíveis de cada tipo. */
 function resolvePositions(zone: Zone): SpawnContext[] {
+  const job = resolvePositionsJob(zone);
+  let step = job.next();
+  while (!step.done) step = job.next();
+  return step.value;
+}
+
+/**
+ * resolvePositions em fatias (frente cliente-log): cede o tick entre colunas quando a leitura de blocos passa de ~3 ms
+ * (no BDS emulado uma zona de 12 colunas chegava a 45 ms num tick só). Mesmo resultado.
+ */
+function* resolvePositionsJob(zone: Zone): Generator<string, SpawnContext[], void> {
   const { dimension } = zone;
+  let sliceStart = Date.now();
   const out: SpawnContext[] = [];
   const weather = weatherOf(dimension);
+  // Relógio do mundo uma vez por passe (frente cliente-log).
+  let clock: SpawnContext["clock"];
+  try { clock = { timeOfDay: worldClock.timeOfDay(), moonPhase: worldClock.moonPhase() }; }
+  catch { clock = undefined; }
   const columns = new Set<number>();
   const total = zone.diameter * zone.diameter;
   const wanted = Math.min(total, SPAWN_TUNING.zoneColumns);
@@ -375,6 +428,11 @@ function resolvePositions(zone: Zone): SpawnContext[] {
       const cell = classify(safeBlock(dimension, { x, y, z }));
       cells.push(cell);
       blockCache.put(x, y, z, cell);
+      // No BDS emulado cada leitura de bloco custa perto de 1 ms: cede no meio da coluna também.
+      if (Date.now() - sliceStart >= 3) {
+        yield "posições";
+        sliceStart = Date.now();
+      }
     }
     const at = (y: number) => cells[y - (zone.baseY - 1)];
     // Céu aberto: nada sólido/fluido acima do bloco da posição (plantas e tapetes não contam).
@@ -394,8 +452,8 @@ function resolvePositions(zone: Zone): SpawnContext[] {
       return {
         dimension, location, blockY, positionType: type, biome, baseBlock: base.typeId, skyLight, light,
         canSeeSky: type === "submerged" || type === "seafloor" ? false : topY === undefined || blockY >= topY,
-        ...weather, zoneHasAny, ...extra,
-        hasSpace: makeHasSpace(blockCache, x, blockY, z, type, extra.fluid, freeHeight, bounds),
+        ...weather, clock, zoneHasAny, ...extra,
+        ...spaceChecks(blockCache, x, blockY, z, type, extra.fluid, freeHeight, bounds),
       };
     };
     const submerged: SpawnContext[] = [];
@@ -420,9 +478,18 @@ function resolvePositions(zone: Zone): SpawnContext[] {
       else if (cell.kind === "solid" && isFluid(above)) {
         out.push(make(y, "seafloor", cell, { fluid: above.kind as "water" | "lava" }));
       }
+      // make() consulta luz e bioma do mundo.
+      if (Date.now() - sliceStart >= 3) {
+        yield "posições";
+        sliceStart = Date.now();
+      }
     }
     // Uma posição submersa por coluna basta (colunas de água funda teriam dezenas).
     if (submerged.length) out.push(submerged[Math.floor(Math.random() * submerged.length)]);
+    if (Date.now() - sliceStart >= 3) {
+      yield "posições";
+      sliceStart = Date.now();
+    }
   }
   return out;
 }
@@ -522,9 +589,22 @@ function markAlphaEntity(entity: Entity) {
 
 /** Cria a entidade de uma ação no mundo. Undefined se falhar. */
 export function spawnActionEntity(action: SpawnAction, influences: SpawnInfluence[] = []): Entity | undefined {
+  let data: PokemonData;
+  try { data = createPokemonForAction(action, influences); }
+  catch (e) {
+    console.warn(`Falha ao spawnar ${action.species}: ${e}`);
+    return undefined;
+  }
+  return spawnPreparedEntity(action, data, influences);
+}
+
+/**
+ * Segunda metade de spawnActionEntity: cria a entidade de um Pokémon já gerado (o passe fatiado gera o Pokémon numa
+ * fatia e cria a entidade na seguinte).
+ */
+function spawnPreparedEntity(action: SpawnAction, data: PokemonData, influences: SpawnInfluence[] = []): Entity | undefined {
   let entity: Entity | undefined;
   try {
-    const data = createPokemonForAction(action, influences);
     entity = action.ctx.dimension.spawnEntity(data.getEntityId(), action.ctx.location);
     data.applyToCobblemon(entity);
     entity.setProperty("cobblemon:wild", true);
@@ -754,32 +834,115 @@ let lastSlowWarning = -Infinity;
 
 /** Um passe de spawn para o jogador (PlayerSpawner.tick quando o timer zera). Retorna as ações feitas. */
 export function trySpawnNear(player: Player): SpawnAction[] {
+  // Mesmo passe, sem fatiar (comandos e testes); o laço natural usa a versão fatiada (spawnPass em runJob).
+  const pass = spawnPass(player, false);
+  let step = pass.next();
+  while (!step.done) step = pass.next();
+  return step.value;
+}
+
+/**
+ * Frente cliente-log (desempenho): o passe como gerador. Fatiado (`sliced`), cede o tick depois das posições, depois
+ * das condições de cada posição (selectSpawnActionsJob) e depois de cada entidade criada; `system.runJob` distribui
+ * as fatias entre os ticks. No mundo hospedado pelo cliente um passe inteiro de 26–148 ms num tick só travava o
+ * anfitrião. A taxa de passes (ticksBetweenSpawnAttempts) e a seleção são as mesmas; o spawn sai alguns ticks depois.
+ */
+function* spawnPass(player: Player, sliced: boolean): Generator<void, SpawnAction[], void> {
+  // Fatiado, o job só começa num tick seguinte: o jogador pode ter saído (o laço conferiu antes).
+  if (!player.isValid) return [];
   const s = settings();
   if (!s.enableSpawning || !spawningEnabled || !getGameRule("doPokemonSpawning")) return [];
   if (s.worldSpawningBlocklist.includes(player.dimension.id)) return [];
   const t0 = Date.now();
+  let sliceStart = t0;
+  let worstSlice = 0;
+  let worstPart = "";
+  const endSlice = (part: string) => {
+    const ms = Date.now() - sliceStart;
+    if (ms > worstSlice) { worstSlice = ms; worstPart = part; }
+  };
   const zone = constrainZone(zoneFor(player, s), s);
   if (!zone) return [];
   if (zoneIsFull(zone, s.pokemonPerChunk)) return [];
   if (wildNear(player, s.maximumSpawningZoneDistanceFromPlayer + 16) >= SPAWN_TUNING.maxWildPerPlayer) return [];
   const t1 = Date.now();
-  const positions = resolvePositions(zone);
+  if (sliced) {
+    endSlice("zona");
+    yield;
+    sliceStart = Date.now();
+  }
+  let positions: SpawnContext[];
+  if (sliced) {
+    const job = resolvePositionsJob(zone);
+    let step = job.next();
+    while (!step.done) {
+      endSlice(step.value);
+      yield;
+      sliceStart = Date.now();
+      step = job.next();
+    }
+    positions = step.value;
+    endSlice("posições");
+    yield;
+    sliceStart = Date.now();
+  }
+  else positions = resolvePositions(zone);
   // HabitatBlockDetector: blocos de habitat perto da zona injetam/substituem spawns nas posições do raio.
   applyHabitats(zone.dimension, positions, zoneCenter(zone), zone.diameter, zone.height, "world");
   applyHoneyLogs(zone.dimension, positions, zoneCenter(zone), zone.diameter);
   const t2 = Date.now();
   const opts = selectOptions({ positions, player, maxSpawns: s.maximumSpawnsPerPass }, s);
-  const actions = selectSpawnActions(positions, opts);
+  let actions: SpawnAction[];
+  if (sliced) {
+    endSlice("habitats");
+    yield;
+    sliceStart = Date.now();
+    const job = selectSpawnActionsJob(positions, opts);
+    let step = job.next();
+    while (!step.done) {
+      endSlice(step.value ?? "seleção");
+      yield;
+      sliceStart = Date.now();
+      step = job.next();
+    }
+    endSlice("seleção final");
+    sliceStart = Date.now();
+    actions = step.value;
+  }
+  else actions = selectSpawnActions(positions, opts);
   const t3 = Date.now();
   const done: SpawnAction[] = [];
-  for (const action of actions) if (spawnActionEntity(action, opts.influences)) done.push(action);
+  for (const action of actions) {
+    if (!sliced) {
+      if (spawnActionEntity(action, opts.influences)) done.push(action);
+      continue;
+    }
+    if (!player.isValid) break;
+    // Fatiado: gera o Pokémon numa fatia e cria a entidade na seguinte.
+    let data: PokemonData | undefined;
+    try { data = createPokemonForAction(action, opts.influences); }
+    catch (e) { console.warn(`Falha ao spawnar ${action.species}: ${e}`); }
+    endSlice("gerar Pokémon");
+    yield;
+    sliceStart = Date.now();
+    if (data && spawnPreparedEntity(action, data, opts.influences)) done.push(action);
+    endSlice("criar entidade");
+    yield;
+    sliceStart = Date.now();
+  }
+  endSlice("fim");
   const t4 = Date.now();
-  if (t4 - t0 > SPAWN_TUNING.slowPassMs && t4 - lastSlowWarning > 10000) {
+  // Fatiado, o que pesa no tick é a maior fatia (o passe inteiro se espalha por vários ticks).
+  const cost = sliced ? worstSlice : t4 - t0;
+  if (cost > SPAWN_TUNING.slowPassMs && t4 - lastSlowWarning > 10000) {
     lastSlowWarning = t4;
-    console.warn(`[spawn] passe lento: ${t4 - t0} ms (zona ${t1 - t0}, posições ${t2 - t1} [${positions.length}], seleção ${t3 - t2}, entidades ${t4 - t3} [${done.length}])`);
+    console.warn(`[spawn] passe lento: ${cost} ms${sliced ? ` na maior fatia (${worstPart}; passe em ${t4 - t0} ms de relógio)` : ""} (zona ${t1 - t0}, posições ${t2 - t1} [${positions.length}], seleção ${t3 - t2}, entidades ${t4 - t3} [${done.length}])`);
   }
   return done;
 }
+
+/** Passes fatiados em andamento (um por jogador). */
+const passesInFlight = new Set<string>();
 
 const playerTimers = new Map<string, number>();
 let lastRunTick = 0;
@@ -805,10 +968,18 @@ function spawnTick() {
   // Rodízio: no máximo maxPassesPerRun passes por execução; os outros esperam a próxima.
   for (let i = 0; i < Math.min(due.length, SPAWN_TUNING.maxPassesPerRun); i++) {
     const player = due[(rotation++) % due.length];
+    // Passe anterior ainda em fatias: o timer fica vencido e o próximo começa assim que ele terminar (a taxa de passes
+    // continua a de ticksBetweenSpawnAttempts enquanto um passe levar menos que isso; no BDS emulado, 3–20 ticks).
+    if (passesInFlight.has(player.id)) continue;
     playerTimers.set(player.id, s.ticksBetweenSpawnAttempts);
     if (!player.isValid) continue;
-    try { trySpawnNear(player); }
-    catch (e) { console.warn(`Erro no spawner: ${e}`); }
+    const id = player.id;
+    passesInFlight.add(id);
+    system.runJob((function* () {
+      try { yield* spawnPass(player, true); }
+      catch (e) { console.warn(`Erro no spawner: ${e}`); }
+      finally { passesInFlight.delete(id); }
+    })());
   }
 }
 
@@ -900,6 +1071,14 @@ function alphaLevelTick(players: Player[]) {
 /** Liga o laço de spawn e o de despawn. Chamar uma vez no carregamento do mundo. */
 export function startSpawner() {
   lastRunTick = system.currentTick;
+  // Frente cliente-log: índices da seleção montados em fatias no carregamento, e o Dex do @pkmn/sim (carga única de
+  // ~40 ms no BDS emulado) carregado aqui, não na primeira fatia "gerar Pokémon" com o jogador já no mundo.
+  system.runJob((function* () {
+    yield* warmSpawnIndex();
+    yield;
+    try { PokemonData.generateNewWildPokemon("pikachu", { level: 5, aspects: [], shiny: false }); }
+    catch { /* só aquecimento */ }
+  })());
   system.runInterval(spawnTick, SPAWN_TUNING.runIntervalTicks);
   system.runInterval(() => {
     try { despawnTick(); }

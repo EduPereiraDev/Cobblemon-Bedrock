@@ -1,6 +1,7 @@
 import { BattleActor, PokemonBattle } from "../battle";
 import { PokemonData } from '../Pokemon';
 import { ActivePokemon } from '../battle';
+import type { Player } from "@minecraft/server";
 
 /** Uses types from Record to create a typescript safe event emitter.
  * @link https://stackblitz.com/edit/node-4kixah?file=index.ts
@@ -65,6 +66,11 @@ export type EventTypes = {
   "BATTLE_STARTED_PRE": [actors: BattleActor[]]
   /** Frente msd-fase2 (HELD_ITEM_POST): item segurado trocado pelo menu/comando (ids Minecraft; undefined = nenhum). */
   "HELD_ITEM_POST": [PokemonData, previous: string | undefined, next: string | undefined]
+  /**
+   * Frente msd-fase4 (CobblemonEvents.POKEMON_CAPTURED): o Pokémon capturado, já com a bola e o treinador, logo antes de
+   * ir para o time/PC (o que um ouvinte mudar nele é gravado). O Mega Showdown fixa aqui o tipo Tera do Ogerpon/Terapagos.
+   */
+  "POKEMON_CAPTURED": [PokemonData, thrower: Player]
 }
 
 export const CobblemonEvents = new TypedEventEmitter<EventTypes>()

@@ -57,32 +57,32 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.3s' * #r_lvl) - '\t')",
+    "source_property_name": "(('%.6s' * #r_lvl) - '\t')",
     "target_property_name": "#lvl"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.73s' * #p))",
+    "source_property_name": "(#p - ('%.76s' * #p))",
     "target_property_name": "#r_hp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.2s' * #r_hp) - '\t')",
+    "source_property_name": "(('%.3s' * #r_hp) - '\t')",
     "target_property_name": "#hp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.75s' * #p))",
+    "source_property_name": "(#p - ('%.79s' * #p))",
     "target_property_name": "#r_exp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.2s' * #r_exp) - '\t')",
+    "source_property_name": "(('%.3s' * #r_exp) - '\t')",
     "target_property_name": "#exp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.77s' * #p))",
+    "source_property_name": "(#p - ('%.82s' * #p))",
     "target_property_name": "#r_st"
    },
    {
@@ -92,7 +92,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.80s' * #p))",
+    "source_property_name": "(#p - ('%.85s' * #p))",
     "target_property_name": "#r_g"
    },
    {
@@ -102,7 +102,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.81s' * #p))",
+    "source_property_name": "(#p - ('%.86s' * #p))",
     "target_property_name": "#r_ball"
    },
    {
@@ -112,7 +112,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.105s' * #p))",
+    "source_property_name": "(#p - ('%.110s' * #p))",
     "target_property_name": "#r_pop"
    },
    {
@@ -122,22 +122,22 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.106s' * #p))",
+    "source_property_name": "(#p - ('%.111s' * #p))",
     "target_property_name": "#r_xp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.7s' * #r_xp) - '\t')",
+    "source_property_name": "(('%.10s' * #r_xp) - '\t')",
     "target_property_name": "#xp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.113s' * #p))",
+    "source_property_name": "(#p - ('%.121s' * #p))",
     "target_property_name": "#r_lu"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.1s' * #r_lu) - '\t')",
+    "source_property_name": "(('%.2s' * #r_lu) - '\t')",
     "target_property_name": "#lu"
    },
    {
@@ -516,7 +516,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_ps0",
-             "source_property_name": "('textures/ui/cobblemon/hud/hp_v_' + #hp)",
+             "source_property_name": "('textures/ui/cobblemon/hud/hp_v' + #hp)",
              "target_property_name": "#texture"
             },
             {
@@ -546,7 +546,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_ps0",
-             "source_property_name": "('textures/ui/cobblemon/hud/exp_v_' + #exp)",
+             "source_property_name": "('textures/ui/cobblemon/hud/exp_v' + #exp)",
              "target_property_name": "#texture"
             },
             {
@@ -703,7 +703,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_ps0",
-             "source_property_name": "(#lu = '1')",
+             "source_property_name": "(#lu = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -777,7 +777,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.114s' * #p))",
+    "source_property_name": "(#p - ('%.123s' * #p))",
     "target_property_name": "#r_k"
    },
    {
@@ -787,7 +787,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.115s' * #p))",
+    "source_property_name": "(#p - ('%.124s' * #p))",
     "target_property_name": "#r_tex"
    },
    {
@@ -797,7 +797,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.155s' * #p))",
+    "source_property_name": "(#p - ('%.164s' * #p))",
     "target_property_name": "#r_name"
    },
    {
@@ -807,37 +807,37 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.179s' * #p))",
+    "source_property_name": "(#p - ('%.188s' * #p))",
     "target_property_name": "#r_lvl"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.3s' * #r_lvl) - '\t')",
+    "source_property_name": "(('%.6s' * #r_lvl) - '\t')",
     "target_property_name": "#lvl"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.182s' * #p))",
+    "source_property_name": "(#p - ('%.194s' * #p))",
     "target_property_name": "#r_hp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.2s' * #r_hp) - '\t')",
+    "source_property_name": "(('%.3s' * #r_hp) - '\t')",
     "target_property_name": "#hp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.184s' * #p))",
+    "source_property_name": "(#p - ('%.197s' * #p))",
     "target_property_name": "#r_exp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.2s' * #r_exp) - '\t')",
+    "source_property_name": "(('%.3s' * #r_exp) - '\t')",
     "target_property_name": "#exp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.186s' * #p))",
+    "source_property_name": "(#p - ('%.200s' * #p))",
     "target_property_name": "#r_st"
    },
    {
@@ -847,7 +847,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.189s' * #p))",
+    "source_property_name": "(#p - ('%.203s' * #p))",
     "target_property_name": "#r_g"
    },
    {
@@ -857,7 +857,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.190s' * #p))",
+    "source_property_name": "(#p - ('%.204s' * #p))",
     "target_property_name": "#r_ball"
    },
    {
@@ -867,7 +867,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.214s' * #p))",
+    "source_property_name": "(#p - ('%.228s' * #p))",
     "target_property_name": "#r_pop"
    },
    {
@@ -877,22 +877,22 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.215s' * #p))",
+    "source_property_name": "(#p - ('%.229s' * #p))",
     "target_property_name": "#r_xp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.7s' * #r_xp) - '\t')",
+    "source_property_name": "(('%.10s' * #r_xp) - '\t')",
     "target_property_name": "#xp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.222s' * #p))",
+    "source_property_name": "(#p - ('%.239s' * #p))",
     "target_property_name": "#r_lu"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.1s' * #r_lu) - '\t')",
+    "source_property_name": "(('%.2s' * #r_lu) - '\t')",
     "target_property_name": "#lu"
    },
    {
@@ -1271,7 +1271,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_ps1",
-             "source_property_name": "('textures/ui/cobblemon/hud/hp_v_' + #hp)",
+             "source_property_name": "('textures/ui/cobblemon/hud/hp_v' + #hp)",
              "target_property_name": "#texture"
             },
             {
@@ -1301,7 +1301,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_ps1",
-             "source_property_name": "('textures/ui/cobblemon/hud/exp_v_' + #exp)",
+             "source_property_name": "('textures/ui/cobblemon/hud/exp_v' + #exp)",
              "target_property_name": "#texture"
             },
             {
@@ -1458,7 +1458,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_ps1",
-             "source_property_name": "(#lu = '1')",
+             "source_property_name": "(#lu = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -1532,7 +1532,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.223s' * #p))",
+    "source_property_name": "(#p - ('%.241s' * #p))",
     "target_property_name": "#r_k"
    },
    {
@@ -1542,7 +1542,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.224s' * #p))",
+    "source_property_name": "(#p - ('%.242s' * #p))",
     "target_property_name": "#r_tex"
    },
    {
@@ -1552,7 +1552,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.264s' * #p))",
+    "source_property_name": "(#p - ('%.282s' * #p))",
     "target_property_name": "#r_name"
    },
    {
@@ -1562,37 +1562,37 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.288s' * #p))",
+    "source_property_name": "(#p - ('%.306s' * #p))",
     "target_property_name": "#r_lvl"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.3s' * #r_lvl) - '\t')",
+    "source_property_name": "(('%.6s' * #r_lvl) - '\t')",
     "target_property_name": "#lvl"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.291s' * #p))",
+    "source_property_name": "(#p - ('%.312s' * #p))",
     "target_property_name": "#r_hp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.2s' * #r_hp) - '\t')",
+    "source_property_name": "(('%.3s' * #r_hp) - '\t')",
     "target_property_name": "#hp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.293s' * #p))",
+    "source_property_name": "(#p - ('%.315s' * #p))",
     "target_property_name": "#r_exp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.2s' * #r_exp) - '\t')",
+    "source_property_name": "(('%.3s' * #r_exp) - '\t')",
     "target_property_name": "#exp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.295s' * #p))",
+    "source_property_name": "(#p - ('%.318s' * #p))",
     "target_property_name": "#r_st"
    },
    {
@@ -1602,7 +1602,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.298s' * #p))",
+    "source_property_name": "(#p - ('%.321s' * #p))",
     "target_property_name": "#r_g"
    },
    {
@@ -1612,7 +1612,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.299s' * #p))",
+    "source_property_name": "(#p - ('%.322s' * #p))",
     "target_property_name": "#r_ball"
    },
    {
@@ -1622,7 +1622,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.323s' * #p))",
+    "source_property_name": "(#p - ('%.346s' * #p))",
     "target_property_name": "#r_pop"
    },
    {
@@ -1632,22 +1632,22 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.324s' * #p))",
+    "source_property_name": "(#p - ('%.347s' * #p))",
     "target_property_name": "#r_xp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.7s' * #r_xp) - '\t')",
+    "source_property_name": "(('%.10s' * #r_xp) - '\t')",
     "target_property_name": "#xp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.331s' * #p))",
+    "source_property_name": "(#p - ('%.357s' * #p))",
     "target_property_name": "#r_lu"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.1s' * #r_lu) - '\t')",
+    "source_property_name": "(('%.2s' * #r_lu) - '\t')",
     "target_property_name": "#lu"
    },
    {
@@ -2026,7 +2026,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_ps2",
-             "source_property_name": "('textures/ui/cobblemon/hud/hp_v_' + #hp)",
+             "source_property_name": "('textures/ui/cobblemon/hud/hp_v' + #hp)",
              "target_property_name": "#texture"
             },
             {
@@ -2056,7 +2056,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_ps2",
-             "source_property_name": "('textures/ui/cobblemon/hud/exp_v_' + #exp)",
+             "source_property_name": "('textures/ui/cobblemon/hud/exp_v' + #exp)",
              "target_property_name": "#texture"
             },
             {
@@ -2213,7 +2213,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_ps2",
-             "source_property_name": "(#lu = '1')",
+             "source_property_name": "(#lu = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -2287,7 +2287,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.332s' * #p))",
+    "source_property_name": "(#p - ('%.359s' * #p))",
     "target_property_name": "#r_k"
    },
    {
@@ -2297,7 +2297,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.333s' * #p))",
+    "source_property_name": "(#p - ('%.360s' * #p))",
     "target_property_name": "#r_tex"
    },
    {
@@ -2307,7 +2307,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.373s' * #p))",
+    "source_property_name": "(#p - ('%.400s' * #p))",
     "target_property_name": "#r_name"
    },
    {
@@ -2317,37 +2317,37 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.397s' * #p))",
+    "source_property_name": "(#p - ('%.424s' * #p))",
     "target_property_name": "#r_lvl"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.3s' * #r_lvl) - '\t')",
+    "source_property_name": "(('%.6s' * #r_lvl) - '\t')",
     "target_property_name": "#lvl"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.400s' * #p))",
+    "source_property_name": "(#p - ('%.430s' * #p))",
     "target_property_name": "#r_hp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.2s' * #r_hp) - '\t')",
+    "source_property_name": "(('%.3s' * #r_hp) - '\t')",
     "target_property_name": "#hp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.402s' * #p))",
+    "source_property_name": "(#p - ('%.433s' * #p))",
     "target_property_name": "#r_exp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.2s' * #r_exp) - '\t')",
+    "source_property_name": "(('%.3s' * #r_exp) - '\t')",
     "target_property_name": "#exp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.404s' * #p))",
+    "source_property_name": "(#p - ('%.436s' * #p))",
     "target_property_name": "#r_st"
    },
    {
@@ -2357,7 +2357,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.407s' * #p))",
+    "source_property_name": "(#p - ('%.439s' * #p))",
     "target_property_name": "#r_g"
    },
    {
@@ -2367,7 +2367,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.408s' * #p))",
+    "source_property_name": "(#p - ('%.440s' * #p))",
     "target_property_name": "#r_ball"
    },
    {
@@ -2377,7 +2377,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.432s' * #p))",
+    "source_property_name": "(#p - ('%.464s' * #p))",
     "target_property_name": "#r_pop"
    },
    {
@@ -2387,22 +2387,22 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.433s' * #p))",
+    "source_property_name": "(#p - ('%.465s' * #p))",
     "target_property_name": "#r_xp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.7s' * #r_xp) - '\t')",
+    "source_property_name": "(('%.10s' * #r_xp) - '\t')",
     "target_property_name": "#xp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.440s' * #p))",
+    "source_property_name": "(#p - ('%.475s' * #p))",
     "target_property_name": "#r_lu"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.1s' * #r_lu) - '\t')",
+    "source_property_name": "(('%.2s' * #r_lu) - '\t')",
     "target_property_name": "#lu"
    },
    {
@@ -2781,7 +2781,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_ps3",
-             "source_property_name": "('textures/ui/cobblemon/hud/hp_v_' + #hp)",
+             "source_property_name": "('textures/ui/cobblemon/hud/hp_v' + #hp)",
              "target_property_name": "#texture"
             },
             {
@@ -2811,7 +2811,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_ps3",
-             "source_property_name": "('textures/ui/cobblemon/hud/exp_v_' + #exp)",
+             "source_property_name": "('textures/ui/cobblemon/hud/exp_v' + #exp)",
              "target_property_name": "#texture"
             },
             {
@@ -2968,7 +2968,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_ps3",
-             "source_property_name": "(#lu = '1')",
+             "source_property_name": "(#lu = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -3042,7 +3042,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.441s' * #p))",
+    "source_property_name": "(#p - ('%.477s' * #p))",
     "target_property_name": "#r_k"
    },
    {
@@ -3052,7 +3052,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.442s' * #p))",
+    "source_property_name": "(#p - ('%.478s' * #p))",
     "target_property_name": "#r_tex"
    },
    {
@@ -3062,7 +3062,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.482s' * #p))",
+    "source_property_name": "(#p - ('%.518s' * #p))",
     "target_property_name": "#r_name"
    },
    {
@@ -3072,37 +3072,37 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.506s' * #p))",
+    "source_property_name": "(#p - ('%.542s' * #p))",
     "target_property_name": "#r_lvl"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.3s' * #r_lvl) - '\t')",
+    "source_property_name": "(('%.6s' * #r_lvl) - '\t')",
     "target_property_name": "#lvl"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.509s' * #p))",
+    "source_property_name": "(#p - ('%.548s' * #p))",
     "target_property_name": "#r_hp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.2s' * #r_hp) - '\t')",
+    "source_property_name": "(('%.3s' * #r_hp) - '\t')",
     "target_property_name": "#hp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.511s' * #p))",
+    "source_property_name": "(#p - ('%.551s' * #p))",
     "target_property_name": "#r_exp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.2s' * #r_exp) - '\t')",
+    "source_property_name": "(('%.3s' * #r_exp) - '\t')",
     "target_property_name": "#exp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.513s' * #p))",
+    "source_property_name": "(#p - ('%.554s' * #p))",
     "target_property_name": "#r_st"
    },
    {
@@ -3112,7 +3112,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.516s' * #p))",
+    "source_property_name": "(#p - ('%.557s' * #p))",
     "target_property_name": "#r_g"
    },
    {
@@ -3122,7 +3122,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.517s' * #p))",
+    "source_property_name": "(#p - ('%.558s' * #p))",
     "target_property_name": "#r_ball"
    },
    {
@@ -3132,7 +3132,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.541s' * #p))",
+    "source_property_name": "(#p - ('%.582s' * #p))",
     "target_property_name": "#r_pop"
    },
    {
@@ -3142,22 +3142,22 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.542s' * #p))",
+    "source_property_name": "(#p - ('%.583s' * #p))",
     "target_property_name": "#r_xp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.7s' * #r_xp) - '\t')",
+    "source_property_name": "(('%.10s' * #r_xp) - '\t')",
     "target_property_name": "#xp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.549s' * #p))",
+    "source_property_name": "(#p - ('%.593s' * #p))",
     "target_property_name": "#r_lu"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.1s' * #r_lu) - '\t')",
+    "source_property_name": "(('%.2s' * #r_lu) - '\t')",
     "target_property_name": "#lu"
    },
    {
@@ -3536,7 +3536,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_ps4",
-             "source_property_name": "('textures/ui/cobblemon/hud/hp_v_' + #hp)",
+             "source_property_name": "('textures/ui/cobblemon/hud/hp_v' + #hp)",
              "target_property_name": "#texture"
             },
             {
@@ -3566,7 +3566,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_ps4",
-             "source_property_name": "('textures/ui/cobblemon/hud/exp_v_' + #exp)",
+             "source_property_name": "('textures/ui/cobblemon/hud/exp_v' + #exp)",
              "target_property_name": "#texture"
             },
             {
@@ -3723,7 +3723,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_ps4",
-             "source_property_name": "(#lu = '1')",
+             "source_property_name": "(#lu = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -3797,7 +3797,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.550s' * #p))",
+    "source_property_name": "(#p - ('%.595s' * #p))",
     "target_property_name": "#r_k"
    },
    {
@@ -3807,7 +3807,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.551s' * #p))",
+    "source_property_name": "(#p - ('%.596s' * #p))",
     "target_property_name": "#r_tex"
    },
    {
@@ -3817,7 +3817,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.591s' * #p))",
+    "source_property_name": "(#p - ('%.636s' * #p))",
     "target_property_name": "#r_name"
    },
    {
@@ -3827,37 +3827,37 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.615s' * #p))",
+    "source_property_name": "(#p - ('%.660s' * #p))",
     "target_property_name": "#r_lvl"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.3s' * #r_lvl) - '\t')",
+    "source_property_name": "(('%.6s' * #r_lvl) - '\t')",
     "target_property_name": "#lvl"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.618s' * #p))",
+    "source_property_name": "(#p - ('%.666s' * #p))",
     "target_property_name": "#r_hp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.2s' * #r_hp) - '\t')",
+    "source_property_name": "(('%.3s' * #r_hp) - '\t')",
     "target_property_name": "#hp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.620s' * #p))",
+    "source_property_name": "(#p - ('%.669s' * #p))",
     "target_property_name": "#r_exp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.2s' * #r_exp) - '\t')",
+    "source_property_name": "(('%.3s' * #r_exp) - '\t')",
     "target_property_name": "#exp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.622s' * #p))",
+    "source_property_name": "(#p - ('%.672s' * #p))",
     "target_property_name": "#r_st"
    },
    {
@@ -3867,7 +3867,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.625s' * #p))",
+    "source_property_name": "(#p - ('%.675s' * #p))",
     "target_property_name": "#r_g"
    },
    {
@@ -3877,7 +3877,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.626s' * #p))",
+    "source_property_name": "(#p - ('%.676s' * #p))",
     "target_property_name": "#r_ball"
    },
    {
@@ -3887,7 +3887,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.650s' * #p))",
+    "source_property_name": "(#p - ('%.700s' * #p))",
     "target_property_name": "#r_pop"
    },
    {
@@ -3897,22 +3897,22 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.651s' * #p))",
+    "source_property_name": "(#p - ('%.701s' * #p))",
     "target_property_name": "#r_xp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.7s' * #r_xp) - '\t')",
+    "source_property_name": "(('%.10s' * #r_xp) - '\t')",
     "target_property_name": "#xp"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.658s' * #p))",
+    "source_property_name": "(#p - ('%.711s' * #p))",
     "target_property_name": "#r_lu"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.1s' * #r_lu) - '\t')",
+    "source_property_name": "(('%.2s' * #r_lu) - '\t')",
     "target_property_name": "#lu"
    },
    {
@@ -4291,7 +4291,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_ps5",
-             "source_property_name": "('textures/ui/cobblemon/hud/hp_v_' + #hp)",
+             "source_property_name": "('textures/ui/cobblemon/hud/hp_v' + #hp)",
              "target_property_name": "#texture"
             },
             {
@@ -4321,7 +4321,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_ps5",
-             "source_property_name": "('textures/ui/cobblemon/hud/exp_v_' + #exp)",
+             "source_property_name": "('textures/ui/cobblemon/hud/exp_v' + #exp)",
              "target_property_name": "#texture"
             },
             {
@@ -4478,7 +4478,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_ps5",
-             "source_property_name": "(#lu = '1')",
+             "source_property_name": "(#lu = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -4589,7 +4589,7 @@
       {
        "binding_type": "view",
        "source_control_name": "cbhud_battle_head",
-       "source_property_name": "((#n = '2') or (#n = '3'))",
+       "source_property_name": "((#n = '_2') or (#n = '_3'))",
        "target_property_name": "#visible"
       }
      ]
@@ -4606,7 +4606,7 @@
       {
        "binding_type": "view",
        "source_control_name": "cbhud_battle_head",
-       "source_property_name": "(#n = '3')",
+       "source_property_name": "(#n = '_3')",
        "target_property_name": "#visible"
       }
      ]
@@ -4628,17 +4628,17 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.57s' * #p))",
+       "source_property_name": "(#p - ('%.61s' * #p))",
        "target_property_name": "#r_v"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.1s' * #r_v) - '\t')",
+       "source_property_name": "(('%.2s' * #r_v) - '\t')",
        "target_property_name": "#v"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.58s' * #p))",
+       "source_property_name": "(#p - ('%.63s' * #p))",
        "target_property_name": "#r_tex"
       },
       {
@@ -4648,7 +4648,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.98s' * #p))",
+       "source_property_name": "(#p - ('%.103s' * #p))",
        "target_property_name": "#r_name"
       },
       {
@@ -4658,27 +4658,27 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.122s' * #p))",
+       "source_property_name": "(#p - ('%.127s' * #p))",
        "target_property_name": "#r_lvl"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.3s' * #r_lvl) - '\t')",
+       "source_property_name": "(('%.6s' * #r_lvl) - '\t')",
        "target_property_name": "#lvl"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.125s' * #p))",
+       "source_property_name": "(#p - ('%.133s' * #p))",
        "target_property_name": "#r_hpw"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.2s' * #r_hpw) - '\t')",
+       "source_property_name": "(('%.3s' * #r_hpw) - '\t')",
        "target_property_name": "#hpw"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.127s' * #p))",
+       "source_property_name": "(#p - ('%.136s' * #p))",
        "target_property_name": "#r_hpt"
       },
       {
@@ -4688,7 +4688,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.136s' * #p))",
+       "source_property_name": "(#p - ('%.145s' * #p))",
        "target_property_name": "#r_st"
       },
       {
@@ -4698,7 +4698,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.139s' * #p))",
+       "source_property_name": "(#p - ('%.148s' * #p))",
        "target_property_name": "#r_g"
       },
       {
@@ -4708,17 +4708,17 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.140s' * #p))",
+       "source_property_name": "(#p - ('%.149s' * #p))",
        "target_property_name": "#r_own"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.1s' * #r_own) - '\t')",
+       "source_property_name": "(('%.2s' * #r_own) - '\t')",
        "target_property_name": "#own"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#v = '1')",
+       "source_property_name": "(#v = '_1')",
        "target_property_name": "#visible"
       }
      ],
@@ -4738,7 +4738,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_battle_head",
-          "source_property_name": "(not (#min = '1'))",
+          "source_property_name": "(not (#min = '_1'))",
           "target_property_name": "#visible"
          }
         ],
@@ -4903,7 +4903,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl0",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -4941,7 +4941,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl0",
-             "source_property_name": "(not (#own = '1'))",
+             "source_property_name": "(not (#own = '_1'))",
              "target_property_name": "#visible"
             }
            ]
@@ -4979,7 +4979,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl0",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -5109,7 +5109,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl0",
-             "source_property_name": "('textures/ui/cobblemon/hud/hp_h_' + #hpw)",
+             "source_property_name": "('textures/ui/cobblemon/hud/hp_h' + #hpw)",
              "target_property_name": "#texture"
             },
             {
@@ -5173,7 +5173,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_battle_head",
-          "source_property_name": "(#min = '1')",
+          "source_property_name": "(#min = '_1')",
           "target_property_name": "#visible"
          }
         ],
@@ -5338,7 +5338,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl0",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -5376,7 +5376,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl0",
-             "source_property_name": "(not (#own = '1'))",
+             "source_property_name": "(not (#own = '_1'))",
              "target_property_name": "#visible"
             }
            ]
@@ -5414,7 +5414,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl0",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -5544,7 +5544,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl0",
-             "source_property_name": "('textures/ui/cobblemon/hud/hp_h_' + #hpw)",
+             "source_property_name": "('textures/ui/cobblemon/hud/hp_h' + #hpw)",
              "target_property_name": "#texture"
             },
             {
@@ -5623,7 +5623,7 @@
       {
        "binding_type": "view",
        "source_control_name": "cbhud_battle_head",
-       "source_property_name": "(#n = '3')",
+       "source_property_name": "(#n = '_3')",
        "target_property_name": "#visible"
       }
      ]
@@ -5645,17 +5645,17 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.141s' * #p))",
+       "source_property_name": "(#p - ('%.151s' * #p))",
        "target_property_name": "#r_v"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.1s' * #r_v) - '\t')",
+       "source_property_name": "(('%.2s' * #r_v) - '\t')",
        "target_property_name": "#v"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.142s' * #p))",
+       "source_property_name": "(#p - ('%.153s' * #p))",
        "target_property_name": "#r_tex"
       },
       {
@@ -5665,7 +5665,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.182s' * #p))",
+       "source_property_name": "(#p - ('%.193s' * #p))",
        "target_property_name": "#r_name"
       },
       {
@@ -5675,27 +5675,27 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.206s' * #p))",
+       "source_property_name": "(#p - ('%.217s' * #p))",
        "target_property_name": "#r_lvl"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.3s' * #r_lvl) - '\t')",
+       "source_property_name": "(('%.6s' * #r_lvl) - '\t')",
        "target_property_name": "#lvl"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.209s' * #p))",
+       "source_property_name": "(#p - ('%.223s' * #p))",
        "target_property_name": "#r_hpw"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.2s' * #r_hpw) - '\t')",
+       "source_property_name": "(('%.3s' * #r_hpw) - '\t')",
        "target_property_name": "#hpw"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.211s' * #p))",
+       "source_property_name": "(#p - ('%.226s' * #p))",
        "target_property_name": "#r_hpt"
       },
       {
@@ -5705,7 +5705,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.220s' * #p))",
+       "source_property_name": "(#p - ('%.235s' * #p))",
        "target_property_name": "#r_st"
       },
       {
@@ -5715,7 +5715,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.223s' * #p))",
+       "source_property_name": "(#p - ('%.238s' * #p))",
        "target_property_name": "#r_g"
       },
       {
@@ -5725,17 +5725,17 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.224s' * #p))",
+       "source_property_name": "(#p - ('%.239s' * #p))",
        "target_property_name": "#r_own"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.1s' * #r_own) - '\t')",
+       "source_property_name": "(('%.2s' * #r_own) - '\t')",
        "target_property_name": "#own"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#v = '1')",
+       "source_property_name": "(#v = '_1')",
        "target_property_name": "#visible"
       }
      ],
@@ -5755,7 +5755,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_battle_head",
-          "source_property_name": "(not (#min = '1'))",
+          "source_property_name": "(not (#min = '_1'))",
           "target_property_name": "#visible"
          }
         ],
@@ -5920,7 +5920,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl1",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -5958,7 +5958,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl1",
-             "source_property_name": "(not (#own = '1'))",
+             "source_property_name": "(not (#own = '_1'))",
              "target_property_name": "#visible"
             }
            ]
@@ -5996,7 +5996,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl1",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -6126,7 +6126,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl1",
-             "source_property_name": "('textures/ui/cobblemon/hud/hp_h_' + #hpw)",
+             "source_property_name": "('textures/ui/cobblemon/hud/hp_h' + #hpw)",
              "target_property_name": "#texture"
             },
             {
@@ -6190,7 +6190,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_battle_head",
-          "source_property_name": "(#min = '1')",
+          "source_property_name": "(#min = '_1')",
           "target_property_name": "#visible"
          }
         ],
@@ -6355,7 +6355,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl1",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -6393,7 +6393,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl1",
-             "source_property_name": "(not (#own = '1'))",
+             "source_property_name": "(not (#own = '_1'))",
              "target_property_name": "#visible"
             }
            ]
@@ -6431,7 +6431,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl1",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -6561,7 +6561,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl1",
-             "source_property_name": "('textures/ui/cobblemon/hud/hp_h_' + #hpw)",
+             "source_property_name": "('textures/ui/cobblemon/hud/hp_h' + #hpw)",
              "target_property_name": "#texture"
             },
             {
@@ -6645,17 +6645,17 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.225s' * #p))",
+       "source_property_name": "(#p - ('%.241s' * #p))",
        "target_property_name": "#r_v"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.1s' * #r_v) - '\t')",
+       "source_property_name": "(('%.2s' * #r_v) - '\t')",
        "target_property_name": "#v"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.226s' * #p))",
+       "source_property_name": "(#p - ('%.243s' * #p))",
        "target_property_name": "#r_tex"
       },
       {
@@ -6665,7 +6665,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.266s' * #p))",
+       "source_property_name": "(#p - ('%.283s' * #p))",
        "target_property_name": "#r_name"
       },
       {
@@ -6675,27 +6675,27 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.290s' * #p))",
+       "source_property_name": "(#p - ('%.307s' * #p))",
        "target_property_name": "#r_lvl"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.3s' * #r_lvl) - '\t')",
+       "source_property_name": "(('%.6s' * #r_lvl) - '\t')",
        "target_property_name": "#lvl"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.293s' * #p))",
+       "source_property_name": "(#p - ('%.313s' * #p))",
        "target_property_name": "#r_hpw"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.2s' * #r_hpw) - '\t')",
+       "source_property_name": "(('%.3s' * #r_hpw) - '\t')",
        "target_property_name": "#hpw"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.295s' * #p))",
+       "source_property_name": "(#p - ('%.316s' * #p))",
        "target_property_name": "#r_hpt"
       },
       {
@@ -6705,7 +6705,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.304s' * #p))",
+       "source_property_name": "(#p - ('%.325s' * #p))",
        "target_property_name": "#r_st"
       },
       {
@@ -6715,7 +6715,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.307s' * #p))",
+       "source_property_name": "(#p - ('%.328s' * #p))",
        "target_property_name": "#r_g"
       },
       {
@@ -6725,17 +6725,17 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.308s' * #p))",
+       "source_property_name": "(#p - ('%.329s' * #p))",
        "target_property_name": "#r_own"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.1s' * #r_own) - '\t')",
+       "source_property_name": "(('%.2s' * #r_own) - '\t')",
        "target_property_name": "#own"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#v = '1')",
+       "source_property_name": "(#v = '_1')",
        "target_property_name": "#visible"
       }
      ],
@@ -6755,7 +6755,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_battle_head",
-          "source_property_name": "(not (#min = '1'))",
+          "source_property_name": "(not (#min = '_1'))",
           "target_property_name": "#visible"
          }
         ],
@@ -6920,7 +6920,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl2",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -6958,7 +6958,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl2",
-             "source_property_name": "(not (#own = '1'))",
+             "source_property_name": "(not (#own = '_1'))",
              "target_property_name": "#visible"
             }
            ]
@@ -6996,7 +6996,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl2",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -7126,7 +7126,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl2",
-             "source_property_name": "('textures/ui/cobblemon/hud/hp_h_' + #hpw)",
+             "source_property_name": "('textures/ui/cobblemon/hud/hp_h' + #hpw)",
              "target_property_name": "#texture"
             },
             {
@@ -7190,7 +7190,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_battle_head",
-          "source_property_name": "(#min = '1')",
+          "source_property_name": "(#min = '_1')",
           "target_property_name": "#visible"
          }
         ],
@@ -7355,7 +7355,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl2",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -7393,7 +7393,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl2",
-             "source_property_name": "(not (#own = '1'))",
+             "source_property_name": "(not (#own = '_1'))",
              "target_property_name": "#visible"
             }
            ]
@@ -7431,7 +7431,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl2",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -7561,7 +7561,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btl2",
-             "source_property_name": "('textures/ui/cobblemon/hud/hp_h_' + #hpw)",
+             "source_property_name": "('textures/ui/cobblemon/hud/hp_h' + #hpw)",
              "target_property_name": "#texture"
             },
             {
@@ -7645,17 +7645,17 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.309s' * #p))",
+       "source_property_name": "(#p - ('%.331s' * #p))",
        "target_property_name": "#r_v"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.1s' * #r_v) - '\t')",
+       "source_property_name": "(('%.2s' * #r_v) - '\t')",
        "target_property_name": "#v"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.310s' * #p))",
+       "source_property_name": "(#p - ('%.333s' * #p))",
        "target_property_name": "#r_tex"
       },
       {
@@ -7665,7 +7665,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.350s' * #p))",
+       "source_property_name": "(#p - ('%.373s' * #p))",
        "target_property_name": "#r_name"
       },
       {
@@ -7675,27 +7675,27 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.374s' * #p))",
+       "source_property_name": "(#p - ('%.397s' * #p))",
        "target_property_name": "#r_lvl"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.3s' * #r_lvl) - '\t')",
+       "source_property_name": "(('%.6s' * #r_lvl) - '\t')",
        "target_property_name": "#lvl"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.377s' * #p))",
+       "source_property_name": "(#p - ('%.403s' * #p))",
        "target_property_name": "#r_hpw"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.2s' * #r_hpw) - '\t')",
+       "source_property_name": "(('%.3s' * #r_hpw) - '\t')",
        "target_property_name": "#hpw"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.379s' * #p))",
+       "source_property_name": "(#p - ('%.406s' * #p))",
        "target_property_name": "#r_hpt"
       },
       {
@@ -7705,7 +7705,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.388s' * #p))",
+       "source_property_name": "(#p - ('%.415s' * #p))",
        "target_property_name": "#r_st"
       },
       {
@@ -7715,7 +7715,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.391s' * #p))",
+       "source_property_name": "(#p - ('%.418s' * #p))",
        "target_property_name": "#r_g"
       },
       {
@@ -7725,17 +7725,17 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.392s' * #p))",
+       "source_property_name": "(#p - ('%.419s' * #p))",
        "target_property_name": "#r_own"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.1s' * #r_own) - '\t')",
+       "source_property_name": "(('%.2s' * #r_own) - '\t')",
        "target_property_name": "#own"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#v = '1')",
+       "source_property_name": "(#v = '_1')",
        "target_property_name": "#visible"
       }
      ],
@@ -7755,7 +7755,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_battle_head",
-          "source_property_name": "(not (#min = '1'))",
+          "source_property_name": "(not (#min = '_1'))",
           "target_property_name": "#visible"
          }
         ],
@@ -7920,7 +7920,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr0",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -7958,7 +7958,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr0",
-             "source_property_name": "(not (#own = '1'))",
+             "source_property_name": "(not (#own = '_1'))",
              "target_property_name": "#visible"
             }
            ]
@@ -7996,7 +7996,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr0",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -8126,7 +8126,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr0",
-             "source_property_name": "('textures/ui/cobblemon/hud/hp_hr_' + #hpw)",
+             "source_property_name": "('textures/ui/cobblemon/hud/hp_hr' + #hpw)",
              "target_property_name": "#texture"
             },
             {
@@ -8190,7 +8190,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_battle_head",
-          "source_property_name": "(#min = '1')",
+          "source_property_name": "(#min = '_1')",
           "target_property_name": "#visible"
          }
         ],
@@ -8355,7 +8355,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr0",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -8393,7 +8393,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr0",
-             "source_property_name": "(not (#own = '1'))",
+             "source_property_name": "(not (#own = '_1'))",
              "target_property_name": "#visible"
             }
            ]
@@ -8431,7 +8431,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr0",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -8561,7 +8561,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr0",
-             "source_property_name": "('textures/ui/cobblemon/hud/hp_hr_' + #hpw)",
+             "source_property_name": "('textures/ui/cobblemon/hud/hp_hr' + #hpw)",
              "target_property_name": "#texture"
             },
             {
@@ -8624,7 +8624,7 @@
       {
        "binding_type": "view",
        "source_control_name": "cbhud_battle_head",
-       "source_property_name": "((#n = '2') or (#n = '3'))",
+       "source_property_name": "((#n = '_2') or (#n = '_3'))",
        "target_property_name": "#visible"
       }
      ]
@@ -8641,7 +8641,7 @@
       {
        "binding_type": "view",
        "source_control_name": "cbhud_battle_head",
-       "source_property_name": "(#n = '3')",
+       "source_property_name": "(#n = '_3')",
        "target_property_name": "#visible"
       }
      ]
@@ -8679,17 +8679,17 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.393s' * #p))",
+       "source_property_name": "(#p - ('%.421s' * #p))",
        "target_property_name": "#r_v"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.1s' * #r_v) - '\t')",
+       "source_property_name": "(('%.2s' * #r_v) - '\t')",
        "target_property_name": "#v"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.394s' * #p))",
+       "source_property_name": "(#p - ('%.423s' * #p))",
        "target_property_name": "#r_tex"
       },
       {
@@ -8699,7 +8699,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.434s' * #p))",
+       "source_property_name": "(#p - ('%.463s' * #p))",
        "target_property_name": "#r_name"
       },
       {
@@ -8709,27 +8709,27 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.458s' * #p))",
+       "source_property_name": "(#p - ('%.487s' * #p))",
        "target_property_name": "#r_lvl"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.3s' * #r_lvl) - '\t')",
+       "source_property_name": "(('%.6s' * #r_lvl) - '\t')",
        "target_property_name": "#lvl"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.461s' * #p))",
+       "source_property_name": "(#p - ('%.493s' * #p))",
        "target_property_name": "#r_hpw"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.2s' * #r_hpw) - '\t')",
+       "source_property_name": "(('%.3s' * #r_hpw) - '\t')",
        "target_property_name": "#hpw"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.463s' * #p))",
+       "source_property_name": "(#p - ('%.496s' * #p))",
        "target_property_name": "#r_hpt"
       },
       {
@@ -8739,7 +8739,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.472s' * #p))",
+       "source_property_name": "(#p - ('%.505s' * #p))",
        "target_property_name": "#r_st"
       },
       {
@@ -8749,7 +8749,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.475s' * #p))",
+       "source_property_name": "(#p - ('%.508s' * #p))",
        "target_property_name": "#r_g"
       },
       {
@@ -8759,17 +8759,17 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.476s' * #p))",
+       "source_property_name": "(#p - ('%.509s' * #p))",
        "target_property_name": "#r_own"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.1s' * #r_own) - '\t')",
+       "source_property_name": "(('%.2s' * #r_own) - '\t')",
        "target_property_name": "#own"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#v = '1')",
+       "source_property_name": "(#v = '_1')",
        "target_property_name": "#visible"
       }
      ],
@@ -8789,7 +8789,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_battle_head",
-          "source_property_name": "(not (#min = '1'))",
+          "source_property_name": "(not (#min = '_1'))",
           "target_property_name": "#visible"
          }
         ],
@@ -8954,7 +8954,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr1",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -8992,7 +8992,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr1",
-             "source_property_name": "(not (#own = '1'))",
+             "source_property_name": "(not (#own = '_1'))",
              "target_property_name": "#visible"
             }
            ]
@@ -9030,7 +9030,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr1",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -9160,7 +9160,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr1",
-             "source_property_name": "('textures/ui/cobblemon/hud/hp_hr_' + #hpw)",
+             "source_property_name": "('textures/ui/cobblemon/hud/hp_hr' + #hpw)",
              "target_property_name": "#texture"
             },
             {
@@ -9224,7 +9224,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_battle_head",
-          "source_property_name": "(#min = '1')",
+          "source_property_name": "(#min = '_1')",
           "target_property_name": "#visible"
          }
         ],
@@ -9389,7 +9389,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr1",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -9427,7 +9427,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr1",
-             "source_property_name": "(not (#own = '1'))",
+             "source_property_name": "(not (#own = '_1'))",
              "target_property_name": "#visible"
             }
            ]
@@ -9465,7 +9465,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr1",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -9595,7 +9595,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr1",
-             "source_property_name": "('textures/ui/cobblemon/hud/hp_hr_' + #hpw)",
+             "source_property_name": "('textures/ui/cobblemon/hud/hp_hr' + #hpw)",
              "target_property_name": "#texture"
             },
             {
@@ -9658,7 +9658,7 @@
       {
        "binding_type": "view",
        "source_control_name": "cbhud_battle_head",
-       "source_property_name": "(#n = '3')",
+       "source_property_name": "(#n = '_3')",
        "target_property_name": "#visible"
       }
      ]
@@ -9696,17 +9696,17 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.477s' * #p))",
+       "source_property_name": "(#p - ('%.511s' * #p))",
        "target_property_name": "#r_v"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.1s' * #r_v) - '\t')",
+       "source_property_name": "(('%.2s' * #r_v) - '\t')",
        "target_property_name": "#v"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.478s' * #p))",
+       "source_property_name": "(#p - ('%.513s' * #p))",
        "target_property_name": "#r_tex"
       },
       {
@@ -9716,7 +9716,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.518s' * #p))",
+       "source_property_name": "(#p - ('%.553s' * #p))",
        "target_property_name": "#r_name"
       },
       {
@@ -9726,27 +9726,27 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.542s' * #p))",
+       "source_property_name": "(#p - ('%.577s' * #p))",
        "target_property_name": "#r_lvl"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.3s' * #r_lvl) - '\t')",
+       "source_property_name": "(('%.6s' * #r_lvl) - '\t')",
        "target_property_name": "#lvl"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.545s' * #p))",
+       "source_property_name": "(#p - ('%.583s' * #p))",
        "target_property_name": "#r_hpw"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.2s' * #r_hpw) - '\t')",
+       "source_property_name": "(('%.3s' * #r_hpw) - '\t')",
        "target_property_name": "#hpw"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.547s' * #p))",
+       "source_property_name": "(#p - ('%.586s' * #p))",
        "target_property_name": "#r_hpt"
       },
       {
@@ -9756,7 +9756,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.556s' * #p))",
+       "source_property_name": "(#p - ('%.595s' * #p))",
        "target_property_name": "#r_st"
       },
       {
@@ -9766,7 +9766,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.559s' * #p))",
+       "source_property_name": "(#p - ('%.598s' * #p))",
        "target_property_name": "#r_g"
       },
       {
@@ -9776,17 +9776,17 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.560s' * #p))",
+       "source_property_name": "(#p - ('%.599s' * #p))",
        "target_property_name": "#r_own"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.1s' * #r_own) - '\t')",
+       "source_property_name": "(('%.2s' * #r_own) - '\t')",
        "target_property_name": "#own"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#v = '1')",
+       "source_property_name": "(#v = '_1')",
        "target_property_name": "#visible"
       }
      ],
@@ -9806,7 +9806,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_battle_head",
-          "source_property_name": "(not (#min = '1'))",
+          "source_property_name": "(not (#min = '_1'))",
           "target_property_name": "#visible"
          }
         ],
@@ -9971,7 +9971,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr2",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -10009,7 +10009,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr2",
-             "source_property_name": "(not (#own = '1'))",
+             "source_property_name": "(not (#own = '_1'))",
              "target_property_name": "#visible"
             }
            ]
@@ -10047,7 +10047,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr2",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -10177,7 +10177,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr2",
-             "source_property_name": "('textures/ui/cobblemon/hud/hp_hr_' + #hpw)",
+             "source_property_name": "('textures/ui/cobblemon/hud/hp_hr' + #hpw)",
              "target_property_name": "#texture"
             },
             {
@@ -10241,7 +10241,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_battle_head",
-          "source_property_name": "(#min = '1')",
+          "source_property_name": "(#min = '_1')",
           "target_property_name": "#visible"
          }
         ],
@@ -10406,7 +10406,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr2",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -10444,7 +10444,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr2",
-             "source_property_name": "(not (#own = '1'))",
+             "source_property_name": "(not (#own = '_1'))",
              "target_property_name": "#visible"
             }
            ]
@@ -10482,7 +10482,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr2",
-             "source_property_name": "(#own = '1')",
+             "source_property_name": "(#own = '_1')",
              "target_property_name": "#visible"
             }
            ]
@@ -10612,7 +10612,7 @@
             {
              "binding_type": "view",
              "source_control_name": "cbhud_btr2",
-             "source_property_name": "('textures/ui/cobblemon/hud/hp_hr_' + #hpw)",
+             "source_property_name": "('textures/ui/cobblemon/hud/hp_hr' + #hpw)",
              "target_property_name": "#texture"
             },
             {
@@ -10713,7 +10713,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.561s' * #p))",
+       "source_property_name": "(#p - ('%.601s' * #p))",
        "target_property_name": "#r_id"
       },
       {
@@ -10723,7 +10723,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.585s' * #p))",
+       "source_property_name": "(#p - ('%.625s' * #p))",
        "target_property_name": "#r_type"
       },
       {
@@ -10733,7 +10733,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.595s' * #p))",
+       "source_property_name": "(#p - ('%.635s' * #p))",
        "target_property_name": "#r_pp"
       },
       {
@@ -10743,12 +10743,12 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.600s' * #p))",
+       "source_property_name": "(#p - ('%.640s' * #p))",
        "target_property_name": "#r_use"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.1s' * #r_use) - '\t')",
+       "source_property_name": "(('%.2s' * #r_use) - '\t')",
        "target_property_name": "#use"
       },
       {
@@ -10773,7 +10773,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_bm0",
-          "source_property_name": "(#use = '1')",
+          "source_property_name": "(#use = '_1')",
           "target_property_name": "#visible"
          }
         ],
@@ -10897,7 +10897,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_bm0",
-          "source_property_name": "(not (#use = '1'))",
+          "source_property_name": "(not (#use = '_1'))",
           "target_property_name": "#visible"
          }
         ],
@@ -11032,7 +11032,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_battle_head",
-          "source_property_name": "(#cur = '0')",
+          "source_property_name": "(#cur = '_0')",
           "target_property_name": "#visible"
          }
         ]
@@ -11074,7 +11074,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.601s' * #p))",
+       "source_property_name": "(#p - ('%.642s' * #p))",
        "target_property_name": "#r_id"
       },
       {
@@ -11084,7 +11084,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.625s' * #p))",
+       "source_property_name": "(#p - ('%.666s' * #p))",
        "target_property_name": "#r_type"
       },
       {
@@ -11094,7 +11094,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.635s' * #p))",
+       "source_property_name": "(#p - ('%.676s' * #p))",
        "target_property_name": "#r_pp"
       },
       {
@@ -11104,12 +11104,12 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.640s' * #p))",
+       "source_property_name": "(#p - ('%.681s' * #p))",
        "target_property_name": "#r_use"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.1s' * #r_use) - '\t')",
+       "source_property_name": "(('%.2s' * #r_use) - '\t')",
        "target_property_name": "#use"
       },
       {
@@ -11134,7 +11134,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_bm1",
-          "source_property_name": "(#use = '1')",
+          "source_property_name": "(#use = '_1')",
           "target_property_name": "#visible"
          }
         ],
@@ -11258,7 +11258,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_bm1",
-          "source_property_name": "(not (#use = '1'))",
+          "source_property_name": "(not (#use = '_1'))",
           "target_property_name": "#visible"
          }
         ],
@@ -11393,7 +11393,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_battle_head",
-          "source_property_name": "(#cur = '1')",
+          "source_property_name": "(#cur = '_1')",
           "target_property_name": "#visible"
          }
         ]
@@ -11435,7 +11435,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.641s' * #p))",
+       "source_property_name": "(#p - ('%.683s' * #p))",
        "target_property_name": "#r_id"
       },
       {
@@ -11445,7 +11445,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.665s' * #p))",
+       "source_property_name": "(#p - ('%.707s' * #p))",
        "target_property_name": "#r_type"
       },
       {
@@ -11455,7 +11455,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.675s' * #p))",
+       "source_property_name": "(#p - ('%.717s' * #p))",
        "target_property_name": "#r_pp"
       },
       {
@@ -11465,12 +11465,12 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.680s' * #p))",
+       "source_property_name": "(#p - ('%.722s' * #p))",
        "target_property_name": "#r_use"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.1s' * #r_use) - '\t')",
+       "source_property_name": "(('%.2s' * #r_use) - '\t')",
        "target_property_name": "#use"
       },
       {
@@ -11495,7 +11495,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_bm2",
-          "source_property_name": "(#use = '1')",
+          "source_property_name": "(#use = '_1')",
           "target_property_name": "#visible"
          }
         ],
@@ -11619,7 +11619,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_bm2",
-          "source_property_name": "(not (#use = '1'))",
+          "source_property_name": "(not (#use = '_1'))",
           "target_property_name": "#visible"
          }
         ],
@@ -11754,7 +11754,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_battle_head",
-          "source_property_name": "(#cur = '2')",
+          "source_property_name": "(#cur = '_2')",
           "target_property_name": "#visible"
          }
         ]
@@ -11796,7 +11796,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.681s' * #p))",
+       "source_property_name": "(#p - ('%.724s' * #p))",
        "target_property_name": "#r_id"
       },
       {
@@ -11806,7 +11806,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.705s' * #p))",
+       "source_property_name": "(#p - ('%.748s' * #p))",
        "target_property_name": "#r_type"
       },
       {
@@ -11816,7 +11816,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.715s' * #p))",
+       "source_property_name": "(#p - ('%.758s' * #p))",
        "target_property_name": "#r_pp"
       },
       {
@@ -11826,12 +11826,12 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.720s' * #p))",
+       "source_property_name": "(#p - ('%.763s' * #p))",
        "target_property_name": "#r_use"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.1s' * #r_use) - '\t')",
+       "source_property_name": "(('%.2s' * #r_use) - '\t')",
        "target_property_name": "#use"
       },
       {
@@ -11856,7 +11856,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_bm3",
-          "source_property_name": "(#use = '1')",
+          "source_property_name": "(#use = '_1')",
           "target_property_name": "#visible"
          }
         ],
@@ -11980,7 +11980,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_bm3",
-          "source_property_name": "(not (#use = '1'))",
+          "source_property_name": "(not (#use = '_1'))",
           "target_property_name": "#visible"
          }
         ],
@@ -12115,7 +12115,7 @@
          {
           "binding_type": "view",
           "source_control_name": "cbhud_battle_head",
-          "source_property_name": "(#cur = '3')",
+          "source_property_name": "(#cur = '_3')",
           "target_property_name": "#visible"
          }
         ]
@@ -12143,7 +12143,7 @@
    {
     "binding_type": "view",
     "source_control_name": "cbhud_battle_head",
-    "source_property_name": "(#pr = '3')",
+    "source_property_name": "(#pr = '_3')",
     "target_property_name": "#visible"
    }
   ],
@@ -12237,7 +12237,7 @@
       {
        "binding_type": "view",
        "source_control_name": "cbhud_battle_head",
-       "source_property_name": "(not ((#cur = '4') or (#cur = '5') or (#cur = '6') or (#cur = '7') or (#cur = '8')))",
+       "source_property_name": "(not ((#cur = '_4') or (#cur = '_5') or (#cur = '_6') or (#cur = '_7') or (#cur = '_8')))",
        "target_property_name": "#visible"
       }
      ]
@@ -12270,7 +12270,7 @@
       {
        "binding_type": "view",
        "source_control_name": "cbhud_battle_head",
-       "source_property_name": "((#cur = '4') or (#cur = '5') or (#cur = '6') or (#cur = '7') or (#cur = '8'))",
+       "source_property_name": "((#cur = '_4') or (#cur = '_5') or (#cur = '_6') or (#cur = '_7') or (#cur = '_8'))",
        "target_property_name": "#visible"
       }
      ]
@@ -12306,12 +12306,12 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.1s' * #r_n) - '\t')",
+       "source_property_name": "(('%.2s' * #r_n) - '\t')",
        "target_property_name": "#n"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.6s' * #p))",
+       "source_property_name": "(#p - ('%.7s' * #p))",
        "target_property_name": "#r_la"
       },
       {
@@ -12321,7 +12321,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.30s' * #p))",
+       "source_property_name": "(#p - ('%.31s' * #p))",
        "target_property_name": "#r_ra"
       },
       {
@@ -12331,32 +12331,32 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.54s' * #p))",
+       "source_property_name": "(#p - ('%.55s' * #p))",
        "target_property_name": "#r_min"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.1s' * #r_min) - '\t')",
+       "source_property_name": "(('%.2s' * #r_min) - '\t')",
        "target_property_name": "#min"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.55s' * #p))",
+       "source_property_name": "(#p - ('%.57s' * #p))",
        "target_property_name": "#r_pr"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.1s' * #r_pr) - '\t')",
+       "source_property_name": "(('%.2s' * #r_pr) - '\t')",
        "target_property_name": "#pr"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.56s' * #p))",
+       "source_property_name": "(#p - ('%.59s' * #p))",
        "target_property_name": "#r_cur"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(('%.1s' * #r_cur) - '\t')",
+       "source_property_name": "(('%.2s' * #r_cur) - '\t')",
        "target_property_name": "#cur"
       }
      ]
@@ -12378,7 +12378,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(#p - ('%.721s' * #p))",
+       "source_property_name": "(#p - ('%.765s' * #p))",
        "target_property_name": "#tail"
       }
      ]
@@ -12515,7 +12515,7 @@
       {
        "binding_type": "view",
        "source_control_name": "cbhud_battle_head",
-       "source_property_name": "(#pr = '1')",
+       "source_property_name": "(#pr = '_1')",
        "target_property_name": "#visible"
       }
      ],
@@ -12555,7 +12555,7 @@
       {
        "binding_type": "view",
        "source_control_name": "cbhud_battle_head",
-       "source_property_name": "(#pr = '2')",
+       "source_property_name": "(#pr = '_2')",
        "target_property_name": "#visible"
       }
      ],
@@ -12594,12 +12594,12 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(('%.1s' * #r_v) - '\t')",
+    "source_property_name": "(('%.2s' * #r_v) - '\t')",
     "target_property_name": "#v"
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.6s' * #p))",
+    "source_property_name": "(#p - ('%.7s' * #p))",
     "target_property_name": "#r_icon"
    },
    {
@@ -12609,7 +12609,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.70s' * #p))",
+    "source_property_name": "(#p - ('%.71s' * #p))",
     "target_property_name": "#r_frame"
    },
    {
@@ -12619,7 +12619,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.71s' * #p))",
+    "source_property_name": "(#p - ('%.72s' * #p))",
     "target_property_name": "#r_color"
    },
    {
@@ -12629,7 +12629,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.72s' * #p))",
+    "source_property_name": "(#p - ('%.73s' * #p))",
     "target_property_name": "#r_l1"
    },
    {
@@ -12639,7 +12639,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#p - ('%.152s' * #p))",
+    "source_property_name": "(#p - ('%.153s' * #p))",
     "target_property_name": "#r_l2"
    },
    {
@@ -12649,7 +12649,7 @@
    },
    {
     "binding_type": "view",
-    "source_property_name": "(#v = '1')",
+    "source_property_name": "(#v = '_1')",
     "target_property_name": "#visible"
    }
   ],

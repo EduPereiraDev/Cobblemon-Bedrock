@@ -2,6 +2,7 @@ import { Entity, MolangVariableMap, system, Vector3 } from "@minecraft/server";
 import { ACTION_EFFECTS, ActionKeyframe, EFFECT_PARTICLES, EntityCond, GENERIC_ANIMATIONS, LOCATORS, StrExpr } from "../../../generated/scripts/actionEffects";
 import { ENTITY_INFO } from "../../../generated/scripts/entityData";
 import { POSER_ANIMATIONS, VARIANTS } from "../../../generated/scripts/variants";
+import { playParticleSounds } from "../../visual/ParticleSounds";
 
 /**
  * Intérprete das timelines de `data/cobblemon/action_effects` (efeitos de golpe/status em batalha).
@@ -180,6 +181,8 @@ function spawnParticle(effect: string, actor: EffectActor, loc: string[], target
     const from = locatorPosition(actor.entity, actor.species, loc);
     const to = target && valid(target.entity) ? locatorPosition(target.entity, target.species, targetLoc ?? ["target"]) : undefined;
     actor.entity.dimension.spawnParticle(effect, from, particleVariables(actor.entity, actor.species, from, to));
+    // Frente cliente-log: sons dos eventos da partícula (o Bedrock não os aceita no JSON da partícula).
+    playParticleSounds(actor.entity.dimension, effect, from);
   } catch { }
 }
 

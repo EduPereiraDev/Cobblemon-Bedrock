@@ -10,6 +10,7 @@
 import { basename } from "node:path";
 import type { AnimationIndex } from "./animations.ts";
 import { rewriteMolang, scanMolang, splitArgs, unquote } from "./molang.ts";
+import { fixBones } from "./animationBake.ts"; // frente cliente-modelos
 import { particleIndex } from "./particles.ts";
 import { ASSETS, BEDROCK_POKEMON, DATA, OUT_RP, OUT_SCRIPTS, count, readJson, tryReadJson, walk, warn, writeJson, writeText } from "./util.ts";
 
@@ -247,6 +248,8 @@ function emitGenericAnimations(): Map<string, string> {
 			const id = `animation.cobblemon_generic.${m[1]}.${m[2]}`.toLowerCase();
 			ids.set(`${m[1]}.${m[2]}`.toLowerCase(), id);
 			out[id] = JSON.parse(JSON.stringify(anim), (k, v) => (typeof v === "string" && k !== "lerp_mode" && k !== "loop" ? rewriteMolang(v, `generic:${orig}`) : v));
+			// Frente cliente-modelos: catmullrom com Molang, Molang malformado e ossos inválidos (animationBake.ts).
+			if (out[id].bones) out[id].bones = fixBones(out[id].bones, Number(anim.animation_length) || 0, `generic:${orig}`);
 		}
 	}
 	writeJson(`${OUT_RP}/animations/cobblemon_generic.animation.json`, { format_version: "1.8.0", animations: out });

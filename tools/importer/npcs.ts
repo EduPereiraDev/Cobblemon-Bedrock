@@ -12,6 +12,7 @@
 import { basename, relative } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
 import { rewriteMolang, scanMolang } from "./molang.ts";
+import { dedupeLocators } from "./locators.ts"; // frente cliente-modelos
 import { ASSETS, DATA, OUT_BP, OUT_RP, OUT_SCRIPTS, copyFile, count, readJson, tryReadJson, walk, warn, writeJson, writeText } from "./util.ts";
 
 const NPC_ASSETS = `${ASSETS}/bedrock/npcs`;
@@ -210,7 +211,15 @@ export function emitNpcs(): NpcEmitStats {
 		if (file) copyFile(file, `${OUT_RP}/${s.textureRef}.png`);
 	}
 	// Só as geometrias usadas por alguma skin.
-	for (const id of new Set(skins.map((s) => s.geometryId))) writeJson(geometryJson.get(id)!.file, geometryJson.get(id)!.json);
+	// Frente cliente-modelos: locators iguais em nome e diferentes em posição entre as geometrias da entidade colidem
+	// no cliente (locators.ts); na ordem g0, g1... o repetido ganha nome próprio.
+	const npcLocators = new Map<string, string>();
+	for (const id of new Set(skins.map((s) => s.geometryId))) {
+		const json = geometryJson.get(id)!.json as any;
+		const renamed = dedupeLocators(json["minecraft:geometry"][0], npcLocators, id);
+		if (renamed.size) count("locators renomeados (colidiam com outra geometria da entidade)", renamed.size);
+		writeJson(geometryJson.get(id)!.file, json);
+	}
 
 	// 3. Animações (trainer_generic) + look + controllers.
 	const anims: Record<string, any> = {};
@@ -265,7 +274,7 @@ export function emitNpcs(): NpcEmitStats {
 				states: {
 					idle: { transitions: [{ blink: "q.state_time > v.cobblemon_npc_blink_at" }] },
 					blink: {
-						animations: has("blink") ? ["blink"] : [],
+						...(has("blink") ? { animations: ["blink"] } : {}), // cliente-modelos: [] é recusado pelo cliente
 						on_exit: ["v.cobblemon_npc_blink_at = math.random(3, 6);"],
 						transitions: [{ idle: "q.all_animations_finished || q.state_time > 0.5" }],
 					},

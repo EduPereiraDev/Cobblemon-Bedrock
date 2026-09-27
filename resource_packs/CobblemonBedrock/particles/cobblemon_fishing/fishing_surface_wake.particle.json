@@ -76,9 +76,6 @@
                         "1.0": "#005DB3FF"
                     }
                 }
-            },
-            "cobblemon:emitter_space": {
-                "scaling": "entity"
             }
         }
     }

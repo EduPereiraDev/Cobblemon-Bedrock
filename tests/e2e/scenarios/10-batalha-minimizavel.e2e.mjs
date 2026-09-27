@@ -13,14 +13,16 @@ const isMoveForm = (f) => f.kind === "action" && f.title.includes("{cobblemon.ba
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Offsets em bytes do título do canal B (conferidos em tests/batalha-minimizavel.test.ts: fieldOffsets(...)).
-const HEAD = { min: 54, pr: 55, cur: 56 };
-const MOVES_AT = 5 + 52 + 6 * 84;
-const MOVE_BYTES = 40;
+// Frente ui-cliente: campos numéricos têm 2 bytes com o prefixo `_` (NUM_LEAD), que o bot tira para comparar.
+const HEAD = { min: 55, pr: 57, cur: 59 };
+const MOVES_AT = 5 + 56 + 6 * 90;
+const MOVE_BYTES = 41;
 const byteSlice = (text, from, len) => Buffer.from(text, "utf8").subarray(from, from + len).toString("utf8").replace(/\t/g, "");
+const numField = (text, from) => byteSlice(text, from, 2).replace(/^_/, "");
 /** Cabeçalho do HUD de batalha (min/pr/cur) e ids dos golpes do menu. */
 function battleHud(text) {
 	return {
-		min: byteSlice(text, HEAD.min, 1), pr: byteSlice(text, HEAD.pr, 1), cur: byteSlice(text, HEAD.cur, 1),
+		min: numField(text, HEAD.min), pr: numField(text, HEAD.pr), cur: numField(text, HEAD.cur),
 		moves: [0, 1, 2, 3].map((i) => byteSlice(text, MOVES_AT + i * MOVE_BYTES, 24)),
 		tail: Buffer.from(text, "utf8").subarray(MOVES_AT + 4 * MOVE_BYTES).toString("utf8"),
 	};

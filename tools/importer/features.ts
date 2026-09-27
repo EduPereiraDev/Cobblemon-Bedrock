@@ -8,6 +8,7 @@
 import { existsSync } from "node:fs";
 import type { BiomeResolver, BlockResolver } from "./worldgen.ts";
 import { DATA, HAND_BP, OUT_BP, count, readJson, splitId, walk, warn, writeJson } from "./util.ts";
+import { heightDependsOnXz } from "./clientRules.ts";
 import { biomeFilter } from "./vanilla.ts";
 
 const FEATURE_FORMAT = "1.13.0";
@@ -62,7 +63,9 @@ export class FeatureBuilder {
 		}
 		const distribution: Record<string, unknown> = {
 			iterations: r.iterations,
-			coordinate_eval_order: "zyx",
+			// Frente cliente-log: y = q.heightmap(v.worldx, v.worldz) precisa de x e z já avaliados ("xzy"); com "zyx"
+			// o cliente acusa "unknown variable 'variable.worldx'" a cada chunk e a feature não é posta.
+			coordinate_eval_order: heightDependsOnXz(r.y) ? "xzy" : "zyx",
 			x: { distribution: "uniform", extent: [0, 16] },
 			y: r.y,
 			z: { distribution: "uniform", extent: [0, 16] },

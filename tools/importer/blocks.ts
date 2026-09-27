@@ -24,6 +24,7 @@ import type { KtBlock } from "./kotlin.ts";
 import { EMPTY_LOOT, convertLoot, emitLoot, javaBlockLoot, lootStateProps } from "./loot.ts";
 import type { Assignment, ItemIdMapper } from "./loot.ts";
 import { ASSETS, DATA, OUT_BP, OUT_RP, OUT_SCRIPTS, ROOT, count, readJson, splitId, walk, warn, writeJson, writeText } from "./util.ts";
+import { BLOCK_GEO_BOUNDS, BLOCK_GEO_MARGIN, BLOCK_GEO_MAX_LENGTH, checkBlockGeometry, geometryBoxes } from "./clientRules.ts";
 
 export const BLOCK_FORMAT = "1.21.90";
 /** O trait minecraft:connection só é estável (sem "Upcoming Creator Features") a partir deste formato. */
@@ -197,8 +198,100 @@ function boxUvFaces(size: number[], uv: number[], su: number, sv: number, instan
 	};
 }
 
+/**
+ * Frente cliente-log: põe a geometria do arbusto de berry (arbusto + flores/frutos nos growthPoints + muda) dentro
+ * dos limites de geometria de bloco do cliente (clientRules.ts: 30 px por eixo, caixas entre -14 e 30 px em y e
+ * -22..22 em x/z). Fora deles o cliente recusa a geometria inteira e o bloco some. Em ordem, do mais fiel ao menos:
+ *  1. Pontos de crescimento cujas flores/frutos saem dos limites mesmo com a escala mínima do passo 3 (pinap/yache/
+ *     iapapa empilham 10 pontos até 3 blocos de altura) saem da geometria. Com growthPoints fixos (randomizedGrowthPoints false) o Java enche os pontos na
+ *     ordem, então os últimos (mais altos) só aparecem com colheitas acima do normal (baseYield 2–3).
+ *  2. A muda (idade 0) sobe o necessário: a parte abaixo de y=0 fica enterrada no solo; ela só aparece sozinha.
+ *  3. Se ainda sobrar (arbusto com planos rotacionados passando de 30 px: occa/pamtre/lum), escala uniforme em
+ *     torno do centro do chão do bloco (UV por face não muda; no máximo 8%).
+ */
+export function fitBerryGrowthGeometry(id: string, bones: Array<Record<string, any>>, randomized: boolean): void {
+	const M = BLOCK_GEO_MARGIN;
+	if (!checkBlockGeometry(bones as any, M).problems.length) return;
+	// Um ponto só sai se nem a escala mínima aceita (passo 3) o trouxer para dentro dos limites.
+	const MIN_SCALE = 0.92;
+	const inside = (b: { min: number[]; max: number[] }) => [0, 1, 2].every((i) => b.min[i] >= (BLOCK_GEO_BOUNDS.min[i] + M) / MIN_SCALE && b.max[i] <= (BLOCK_GEO_BOUNDS.max[i] - M) / MIN_SCALE);
+	const subtree = (root: string) => (b: Record<string, any>) => b.name === root || String(b.name).startsWith(`${root}_`);
+	const actions: string[] = [];
+	// 1. Pontos fora dos limites (flor e fruto do mesmo ponto saem juntos).
+	const boxes = geometryBoxes(bones as any);
+	const points = new Set<number>();
+	for (const b of bones) {
+		const m = /^berry_(?:flower|fruit)_(\d+)$/.exec(b.name);
+		if (m) points.add(Number(m[1]));
+	}
+	const dropped: number[] = [];
+	for (const i of [...points].sort((a, b) => a - b)) {
+		const inUnit = [subtree(`berry_flower_${i}`), subtree(`berry_fruit_${i}`)];
+		const names = new Set(bones.filter((b) => inUnit.some((f) => f(b))).map((b) => b.name));
+		if (boxes.some((bx) => names.has(bx.bone) && !inside(bx))) dropped.push(i);
+	}
+	if (dropped.length) {
+		const gone = new Set(bones.filter((b) => dropped.some((i) => subtree(`berry_flower_${i}`)(b) || subtree(`berry_fruit_${i}`)(b))).map((b) => b.name));
+		for (let k = bones.length - 1; k >= 0; k--) if (gone.has(bones[k].name)) bones.splice(k, 1);
+		actions.push(`${dropped.length} de ${points.size} pontos de crescimento fora dos limites removidos (${randomized ? "pontos sorteados" : "os mais altos"})`);
+		count("berries: pontos de crescimento fora do limite de geometria de bloco removidos", dropped.length);
+	}
+	// 2. Muda sobe o necessário para a extensão em y caber (limitada ao que estava enterrado).
+	let check = checkBlockGeometry(bones as any, M);
+	const sproutBones = bones.filter(subtree("berry_sprout"));
+	if (check.length[1] > BLOCK_GEO_MAX_LENGTH - M && sproutBones.length) {
+		const sproutMin = Math.min(...geometryBoxes(bones as any).filter((b) => sproutBones.some((s) => s.name === b.bone)).map((b) => b.min[1]));
+		const others = geometryBoxes(bones as any).filter((b) => !sproutBones.some((s) => s.name === b.bone));
+		const otherMin = others.length ? Math.min(...others.map((b) => b.min[1])) : Infinity;
+		// Só adianta se a muda for a parte mais baixa; sobe até igualar o resto ou até o que falta, o que for menor.
+		const need = check.length[1] - (BLOCK_GEO_MAX_LENGTH - M) + 0.01;
+		const lift = Math.min(need, Math.max(0, Math.min(otherMin, 0) - sproutMin));
+		if (lift > 0) {
+			const r4 = (n: number) => Math.round(n * 10000) / 10000;
+			for (const b of sproutBones) {
+				if (b.pivot) b.pivot = [b.pivot[0], r4(b.pivot[1] + lift), b.pivot[2]];
+				for (const c of b.cubes ?? []) {
+					c.origin = [c.origin[0], r4(c.origin[1] + lift), c.origin[2]];
+					if (c.pivot) c.pivot = [c.pivot[0], r4(c.pivot[1] + lift), c.pivot[2]];
+				}
+			}
+			actions.push(`muda erguida ${lift.toFixed(2)} px`);
+			count("berries: muda erguida para caber no limite de geometria de bloco");
+		}
+		check = checkBlockGeometry(bones as any, M);
+	}
+	// 3. Escala uniforme em torno de (0, 0, 0) (centro do chão do bloco).
+	if (check.problems.length) {
+		let s = 1;
+		for (let i = 0; i < 3; i++) {
+			if (check.length[i] > 0) s = Math.min(s, (BLOCK_GEO_MAX_LENGTH - M) / check.length[i]);
+			if (check.max[i] > 0) s = Math.min(s, (BLOCK_GEO_BOUNDS.max[i] - M) / check.max[i]);
+			if (check.min[i] < 0) s = Math.min(s, (BLOCK_GEO_BOUNDS.min[i] + M) / check.min[i]);
+		}
+		const r4 = (n: number) => Math.round(n * s * 10000) / 10000;
+		const scaleVec = (v?: number[]) => v?.map(r4);
+		for (const b of bones) {
+			if (b.pivot) b.pivot = scaleVec(b.pivot);
+			for (const c of b.cubes ?? []) {
+				c.origin = scaleVec(c.origin);
+				c.size = scaleVec(c.size);
+				if (c.pivot) c.pivot = scaleVec(c.pivot);
+				if (c.inflate) c.inflate = r4(c.inflate);
+			}
+		}
+		actions.push(`escala ${(s * 100).toFixed(1)}%`);
+		count("berries: geometria escalada para caber no limite de geometria de bloco");
+		check = checkBlockGeometry(bones as any, 0);
+	}
+	if (check.problems.length) warn("geometria de berry ainda fora dos limites do cliente", `${id}: ${check.problems.join("; ")}`);
+	BERRY_GEOMETRY_FITS.set(id, actions);
+}
+
+/** Ajustes feitos por fitBerryGrowthGeometry (id do bloco → ações), para o relatório do import e os testes. */
+export const BERRY_GEOMETRY_FITS = new Map<string, string[]>();
+
 const HORIZONTAL = ["north", "south", "east", "west"];
-const SIX = ["down", "up", "north", "south", "east", "west"];
+const SIX =["down", "up", "north", "south", "east", "west"];
 
 const q = (state: string) => `q.block_state('${state}')`;
 const eqS = (state: string, v: StateValue) => (typeof v === "boolean" ? (v ? q(state) : `!${q(state)}`) : typeof v === "number" ? `${q(state)} == ${v}` : `${q(state)} == '${v}'`);
@@ -586,6 +679,7 @@ export class BlockBuilder {
 			});
 		}
 		if (!added) return;
+		fitBerryGrowthGeometry(id, bones, berry.randomizedGrowthPoints === true);
 		const newId = `geometry.cobblemon.${safeGeoName(path)}_growth`;
 		geo["minecraft:geometry"][0].description.identifier = newId;
 		writeJson(geoFile(newId), geo);

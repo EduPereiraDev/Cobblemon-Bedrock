@@ -9,7 +9,8 @@
 import { basename } from "node:path";
 import type { AnimationIndex, AnimInfo, EmittedEffects } from "./animations.ts";
 import { loadKotlinPosers } from "./kotlinPosers.ts";
-import { looksBroken, rewriteMolang, scanMolang, splitArgs, unquote } from "./molang.ts";
+import { rewriteMolang, scanMolang, splitArgs, unquote } from "./molang.ts";
+import { javaMolangToBedrock } from "./molangSyntax.ts"; // frente cliente-modelos
 import { BEDROCK_POKEMON, OUT_RP, count, safeName, splitId, tryReadJson, walk, warn, writeJson } from "./util.ts";
 
 /** Códigos de v.cobblemon_pose_type (calculado no pre_animation da client entity). */
@@ -278,10 +279,6 @@ export function rewriteHasAspect(expr: string, sink?: Set<string>): string {
 }
 
 function translateCondition(expr: string, where: string): string {
-	if (looksBroken(expr)) {
-		warn("condição Molang malformada (pose tratada como indisponível)", `${where}: ${expr}`);
-		return "0.0";
-	}
 	// Frente dados-ia: literais true/false soltos (ex.: "q.has_aspect('sheared') == false") viram 1.0/0.0.
 	const literals = expr.trim().replace(/'[^']*'|\b(true|false)\b/gi, (m, lit?: string) => (lit ? (lit.toLowerCase() === "true" ? "1.0" : "0.0") : m));
 	const out = rewriteMolang(rewriteHasAspect(literals, aspectSink), where, {
@@ -289,7 +286,11 @@ function translateCondition(expr: string, where: string): string {
 		// Sem argumento de texto (não deveria acontecer): aspect ausente.
 		has_aspect: "0.0",
 	});
-	return `(${out})`;
+	// Frente cliente-modelos: condição malformada vale o que o parser do Java lê (ele para no primeiro token que não
+	// continua a expressão: "a && b: 1.0 ? 0.0" = "a && b"), em sintaxe do Bedrock e com a precedência do Java.
+	const fixed = javaMolangToBedrock(out, true, "0.0");
+	if (fixed.reason) warn("condição Molang de pose corrigida (semântica do Java)", `${where}: ${expr} → ${fixed.expr} (${fixed.reason})`);
+	return `(${fixed.expr})`;
 }
 
 /** Acumula o que um poser gera: animações usadas, animações sintéticas e controllers. */
@@ -680,7 +681,8 @@ class GenContext {
 		const states: Record<string, any> = {};
 		poses.forEach((p, i) => {
 			states[stateNames[i]] = {
-				animations: p.anims.map((a) => (a.condition ? { [a.short]: a.condition } : a.short)),
+				// Frente cliente-modelos: "animations": [] é recusado pelo cliente ("Required child not found").
+				...(p.anims.length ? { animations: p.anims.map((a) => (a.condition ? { [a.short]: a.condition } : a.short)) } : {}),
 				transitions: poses.map((_, j) => j).filter((j) => j !== i).map((j) => ({ [stateNames[j]]: `${poseVar} == ${j}` })),
 				blend_transition: 0.2,
 			};

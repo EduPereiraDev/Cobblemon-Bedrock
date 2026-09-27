@@ -33,6 +33,11 @@ const ONLINE_MODE = process.env.COBBLEMON_BDS_ONLINE_MODE;
 const TRANSPORT = process.env.COBBLEMON_BDS_TRANSPORT ?? "nethernet";
 // Faixa UDP fixa do NetherNet, publicada no Docker e anunciada aos clientes com o IP do Mac na rede local.
 const UDP_RANGE = process.env.COBBLEMON_BDS_UDP_RANGE ?? "19200-19209";
+// Box64 (frente estabilidade, docs/pendencias/estabilidade.md): no Mac (arm64) a imagem roda o BDS x86-64 pelo box64.
+// Sem ordem de memória forte, corridas entre as threads do BDS travam o carregamento de chunks (bot/jogador sem spawn,
+// y = 32769, e chunks "fora do mundo") e às vezes corrompem o heap (quedas nativas). STRONGMEM=1 resolve, sem custo
+// medido. COBBLEMON_BDS_BOX64_STRONGMEM=0 desliga (só para comparar). Em host x86-64 o box64 não é usado.
+const BOX64_ENV = [`BOX64_DYNAREC_STRONGMEM=${process.env.COBBLEMON_BDS_BOX64_STRONGMEM ?? "1"}`];
 function lanAddress() {
 	for (const iface of ["en0", "en1"]) {
 		const r = spawnSync("ipconfig", ["getifaddr", iface], { encoding: "utf8" });
@@ -51,6 +56,11 @@ function start() {
 	const ports = exists ? spawnSync("docker", ["inspect", "-f", "{{json .HostConfig.PortBindings}}", CONTAINER], { encoding: "utf8" }).stdout : "";
 	const wantsUdpRange = TRANSPORT === "nethernet";
 	if (exists && (!ports.includes(`"${HOST_PORT}"`) || wantsUdpRange !== ports.includes(UDP_RANGE.split("-")[0]))) docker("rm", "-f", CONTAINER);
+	// O ambiente também é fixado na criação: recria o container antigo sem o ajuste do box64 (o mundo fica no volume).
+	else if (exists) {
+		const env = spawnSync("docker", ["inspect", "-f", "{{json .Config.Env}}", CONTAINER], { encoding: "utf8" }).stdout;
+		if (BOX64_ENV.some((e) => !env.includes(`"${e}"`))) docker("rm", "-f", CONTAINER);
+	}
 	if (spawnSync("docker", ["inspect", CONTAINER]).status === 0) docker("start", CONTAINER);
 	else {
 		mkdirSync(data, { recursive: true });
@@ -58,6 +68,7 @@ function start() {
 			"-e", "EULA=TRUE", "-e", "VERSION=LATEST", "-e", `LEVEL_NAME=${LEVEL}`,
 			"-e", "ALLOW_CHEATS=true", "-e", "ALLOW_LIST=false", "-e", "DEFAULT_PLAYER_PERMISSION_LEVEL=operator",
 			"-e", "TEXTUREPACK_REQUIRED=true",
+			...BOX64_ENV.flatMap((e) => ["-e", e]),
 			...(ONLINE_MODE ? ["-e", `ONLINE_MODE=${ONLINE_MODE}`] : []),
 			"-p", `${HOST_PORT}:19132/udp`, "-p", `${HOST_PORT}:19132/tcp`,
 			...(wantsUdpRange ? ["-p", `${UDP_RANGE}:${UDP_RANGE}/udp`] : []),

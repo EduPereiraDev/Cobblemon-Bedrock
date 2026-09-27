@@ -424,6 +424,13 @@ export function healPlayerPC(player: Player): number {
   return healed;
 }
 
+/**
+ * Frente msd-fase3: avisados quando o time do jogador é curado por inteiro (máquina de cura, comando, NPC: o
+ * `Pokemon.heal()` do Cobblemon, que posta POKEMON_HEALED com HealingSource.Force). O Mega Showdown recarrega a Tera
+ * Orb aqui. Vazio no base.
+ */
+export const partyHealedHooks: ((player: Player) => void)[] = [];
+
 /** Heals the player's entire team
  * @returns whether or not it was sucessful
  */
@@ -436,6 +443,9 @@ export function healPlayerTeam(player: Player): boolean {
     a[i] = x;
   })
   player.setDynamicProperty("team", JSON.stringify(teamData));
+  for (const hook of partyHealedHooks) {
+    try { hook(player); } catch (e) { console.warn(`Cura do time (extensão): ${e}`); }
+  }
   return true;
 }
 

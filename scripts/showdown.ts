@@ -71,6 +71,12 @@ const COBBLEMON_HELD_ITEMS: Record<string, object> = {
 	for (const [id, data] of Object.entries(COBBLEMON_HELD_ITEMS)) if (!items[id]) items[id] = data;
 }
 
+/**
+ * Frente msd-fase3: ganchos chamados no início de cada batalha (onBegin do formato: estado persistente já aplicado e
+ * nenhum request enviado). Vazio no base; a extensão Mega Showdown põe aqui o Dynamax em gen9 (SD/side.js do MSD).
+ */
+export const battleBeginHooks: ((battle: Battle) => void)[] = [];
+
 /** Ordem da ação de item na fila do turno: logo antes das trocas (103), como no jogo. */
 export const BAG_ITEM_ACTION_ORDER = 102;
 
@@ -117,6 +123,11 @@ function createFormat(formatId: string, gameType: string): Format {
 		base.onBegin?.call(this);
 		for (const side of this.sides) {
 			for (const pokemon of side.pokemon) applyPersistentState(pokemon);
+		}
+		// Frente msd-fase3: regras de extensões (Dynamax em gen9 do Mega Showdown), antes do primeiro request.
+		for (const hook of battleBeginHooks) {
+			try { hook(this); }
+			catch (e) { console.warn(`Regra de batalha de extensão: ${e}`); }
 		}
 	};
 	// A ação "start" do Showdown recalcula pokemonLeft e manda o primeiro do time a campo sem olhar

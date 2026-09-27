@@ -10,7 +10,7 @@
         "default": "textures/entity/cobblemon_boat/saccharine_boat"
       },
       "geometry": {
-        "default": "geometry.boat"
+        "default": "geometry.cobblemon.boat"
       },
       "render_controllers": [
         "controller.render.default"

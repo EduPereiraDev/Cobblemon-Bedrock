@@ -95,12 +95,19 @@ function flagsOf(l: GeoLocators | undefined): number {
 	return (l?.item ? 1 : 0) | (l?.hat ? 2 : 0) | (l?.face ? 4 : 0);
 }
 
-/** Expressão Molang "v.cobblemon_variant == i ? a : (...)" para um valor por variante. */
-function perVariant(values: number[]): number | string {
+/**
+ * Expressão Molang com um valor por variante. Frente cliente-modelos: busca binária em v.cobblemon_variant (profundidade
+ * log2 n). A cadeia "v == 0 ? a : (v == 1 ? b : (...))" com 264 variantes (raichu) estourava a pilha do parser do
+ * cliente ("Expression could not be parsed due to stack depth").
+ */
+export function perVariant(values: number[]): number | string {
+	const build = (lo: number, hi: number): string => {
+		if (new Set(values.slice(lo, hi)).size === 1) return String(values[lo]);
+		const mid = (lo + hi) >> 1;
+		return `v.cobblemon_variant < ${mid} ? (${build(lo, mid)}) : (${build(mid, hi)})`;
+	};
 	if (new Set(values).size === 1) return values[0];
-	let expr = String(values[values.length - 1]);
-	for (let i = values.length - 2; i >= 0; i--) expr = `v.cobblemon_variant == ${i} ? ${values[i]} : (${expr})`;
-	return expr;
+	return build(0, values.length);
 }
 
 /**

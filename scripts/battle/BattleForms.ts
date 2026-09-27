@@ -48,6 +48,11 @@ export interface BattleVisualState {
    * (partícula/pausa) troca o modelo no meio da animação (`apply_after`), por `revealPendingForme`.
    */
   pendingForme?: string;
+  /**
+   * Frente msd-fase4: aspects de exibição já calculados por uma extensão para a forma anunciada (o Mega Showdown aplica
+   * os `battle_form` dele: "multitype=fire", "percent_cells=complete"...). Com eles, a forma dos dados não é consultada.
+   */
+  aspects?: string[];
 }
 
 const states = new Map<string, BattleVisualState>();
@@ -103,7 +108,8 @@ export function displayFor(data: DisplaySubject): DisplayOverride | undefined {
     return undefined;
   }
   let aspects: string[] | undefined;
-  if (state.forme) aspects = aspectsForForme(data, state.forme);
+  if (state.aspects) aspects = [...state.aspects];
+  else if (state.forme) aspects = aspectsForForme(data, state.forme);
   if (state.dynamax && state.gigantamax) {
     const species = getSpeciesData(data.species);
     const gmax = species ? getFormByName(species, "Gmax") : undefined;
@@ -121,6 +127,12 @@ export function displayFor(data: DisplaySubject): DisplayOverride | undefined {
 function reapply(active: ActivePokemon): void {
   try {
     if (active.pending || !active.entity?.isValid) return;
+    // Frente msd-fase3: sem aspects de exibição (fim do Dynamax/G-Max ou de forma temporária NA batalha), a entidade
+    // volta à variante e aos bits dos dados (applyDisplayOverride só grava quando há aspects de exibição).
+    if (!displayFor(active.data)?.aspects) {
+      try { active.entity.setProperty("cobblemon:variant", resolveVariant(toSpeciesId(active.data.species), active.data.aspects)); } catch { }
+      try { syncAspectBits(active.entity, active.data.aspects); } catch { }
+    }
     applyDisplayOverride(active.entity, active.data);
     // Frente msd-fase2: tamanho (hitbox/escala) da forma mostrada (entity/Size.ts lê o DisplayOverride).
     applyEntitySize(active.entity, active.data);
@@ -148,6 +160,7 @@ export function revealPendingForme(battle: PokemonBattle, active: ActivePokemon)
   state.forme = state.pendingForme;
   state.temporary = undefined;
   state.pendingForme = undefined;
+  state.aspects = undefined;
   reapply(active);
   return true;
 }
@@ -168,7 +181,47 @@ export function updateVisualState(battle: PokemonBattle, active: ActivePokemon, 
   return state;
 }
 
+/**
+ * Frente msd-fase4: uma extensão pode resolver a troca de forma anunciada em aspects de exibição (e decidir quando ela
+ * aparece: `reveal(show)` chama `show()` na hora do efeito). `current` = aspects mostrados agora. Undefined = segue o
+ * caminho padrão (forma dos dados). Sem resolvedor (sem a extensão), nada muda.
+ */
+export type FormeAspectsResolver = (battle: PokemonBattle, active: ActivePokemon, forme: string, permanent: boolean, current: string[]) =>
+  { aspects: string[]; reveal?: (show: () => void) => void } | undefined;
+let formeResolver: FormeAspectsResolver | undefined;
+
+export function setFormeAspectsResolver(resolver: FormeAspectsResolver | undefined): void {
+  formeResolver = resolver;
+}
+
+/** Aspects mostrados agora pelo Pokémon (estado de batalha ou dados). */
+export function displayedAspects(data: DisplaySubject): string[] {
+  return [...(displayFor(data)?.aspects ?? data.aspects)];
+}
+
 function onFormeChange(battle: PokemonBattle, active: ActivePokemon, forme: string, permanent: boolean): void {
+  // Frente msd-fase4: formas resolvidas por uma extensão (battle_form do Mega Showdown), com o efeito dela.
+  let custom: ReturnType<FormeAspectsResolver>;
+  try { custom = formeResolver?.(battle, active, forme, permanent, displayedAspects(active.data)); }
+  catch (e) { console.warn(`BattleForms: resolvedor de forma: ${e}`); custom = undefined; }
+  if (custom) {
+    const resolved = custom;
+    const show = () => {
+      if (!battleExists(battle.battleId)) return;
+      updateVisualState(battle, active, state => {
+        // A mesma forma já mostrada como permanente continua permanente (Shaymin congelado: detailschange + -formechange).
+        const samePermanent = state.temporary === false && !!state.aspects && state.aspects.length === resolved.aspects.length
+          && resolved.aspects.every(aspect => state.aspects!.includes(aspect));
+        state.forme = forme;
+        state.aspects = [...resolved.aspects];
+        state.temporary = samePermanent ? false : !permanent;
+        state.pendingForme = undefined;
+      });
+    };
+    if (resolved.reveal) resolved.reveal(show);
+    else show();
+    return;
+  }
   // Frente msd-fase2: Mega/Primal/Ultra esperam o efeito (o modelo troca no meio da animação, como no MSD).
   if (permanent && formeGate?.(battle, active, forme)) {
     updateVisualState(battle, active, state => { state.pendingForme = forme; });
@@ -181,14 +234,41 @@ function onFormeChange(battle: PokemonBattle, active: ActivePokemon, forme: stri
     if (species && toID(forme) === toID(species.name) && !getFormForAspects(species, active.data.aspects)) {
       state.forme = undefined;
       state.temporary = undefined;
+      state.aspects = undefined;
       return;
     }
     state.forme = forme;
+    state.aspects = undefined;
     state.temporary = !permanent;
   });
 }
 
+/**
+ * Frente msd-fase3: atraso (ticks) até a tinta Tera aparecer, pedido por uma extensão (o Mega Showdown aplica o
+ * aspect `msd:tera_<tipo>` 1,5 s depois do `-terastallize`, no meio do efeito). Sem gancho: na hora, como na Fase 1.
+ */
+export type TeraRevealDelay = (battle: PokemonBattle, active: ActivePokemon, type: string) => number;
+let teraDelay: TeraRevealDelay | undefined;
+
+export function setTeraRevealDelay(fn: TeraRevealDelay | undefined): void {
+  teraDelay = fn;
+}
+
 function onTerastallize(battle: PokemonBattle, active: ActivePokemon, type: string): void {
+  let delay = 0;
+  try { delay = teraDelay?.(battle, active, type) ?? 0; } catch { delay = 0; }
+  if (delay > 0 && !active.pending) {
+    try {
+      system.runTimeout(() => {
+        const state = states.get(active.data.uuid);
+        if (state && state.battleId !== battle.battleId) return;
+        if (!battleExists(battle.battleId)) return;
+        updateVisualState(battle, active, current => { current.tera = type; });
+      }, delay);
+      return;
+    }
+    catch { }
+  }
   updateVisualState(battle, active, state => { state.tera = type; });
 }
 
@@ -205,6 +285,7 @@ function onSwitchIn(battle: PokemonBattle, uuid: string): void {
   if (state.temporary) {
     state.forme = undefined;
     state.temporary = undefined;
+    state.aspects = undefined;
   }
   state.dynamax = undefined;
   state.gigantamax = undefined;
@@ -264,6 +345,8 @@ export function disableBattleFormsForTests(): void {
   states.clear();
   setDisplayOverrideProvider(undefined);
   formeGate = undefined;
+  teraDelay = undefined;
+  formeResolver = undefined;
   const hook = battleEntityReleaseHooks.indexOf(resetReleasedEntity);
   if (hook >= 0) battleEntityReleaseHooks.splice(hook, 1);
 }

@@ -5,7 +5,7 @@
  * - `starter_selected`: já escolheu (não pode escolher de novo, a menos que um admin resete);
  * - `starter_prompted`: já recebeu a tela automática no login (para `promptStarterOnceOnly`).
  */
-import { Player } from "@minecraft/server";
+import { Player, system, world } from "@minecraft/server";
 import { showStarterGUI } from "./GUI";
 import { getConfig, getGameRule } from "./Config";
 import { getTeam, storePokemonInFirstSpace } from "./pokemonStorage";
@@ -35,11 +35,64 @@ export function shouldPromptOnJoin(player: Player): boolean {
   return !(config.promptStarterOnceOnly && player.getDynamicProperty(PROMPTED) === true);
 }
 
-/** Abre a tela automática do login e marca que já foi oferecida. */
+/** Tentativas de 10 ticks enquanto o cliente responde UserBusy na tela automática (~3 min). */
+const JOIN_BUSY_RETRIES = 360;
+/** Espera o jogador se mexer (cliente carregado) antes da tela automática, no máximo isto (ticks). */
+const JOIN_READY_MAX_TICKS = 400;
+const joinPrompts = new Set<string>();
+
+/** Resolve quando o jogador se mexe/olha em volta (o cliente terminou de carregar) ou no tempo máximo. */
+function whenPlayerReady(player: Player): Promise<void> {
+  return new Promise(resolve => {
+    let start: { x: number; y: number; z: number; ry: number; rx: number } | undefined;
+    let waited = 0;
+    const id = system.runInterval(() => {
+      waited += 10;
+      if (!player.isValid) { system.clearRun(id); resolve(); return; }
+      try {
+        const l = player.location, r = player.getRotation();
+        const now = { x: l.x, y: l.y, z: l.z, ry: r.y, rx: r.x };
+        if (!start) start = now;
+        const moved = Math.abs(now.x - start.x) + Math.abs(now.z - start.z) > 0.2 || Math.abs(now.ry - start.ry) + Math.abs(now.rx - start.rx) > 2;
+        if (moved || waited >= JOIN_READY_MAX_TICKS) { system.clearRun(id); resolve(); }
+      }
+      catch { system.clearRun(id); resolve(); }
+    }, 10);
+  });
+}
+
+/**
+ * Abre a tela automática do login. Só marca "já oferecida" se a tela chegou a aparecer: com o pacote grande o
+ * cliente real fica muito tempo carregando e a tela voltava UserBusy e se perdia (o bot de teste não carrega nada).
+ */
 export async function promptStarterOnJoin(player: Player) {
-  if (!shouldPromptOnJoin(player)) return;
-  player.setDynamicProperty(PROMPTED, true);
-  await offerStarter(player);
+  if (!shouldPromptOnJoin(player) || joinPrompts.has(player.id)) return;
+  joinPrompts.add(player.id);
+  try {
+    await whenPlayerReady(player);
+    if (!player.isValid || !shouldPromptOnJoin(player)) return;
+    const outcome: { busy?: boolean } = {};
+    const choice = await showStarterGUI(player, { busyRetries: JOIN_BUSY_RETRIES, outcome });
+    if (!player.isValid) return;
+    if (!outcome.busy) player.setDynamicProperty(PROMPTED, true);
+    if (choice !== undefined && !hasSelectedStarter(player) && !hasTeam(player)) giveStarter(player, choice);
+  }
+  finally { joinPrompts.delete(player.id); }
+}
+
+/** Lembrete no HUD enquanto o jogador não escolheu o inicial (o Java mostra "Pressione M para escolher..."). */
+export function startStarterReminder() {
+  system.runInterval(() => {
+    const config = getConfig();
+    if (!config.allowStarterOnJoin) return;
+    for (const player of world.getAllPlayers()) {
+      try {
+        if (hasSelectedStarter(player) || hasTeam(player)) continue;
+        player.onScreenDisplay.setActionBar({ translate: "cobblemon.ui.starter.chooseyourstarter", with: ["/cobblemon:starter"] });
+      }
+      catch { }
+    }
+  }, 40);
 }
 
 /**

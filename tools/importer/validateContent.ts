@@ -10,6 +10,7 @@ import { registeredComponents } from "./blocks.ts";
 import { HAND_BP, HAND_RP, OUT_BP, OUT_RP, OUT_SCRIPTS, parseLenient, rel, walk } from "./util.ts";
 import { VANILLA_BLOCKS, VANILLA_ITEMS } from "./vanilla.ts";
 import { VANILLA_LOOT_DIR } from "./lootInjection.ts";
+import { checkBlockGeometry, checkScatterFeatureMolang } from "./clientRules.ts";
 
 /** Tags de item nativas do Bedrock aceitas em receitas. */
 const VANILLA_ITEM_TAGS = new Set(["minecraft:planks", "minecraft:wool", "minecraft:wooden_slabs", "minecraft:logs", "minecraft:coals", "minecraft:stone_tool_materials", "minecraft:is_fish", "minecraft:transform_templates"]);
@@ -36,12 +37,25 @@ export async function validateContent(err: (m: string) => void, warnMsg: (m: str
 
 	// Índices do RP.
 	const geometries = new Map<string, Set<string>>();
+	const geometryBones = new Map<string, any[]>();
 	for (const root of [OUT_RP, HAND_RP]) {
 		for (const f of walk(`${root}/models/blocks`, (n) => n.endsWith(".json"))) {
 			const j = load(f, err);
-			for (const g of j?.["minecraft:geometry"] ?? []) geometries.set(g.description?.identifier, new Set((g.bones ?? []).map((b: any) => b.name)));
+			for (const g of j?.["minecraft:geometry"] ?? []) {
+				geometries.set(g.description?.identifier, new Set((g.bones ?? []).map((b: any) => b.name)));
+				geometryBones.set(g.description?.identifier, g.bones ?? []);
+			}
 		}
 	}
+	// Frente cliente-log: limites de geometria de bloco que só o cliente confere (clientRules.ts). Fora deles o
+	// cliente descarta a geometria e o bloco some ("cannot find geometry ... JSON").
+	const boundsChecked = new Set<string>();
+	const checkGeometryBounds = (geoId: string, where: string) => {
+		if (boundsChecked.has(geoId) || !geometryBones.has(geoId)) return;
+		boundsChecked.add(geoId);
+		const r = checkBlockGeometry(geometryBones.get(geoId)!);
+		for (const p of r.problems) err(`${where}: geometria de bloco ${geoId}: ${p}`);
+	};
 	const atlas = (file: string) => {
 		const out = new Map<string, string[]>();
 		for (const root of [OUT_RP, HAND_RP]) {
@@ -105,6 +119,7 @@ export async function validateContent(err: (m: string) => void, warnMsg: (m: str
 				const bones = geometries.get(geoId);
 				if (!bones) err(`${where}: geometria ${geoId} não existe`);
 				else for (const b of Object.keys(geo?.bone_visibility ?? {})) if (!bones.has(b)) err(`${where}: bone_visibility usa bone inexistente ${b}`);
+				checkGeometryBounds(geoId, where);
 			}
 			for (const [inst, m] of Object.entries<any>(comps["minecraft:material_instances"] ?? {})) {
 				if (typeof m === "string") continue;
@@ -216,6 +231,8 @@ export async function validateContent(err: (m: string) => void, warnMsg: (m: str
 		if (features.has(id)) err(`feature duplicada: ${id}`);
 		features.add(id);
 		featureDocs.push([id, j[type]]);
+		// Frente cliente-log: v.worldx/z fora de ordem (o cliente acusa "unknown variable" a cada chunk).
+		if (type === "minecraft:scatter_feature") for (const p of checkScatterFeatureMolang(j[type])) err(`feature ${id}: ${p}`);
 	}
 	const blockRef = (b: any) => (typeof b === "string" ? b : b?.name);
 	// Blocos citados em filtros/regras de worldgen e placement_filter precisam existir (o BDS só acusa
@@ -256,6 +273,7 @@ export async function validateContent(err: (m: string) => void, warnMsg: (m: str
 		const r = load(f, err)?.["minecraft:feature_rules"];
 		if (!r) continue;
 		ruleCount++;
+		for (const p of checkScatterFeatureMolang(r.distribution)) err(`feature rule ${r.description?.identifier}: ${p}`);
 		const pf = r.description?.places_feature;
 		if (pf && !features.has(pf) && !String(pf).startsWith("minecraft:")) err(`feature rule ${r.description?.identifier}: feature ${pf} não existe`);
 	}

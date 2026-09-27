@@ -17,7 +17,7 @@
                 "active_time": 0.2
             },
             "minecraft:emitter_shape_disc": {
-                "radius": "math.clamp(q.entity_radius,1.5,999)",
+                "radius": "math.clamp(v.entity_radius ?? 0,1.5,999)",
                 "direction": [
                     "math.random(-1.5,1.5)",
                     "math.random(0.05,3.2)*8",
@@ -65,9 +65,6 @@
                         "max_frame": 5
                     }
                 }
-            },
-            "cobblemon:emitter_space": {
-                "scaling": "entity"
             }
         }
     }

@@ -8,6 +8,8 @@ import { RidingMolang, rewriteMolang, scanMolang, unquote } from "./molang.ts";
 import { particleIndex } from "./particles.ts";
 import type { ParticleIndex } from "./particles.ts";
 import { soundAlias } from "./sounds.ts";
+import { fixBones } from "./animationBake.ts"; // frente cliente-modelos: Molang/catmullrom/ossos aceitos pelo cliente
+import { javaMolangToBedrock } from "./molangSyntax.ts"; // frente cliente-modelos
 import { BEDROCK_POKEMON, OUT_RP, count, report, safeName, tryReadJson, walk, warn, writeJson } from "./util.ts";
 
 export interface AnimInfo {
@@ -142,7 +144,7 @@ export class AnimationIndex {
 	private convert(anim: any, where: string, effects: EmittedEffects, riding: RidingMolang, group: string): any {
 		const out: any = {};
 		for (const [key, value] of Object.entries<any>(anim)) {
-			if (key === "bones") out.bones = rewriteDeep(value, where, riding);
+			if (key === "bones") out.bones = fixBones(rewriteDeep(value, where, riding), lengthOf(anim), where);
 			else if (key === "sound_effects") {
 				const se = convertTimed(value, (e: any) => {
 					const short = typeof e?.effect === "string" ? this.soundShort(e.effect, where, effects) : undefined;
@@ -161,7 +163,7 @@ export class AnimationIndex {
 					const short = `ptc_${safeName(name)}`;
 					effects.particles.set(short, id);
 					const copy = { ...e, effect: short };
-					const script = typeof copy.pre_effect_script === "string" ? rewriteMolang(copy.pre_effect_script, where, {}, riding) : "";
+					const script = typeof copy.pre_effect_script === "string" ? javaMolang(rewriteMolang(copy.pre_effect_script, where, {}, riding), where) : "";
 					copy.pre_effect_script = `${this.entityVarsScript(group)}${script ? ` ${script.trim().endsWith(";") ? script.trim() : `${script.trim()};`}` : ""}`;
 					return copy;
 				});
@@ -169,7 +171,7 @@ export class AnimationIndex {
 			} else if (key === "timeline") {
 				const tl = this.convertTimeline(value, where, effects, out, riding);
 				if (tl) out.timeline = tl;
-			} else if (typeof value === "string" && key !== "loop") out[key] = rewriteMolang(value, where, {}, riding);
+			} else if (typeof value === "string" && key !== "loop") out[key] = javaMolang(rewriteMolang(value, where, {}, riding), where);
 			else out[key] = value;
 		}
 		return out;
@@ -199,15 +201,28 @@ export class AnimationIndex {
 					const add = { effect: short };
 					out.sound_effects[time] = cur === undefined ? add : Array.isArray(cur) ? [...cur, add] : [cur, add];
 				}
-				rest = rewriteMolang(rest, where, {}, riding).trim();
+				rest = javaMolang(rewriteMolang(rest, where, {}, riding), where).trim();
 				// Sobrou só casca (ex.: "1.0 ? { 0.0; };")? Descarta.
 				if (sounds.length && /^[\d.\s?:{};()!&|]*$/.test(rest.replace(/0\.0|1\.0/g, ""))) continue;
+				// Frente cliente-modelos: instrução que virou só constante (ex.: s.sound(...) vale 0 no Java) não faz nada.
+				if (/^[\d.\s;]*$/.test(rest)) continue;
 				if (rest) kept.push(rest.endsWith(";") ? rest : `${rest};`);
 			}
 			if (kept.length) result[time] = kept;
 		}
 		return Object.keys(result).length ? result : undefined;
 	}
+}
+
+/** Frente cliente-modelos: Molang de instrução (timeline, scripts) com a semântica do Java, em sintaxe do Bedrock. */
+function javaMolang(expr: string, where: string): string {
+	if (!expr.trim()) return expr;
+	const r = javaMolangToBedrock(expr, false, "");
+	if (r.reason) {
+		count("Molang de animação corrigido para o Bedrock (semântica do Java)");
+		warn("Molang de animação corrigido (semântica do Java)", `${where}: ${expr} → ${r.expr} (${r.reason})`);
+	}
+	return r.expr;
 }
 
 function convertTimed(value: any, fn: (e: any) => any): any {

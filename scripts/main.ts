@@ -9,7 +9,7 @@ import { getSafeTeam } from "./pokemonStorage";
 import { registerCustomComponents } from "./custom_components";
 import { setupCobblemon } from "./Pokemon";
 import { registerCommands } from "./commands";
-import { hasTeam, offerStarter, promptStarterOnJoin } from "./starter";
+import { hasTeam, offerStarter, promptStarterOnJoin, startStarterReminder } from "./starter";
 import WorldCleanup from "./Cleanup";
 import { message } from "./language";
 import { bindCatchEvents } from "./catching";
@@ -27,6 +27,7 @@ import { NPC_MODEL_TAG } from "./npc/PokemonModel";
 import { setDexData } from "./pokedex";
 import { DEXES, DEX_ENTRIES } from "../generated/scripts/dex";
 import { BATTLE_CLONE_TAG } from "./Pokemon";
+import { shouldThrowOnEntityInteract, throwPokeBall } from "./catching/ThrowBall";
 import { battleMap, isPlayerInAnyBattle, startSpectating } from "./battle";
 import { getConfig } from "./Config";
 import { requestTradeWith } from "./trade/TradeUI";
@@ -63,6 +64,7 @@ world.afterEvents.playerEmote.subscribe(({ player }) => {
 
 // Login sem inicial: oferece a escolha depois que o mundo terminar de carregar para o jogador
 // (respeita allowStarterOnJoin/promptStarterOnceOnly da config).
+startStarterReminder();
 world.afterEvents.playerSpawn.subscribe(({ player, initialSpawn }) => {
   if (initialSpawn && !hasTeam(player))
     system.runTimeout(() => { if (player.isValid) void promptStarterOnJoin(player); }, 100);
@@ -100,6 +102,15 @@ world.beforeEvents.playerInteractWithEntity.subscribe(event => {
   // Com a Pokédex na mão, o clique é o scanner da Pokédex, não interação com o Pokémon.
   if (heldItem?.typeId.startsWith("cobblemon:pokedex")) return;
   event.cancel = true;
+  // Frente ui-cliente: com Poké Ball na mão, usar mirando o Pokémon arremessa (no Bedrock a mira na entidade troca o
+  // itemUse por esta interação; no Java o mobInteract passa e o PokeBallItem.use arremessa).
+  if (heldItem && shouldThrowOnEntityInteract(heldItem.typeId, {
+    sneaking: player.isSneaking, isPokemon: true, isBattleClone: target.hasTag(BATTLE_CLONE_TAG), isNpcModel: target.hasTag(NPC_MODEL_TAG),
+  })) {
+    const ballItem = heldItem.typeId;
+    system.run(() => { if (player.isValid) throwPokeBall(player, ballItem); });
+    return;
+  }
   // Clone de batalha (cloneParties/setLevel): sem interação (InteractPokemonHandler ignora isBattleClone).
   if (target.hasTag(BATTLE_CLONE_TAG)) return;
   // Exibição do NPC com modelo de Pokémon: o clique é do NPC (scripts/npc/PokemonModel.ts), não de um Pokémon.

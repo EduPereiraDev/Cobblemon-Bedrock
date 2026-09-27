@@ -32,6 +32,7 @@ import {
   hpText, itemName, join, natureName, statusLabel, tr, typeName,
 } from "./common";
 import { STAT_LANG, STAT_ORDER } from "./PokemonEdit";
+import { extraSummaryInfo } from "./summaryExtras";
 import { sizeCategoryKey } from "../pokemon/Scale";
 import { RIDE_STYLES, RIDING_STATS, getMaxRideBoost, getRideBoost, getRideStat, rideInfoOf, rideStyleLangKey, statRange } from "../pokemon/RideStats";
 import type { RideStyle } from "../entity/EntityData";
@@ -101,6 +102,8 @@ export function buildSummarySections(pokemon: PokemonData): SummarySection[] {
   if (size) info.push(join("§7", tr("cobblemon.size_category.prefix", { translate: sizeCategoryKey(size) })));
   info.push(label(K.ball, itemName(pokemon.pokeball ?? "cobblemon:poke_ball")));
   info.push(label("cobblemon.ui.stats.hp", status ? join(hpText(pokemon), "  §c", status) : hpText(pokemon)));
+  // Frente msd-fase3: linhas de extensões (tipo Tera, Gigantamax e nível de Dynamax do Mega Showdown).
+  info.push(...extraSummaryInfo(pokemon));
 
   const stats = pokemon.getCurrentStats();
   const statLines: RawMessage[] = [

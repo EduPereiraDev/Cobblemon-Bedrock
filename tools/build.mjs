@@ -19,6 +19,7 @@ import { execFileSync } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkPublicDist, cleanBuildPlugin, forbiddenInBundle, leakedInputs } from "./cleanBuild.mjs";
+import { selfTestManifestPlugin } from "./selftest/manifest.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const release = process.argv.includes("--release");
@@ -209,7 +210,8 @@ const result = await build({
 	mainFields: ["module", "main"],
 	banner: { js: "var global = globalThis;" },
 	logLevel: "warning",
-	plugins: [slimShowdown, ...(clean ? [cleanBuildPlugin({ root, stubbed })] : [])],
+	// /cobblemon:selftest: partículas, sons, blocos e entidades lidos dos packs já mesclados em dist/.
+	plugins: [slimShowdown, selfTestManifestPlugin({ dist }), ...(clean ? [cleanBuildPlugin({ root, stubbed })] : [])],
 });
 const bytes = Object.values(result.metafile.outputs).find((o) => o.entryPoint)?.bytes ?? 0;
 console.log(`scripts empacotados em ${Date.now() - started}ms (${(bytes / 1e6).toFixed(2)} MB)`);

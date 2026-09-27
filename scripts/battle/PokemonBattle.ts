@@ -34,6 +34,13 @@ export interface BattleCaptureActionLike {
 /** Chamados para cada entidade liberada no fim da batalha (ex.: NPCs reaplicam os behaviours). */
 export const battleEntityReleaseHooks: ((entity: Entity) => void)[] = [];
 
+/**
+ * Frente msd-fase4: chamados no fim da batalha, ANTES de sincronizar e gravar os Pokémon dos atores (o que um gancho
+ * mudar em `actor.pokemon` é gravado). Vazio no base; o Mega Showdown grava aqui as formas de batalha que ele não
+ * desfaz (AspectUtils.revertPokemonsIfRequiredBattleEnd: Shaymin congelado volta à forma Land e fica assim).
+ */
+export const battleEndHooks: ((battle: PokemonBattle) => void)[] = [];
+
 export const battleMap = new Map<string, PokemonBattle>();
 
 /** Como a batalha terminou. */
@@ -382,6 +389,7 @@ export class PokemonBattle {
     battleMap.delete(this.battleId);
     system.clearRun(this.runtimeID);
 
+    for (const hook of battleEndHooks) this.guard("endHooks", () => hook(this));
     this.guard("sync", () => this.syncFromSimulator());
     this.guard("rewards", () => awardBattleRewards(this));
     this.guard("refund", () => this.refundUnusedItems());
@@ -408,7 +416,8 @@ export class PokemonBattle {
         let sim = getSimPokemon(this, pokemon.uuid);
         if (!sim || this.capturedUUIDs.has(pokemon.uuid))
           continue;
-        pokemon.currentHealth = sim.fainted ? 0 : sim.hp;
+        // Frente msd-fase3: batalha que termina com o Pokémon em Dynamax volta ao HP sem o Dynamax (Pokemon.getUndynamaxedHP).
+        pokemon.currentHealth = sim.fainted ? 0 : sim.getUndynamaxedHP();
         if (pokemon.currentHealth <= 0)
           pokemon.status = StatusEffect.Faint;
         else if (sim.status) {

@@ -225,6 +225,13 @@ function spawnDrops(entity: Entity): DropTableData | undefined {
   }
 }
 
+/** Frente msd-fase3: itens extras no drop do selvagem derrotado (vazio no base). */
+export type WildDropProvider = (active: ActivePokemon) => ItemStack[];
+const wildDropProviders: WildDropProvider[] = [];
+export function addWildDropProvider(provider: WildDropProvider): void {
+  if (!wildDropProviders.includes(provider)) wildDropProviders.push(provider);
+}
+
 /**
  * Drops do Pokémon selvagem que desmaiou (PokemonServerDelegate.doDeathDrops): só com a gamerule `doPokemonLoot`;
  * item segurado + tabela `drops` do spawn/forma/espécie (sorteada duas vezes com o aspect `drops_reroll` da isca),
@@ -255,6 +262,10 @@ export function dropWildLoot(active: ActivePokemon) {
     catch {
       // Item do Cobblemon que ainda não existe no Bedrock.
     }
+  }
+  // Frente msd-fase3: drops de extensões (Tera Shards do Mega Showdown: CobbleEvents.dropShardPokemon, LOOT_DROPPED).
+  for (const provider of wildDropProviders) {
+    try { items.push(...provider(active)); } catch (e) { console.warn(`Drop de extensão: ${e}`); }
   }
   if (!items.length) return;
   const dimension = entity.dimension;

@@ -22,7 +22,8 @@ import type { Entity } from "@minecraft/server";
 import { BEST_SPAWNER_CONFIG, HerdMember, SPAWNS, SpawnDrops, SpawnEntry } from "../../generated/scripts/spawns";
 import type { PokemonData } from "../Pokemon";
 import { getFormForAspects, getSpeciesData } from "../speciesData";
-import { baseWeight, entryAllowed, SpawnContext } from "./SpawnConditions";
+import type { SpawnWeightMultiplier } from "../../generated/scripts/spawns";
+import { conditionMatches, entryAllowed, SpawnContext } from "./SpawnConditions";
 
 /** Uma decisão de spawn: o que spawnar, onde e com qual faixa de nível. */
 export interface SpawnAction {
@@ -121,6 +122,107 @@ export function entriesForBiome(biome: string): SpawnEntry[] {
   return list ? (anyBiome.length ? list.concat(anyBiome) : list) : anyBiome;
 }
 
+/**
+ * Frente cliente-log (desempenho do spawner): entradas do bioma já separadas por bucket (o passe só percorre as do
+ * bucket sorteado, não as ~1.800 do bioma a cada bucket). Mesma ordem de entriesForBiome.
+ */
+const biomeBucketIndex = new Map<string, Map<string, SpawnEntry[]>>();
+export function entriesForBiomeBucket(biome: string, bucket: string): SpawnEntry[] {
+  let byBucket = biomeBucketIndex.get(biome);
+  if (!byBucket) {
+    byBucket = new Map();
+    for (const entry of entriesForBiome(biome)) {
+      let list = byBucket.get(entry.bucket);
+      if (!list) byBucket.set(entry.bucket, list = []);
+      list.push(entry);
+    }
+    biomeBucketIndex.set(biome, byBucket);
+  }
+  return byBucket.get(bucket) ?? [];
+}
+
+/**
+ * Grupo de condição da entrada: entradas com o mesmo tipo de posição, condição e anticondições dão o mesmo
+ * resultado em entryAllowed numa posição (≈5× menos avaliações: ~1.800 entradas, ~350 grupos por bioma).
+ */
+const conditionGroups = new WeakMap<SpawnEntry, number>();
+const conditionKeys = new Map<string, number>();
+export function conditionGroupOf(entry: SpawnEntry): number {
+  let id = conditionGroups.get(entry);
+  if (id === undefined) {
+    const key = JSON.stringify([entry.positionType, entry.condition, entry.anticonditions ?? null]);
+    id = conditionKeys.get(key);
+    if (id === undefined) conditionKeys.set(key, id = conditionKeys.size);
+    conditionGroups.set(entry, id);
+  }
+  return id;
+}
+
+/**
+ * Aquece os índices (bioma, bioma+bucket e grupos de condição) em fatias para `system.runJob`, no carregamento:
+ * o primeiro passe em cada bioma não paga a montagem (dezenas de ms no QuickJS).
+ */
+export function* warmSpawnIndex(batch = 64): Generator<void, void, void> {
+  if (!biomeIndex) {
+    // Mesmo que buildIndex, em fatias (~260 mil inserções: cada entrada vale em ~60 biomas).
+    const index = new Map<string, SpawnEntry[]>();
+    const any: SpawnEntry[] = [];
+    const buckets = new Set<string>();
+    let k = 0;
+    for (const entry of SPAWNS) {
+      buckets.add(entry.bucket);
+      const biomes = entry.condition.biomes;
+      if (!biomes || biomes.length === 0) any.push(entry);
+      else for (const b of biomes) {
+        let list = index.get(b);
+        if (!list) index.set(b, list = []);
+        list.push(entry);
+      }
+      if (++k % batch === 0) yield;
+    }
+    // Um passe pode ter montado o índice enquanto isso (buildIndex síncrono): mantém o dele.
+    if (!biomeIndex) {
+      biomeIndex = index;
+      anyBiome = any;
+      allBuckets = buckets;
+    }
+  }
+  yield;
+  let n = 0;
+  for (const entry of SPAWNS) {
+    conditionGroupOf(entry);
+    for (const m of entry.weightMultipliers ?? []) multiplierGroupOf(m);
+    if (++n % batch === 0) yield;
+  }
+  // Tamanho do hitbox de cada entrada e membro de herd: a primeira consulta de uma espécie faz JSON.parse dos dados
+  // dela (dezenas de ms no BDS emulado), que caía no meio de um passe. Aqui, no carregamento, por tempo.
+  let start = Date.now();
+  for (const entry of SPAWNS) {
+    entrySizeOf(entry);
+    for (const member of entry.herd?.members ?? []) {
+      if (!entrySizes.has(member)) entrySizes.set(member, spawnSizeOf(member.species, member.aspects ?? []));
+    }
+    if (Date.now() - start >= 4) {
+      yield;
+      start = Date.now();
+    }
+  }
+}
+
+/** Grupo das condições de um weightMultiplier (mesma ideia de conditionGroupOf). */
+const multiplierGroups = new WeakMap<SpawnWeightMultiplier, number>();
+const multiplierKeys = new Map<string, number>();
+function multiplierGroupOf(m: SpawnWeightMultiplier): number {
+  let id = multiplierGroups.get(m);
+  if (id === undefined) {
+    const key = JSON.stringify([m.condition ?? null, m.anticondition ?? null]);
+    id = multiplierKeys.get(key);
+    if (id === undefined) multiplierKeys.set(key, id = multiplierKeys.size);
+    multiplierGroups.set(m, id);
+  }
+  return id;
+}
+
 /** Buckets presentes no pool de spawns do mundo. */
 export function poolBuckets(): Set<string> {
   if (!allBuckets) buildIndex();
@@ -204,8 +306,19 @@ export function hasSpaceBox(x: number, y: number, z: number, width: number, heig
  * AreaSpawnablePosition.postFilter: com largura ou altura > 1, exige a caixa livre de hasSpace (largura do
  * hitbox nas laterais). Sem `ctx.hasSpace` (posições montadas à mão) confere só a coluna.
  */
-function fitsAt(species: string, aspects: readonly string[], ctx: SpawnContext): boolean {
-  const { width, height } = spawnSizeOf(species, aspects);
+const entrySizes = new WeakMap<object, { width: number; height: number }>();
+function entrySizeOf(entry: SpawnEntry): { width: number; height: number } {
+  let size = entrySizes.get(entry);
+  if (!size) entrySizes.set(entry, size = spawnSizeOf(entry.species, entry.aspects));
+  return size;
+}
+function fitsAt(species: string, aspects: readonly string[], ctx: SpawnContext, owner?: object): boolean {
+  let size = owner ? entrySizes.get(owner) : undefined;
+  if (!size) {
+    size = spawnSizeOf(species, aspects);
+    if (owner) entrySizes.set(owner, size);
+  }
+  const { width, height } = size;
   if (width <= 1 && height <= 1) return true;
   if (ctx.hasSpace) return ctx.hasSpace(width, height);
   if (ctx.height === undefined) return true;
@@ -269,54 +382,167 @@ class Selection {
   influencesAt(ctx: SpawnContext): SpawnInfluence[] {
     const extra = ctx.influences ?? [];
     const base = this.opts.influences ?? [];
-    return extra.length ? base.concat(extra) : base;
+    if (!extra.length) return base;
+    let all = this.influenceMemo.get(ctx);
+    if (!all) this.influenceMemo.set(ctx, all = base.concat(extra));
+    return all;
   }
 
   /** SpawnablePosition.getWeight: peso × weightMultipliers × influências. */
+  /**
+   * baseWeight com as condições dos weightMultipliers memorizadas por posição no passe (frente cliente-log: timeRange e
+   * moonPhase consultam o relógio do mundo, chamada nativa, a cada entrada). Mesma conta de baseWeight.
+   */
+  private readonly multiplierMemo = new Map<SpawnContext, (boolean | undefined)[]>();
+  private baseWeightAt(entry: SpawnEntry, ctx: SpawnContext): number {
+    const multipliers = entry.weightMultipliers;
+    if (!multipliers?.length) return entry.weight;
+    let memo = this.multiplierMemo.get(ctx);
+    if (!memo) this.multiplierMemo.set(ctx, memo = []);
+    let weight = entry.weight;
+    for (const m of multipliers) {
+      const id = multiplierGroupOf(m);
+      let meets = memo[id];
+      if (meets === undefined) memo[id] = meets = (!m.condition || conditionMatches(m.condition, ctx)) && !(m.anticondition && conditionMatches(m.anticondition, ctx));
+      if (meets) weight *= m.multiplier;
+    }
+    return weight;
+  }
+
   weightAt(entry: SpawnEntry, ctx: SpawnContext): number {
-    let weight = baseWeight(entry, ctx);
+    let weight = this.baseWeightAt(entry, ctx);
     for (const influence of this.influencesAt(ctx)) {
       if (influence.affectWeight) weight = influence.affectWeight(entry, ctx, weight);
     }
     return weight;
   }
 
-  private matches(entry: SpawnEntry, ctx: SpawnContext): boolean {
+  /**
+   * entryAllowed por grupo de condição, memorizado por posição durante o passe (as posições não mudam nele).
+   * Checado antes dos outros filtros (todos são E lógico sem efeito colateral): rejeita a maioria de graça.
+   */
+  private readonly allowedMemo = new Map<SpawnContext, (boolean | undefined)[]>();
+  private readonly influenceMemo = new Map<SpawnContext, SpawnInfluence[]>();
+
+  private allowed(entry: SpawnEntry, ctx: SpawnContext): boolean {
+    let memo = this.allowedMemo.get(ctx);
+    if (!memo) this.allowedMemo.set(ctx, memo = []);
+    const group = conditionGroupOf(entry);
+    let ok = memo[group];
+    if (ok === undefined) memo[group] = ok = entryAllowed(entry, ctx);
+    return ok;
+  }
+
+  /**
+   * Avalia de antemão as condições dos grupos de entradas do bioma da posição (a parte cara do passe), para o
+   * passe fatiado entre ticks (selectSpawnActionsJob). Só com a fonte padrão de entradas.
+   */
+  *warmJob(ctx: SpawnContext, budgetMs = 4): Generator<string, void, void> {
+    if (this.opts.entriesFor) return;
+    // Cede por tempo, não por contagem: algumas condições consultam o mundo (blocos por perto, estruturas) e custam
+    // bem mais que as outras.
+    let start = Date.now();
+    for (const entry of entriesForBiome(ctx.biome)) {
+      this.allowed(entry, ctx);
+      if (Date.now() - start >= budgetMs) {
+        yield "condições";
+        start = Date.now();
+      }
+    }
+    yield "condições";
+  }
+
+  /** getDataForBucket em fatias (cede por tempo entre posições/entradas e entre leituras de espaço). */
+  *bucketDataJob(bucket: string): Generator<string, void, void> {
+    if (this.bucketData.has(bucket)) return;
+    const data: BucketData = new Map();
+    for (const ctx of this.positions) yield* this.addPositionDataJob(data, bucket, ctx, 3);
+    this.bucketData.set(bucket, data);
+    yield "bucket"; // o sorteio vem na fatia seguinte
+  }
+
+  private addPositionData(data: BucketData, bucket: string, ctx: SpawnContext): void {
+    const job = this.addPositionDataJob(data, bucket, ctx, Infinity);
+    while (!job.next().done) { /* sem fatias */ }
+  }
+
+  /** Candidatas de uma posição num bucket; cede quando passa de `budgetMs` (hasSpace lê blocos do mundo). */
+  private *addPositionDataJob(data: BucketData, bucket: string, ctx: SpawnContext, budgetMs: number): Generator<string, void, void> {
+    if (this.removedPositions.has(ctx)) return;
+    // `start` só volta a zero quando esta função cede: o tempo gasto dentro de hasSpaceJob sem ceder conta na fatia.
+    let start = budgetMs === Infinity ? 0 : Date.now();
+    for (const entry of this.candidates(ctx, bucket)) {
+      if (budgetMs !== Infinity && Date.now() - start >= budgetMs) {
+        yield "bucket";
+        start = Date.now();
+      }
+      if (budgetMs !== Infinity && ctx.hasSpaceJob && !entry.herd && this.needsSpace(entry, ctx)) {
+        // Mesma ordem de matches: o espaço (leituras de bloco, com orçamento) só é lido quando os filtros antes dele
+        // passaram; aqui em fatias, e matches acha o resultado memorizado.
+        const size = entrySizeOf(entry);
+        const job = ctx.hasSpaceJob(size.width, size.height);
+        let step = job.next();
+        while (!step.done) {
+          yield step.value;
+          start = Date.now();
+          step = job.next();
+        }
+        if (Date.now() - start >= budgetMs) {
+          yield "espaço";
+          start = Date.now();
+        }
+      }
+      if (!this.matches(entry, ctx)) continue;
+      let byType = data.get(ctx.positionType);
+      if (!byType) data.set(ctx.positionType, byType = new Map());
+      let info = byType.get(entry);
+      if (!info) byType.set(entry, info = { positions: new Map(), highest: 0 });
+      const weight = this.weightAt(entry, ctx);
+      info.positions.set(ctx, weight);
+      if (weight > info.highest) info.highest = weight;
+    }
+  }
+
+  /** Os filtros de matches antes do espaço passam e a forma é maior que 1 bloco (hasSpace vai ler blocos). */
+  private needsSpace(entry: SpawnEntry, ctx: SpawnContext): boolean {
+    if (!this.passesBeforeSpace(entry, ctx)) return false;
+    const size = entrySizeOf(entry);
+    return size.width > 1 || size.height > 1;
+  }
+
+  private passesBeforeSpace(entry: SpawnEntry, ctx: SpawnContext): boolean {
+    if (!this.allowed(entry, ctx)) return false;
     if (this.removedEntries.has(entry)) return false;
     if (this.opts.filter && !this.opts.filter(entry)) return false;
     for (const influence of this.influencesAt(ctx)) {
       if (influence.affectSpawnable && !influence.affectSpawnable(entry, ctx)) return false;
     }
-    if (!entryAllowed(entry, ctx)) return false;
-    // Herds verificam o tamanho de cada membro na hora de criar a ação.
-    if (!entry.herd && !fitsAt(entry.species, entry.aspects, ctx)) return false;
     return true;
+  }
+
+  private matches(entry: SpawnEntry, ctx: SpawnContext): boolean {
+    if (!this.passesBeforeSpace(entry, ctx)) return false;
+    // Herds verificam o tamanho de cada membro na hora de criar a ação.
+    if (!entry.herd && !fitsAt(entry.species, entry.aspects, ctx, entry)) return false;
+    return true;
+  }
+
+  /** Candidatas de uma posição para o bucket (índice por bioma e bucket quando a fonte é o padrão). */
+  private candidates(ctx: SpawnContext, bucket: string): SpawnEntry[] {
+    let list = this.opts.entriesFor ? this.opts.entriesFor(ctx).filter(e => e.bucket === bucket) : entriesForBiomeBucket(ctx.biome, bucket);
+    // Spawner.getMatchingSpawns: as do pool + as injetadas pelas influências da posição.
+    for (const influence of this.influencesAt(ctx)) {
+      const injected = influence.injectSpawns?.(bucket, ctx);
+      if (injected?.length) list = list.concat(injected.filter(e => e.bucket === bucket));
+    }
+    return list;
   }
 
   getDataForBucket(bucket: string): BucketData {
     let data = this.bucketData.get(bucket);
     if (data) return data;
     data = new Map();
-    const entriesFor = this.opts.entriesFor ?? ((ctx: SpawnContext) => entriesForBiome(ctx.biome));
-    for (const ctx of this.positions) {
-      if (this.removedPositions.has(ctx)) continue;
-      let candidates = entriesFor(ctx);
-      // Spawner.getMatchingSpawns: as do pool + as injetadas pelas influências da posição.
-      for (const influence of this.influencesAt(ctx)) {
-        const injected = influence.injectSpawns?.(bucket, ctx);
-        if (injected?.length) candidates = candidates.concat(injected);
-      }
-      for (const entry of candidates) {
-        if (entry.bucket !== bucket || !this.matches(entry, ctx)) continue;
-        let byType = data.get(ctx.positionType);
-        if (!byType) data.set(ctx.positionType, byType = new Map());
-        let info = byType.get(entry);
-        if (!info) byType.set(entry, info = { positions: new Map(), highest: 0 });
-        const weight = this.weightAt(entry, ctx);
-        info.positions.set(ctx, weight);
-        if (weight > info.highest) info.highest = weight;
-      }
-    }
+    for (const ctx of this.positions) this.addPositionData(data, bucket, ctx);
     this.bucketData.set(bucket, data);
     return data;
   }
@@ -324,7 +550,7 @@ class Selection {
   removeEntries(shouldRemove: (entry: SpawnEntry) => boolean) {
     for (const data of this.bucketData.values()) {
       for (const [type, byType] of data) {
-        for (const entry of [...byType.keys()]) {
+        for (const entry of byType.keys()) {
           if (shouldRemove(entry)) {
             byType.delete(entry);
             this.removedEntries.add(entry);
@@ -336,17 +562,29 @@ class Selection {
   }
 
   removePositions(shouldRemove: (ctx: SpawnContext) => boolean) {
-    for (const ctx of this.positions) if (!this.removedPositions.has(ctx) && shouldRemove(ctx)) this.removedPositions.add(ctx);
+    // Frente cliente-log (desempenho): só as posições removidas agora mexem nos dados (as de antes já saíram deles ou
+    // nem entraram); sem cópias de Map a cada entrada. Mesmo resultado.
+    const removed: SpawnContext[] = [];
+    for (const ctx of this.positions) {
+      if (!this.removedPositions.has(ctx) && shouldRemove(ctx)) {
+        this.removedPositions.add(ctx);
+        removed.push(ctx);
+      }
+    }
+    if (!removed.length) return;
     for (const data of this.bucketData.values()) {
       for (const [type, byType] of data) {
-        for (const [entry, info] of [...byType]) {
-          let highest = 0;
-          for (const [ctx, weight] of [...info.positions]) {
-            if (this.removedPositions.has(ctx)) info.positions.delete(ctx);
-            else if (weight > highest) highest = weight;
+        for (const [entry, info] of byType) {
+          let changed = false;
+          for (const ctx of removed) if (info.positions.delete(ctx)) changed = true;
+          if (!changed) continue;
+          if (info.positions.size === 0) {
+            byType.delete(entry);
+            continue;
           }
+          let highest = 0;
+          for (const weight of info.positions.values()) if (weight > highest) highest = weight;
           info.highest = highest;
-          if (info.positions.size === 0) byType.delete(entry);
         }
         if (byType.size === 0) data.delete(type);
       }
@@ -448,7 +686,7 @@ class Selection {
     const member = weightedPick(this.membersForRole(entry, this.lacksPossibleLeader(entry)), m => m.weight, this.random) ?? herd.members[0];
     let level = this.context.get(`${entry.id}__LEVEL`) ?? 1;
     const memberAspects = member.aspects ?? [];
-    const empty = !fitsAt(member.species, memberAspects, ctx);
+    const empty = !fitsAt(member.species, memberAspects, ctx, member);
     if (member.levelRange) level = Math.min(member.levelRange[1], Math.max(member.levelRange[0], level));
     const levelRange: [number, number] = member.levelRangeOffset
       ? [level + member.levelRangeOffset[0], level + member.levelRangeOffset[1]]
@@ -483,7 +721,36 @@ class Selection {
 export function selectSpawnActions(positions: SpawnContext[], opts: SelectOptions): SpawnAction[] {
   if (positions.length === 0) return [];
   const random = opts.random ?? Math.random;
+  return runSelection(new Selection(positions, opts, random), opts, random);
+}
+
+/**
+ * Frente cliente-log: selectSpawnActions fatiado para `system.runJob` (um `yield` depois de avaliar as condições de
+ * cada posição). Mesmo resultado de selectSpawnActions (a mesma seleção; só as condições são avaliadas antes).
+ */
+export function* selectSpawnActionsJob(positions: SpawnContext[], opts: SelectOptions): Generator<string, SpawnAction[], void> {
+  if (positions.length === 0) return [];
+  const random = opts.random ?? Math.random;
   const selection = new Selection(positions, opts, random);
+  // 1. Condições dos grupos de entradas de cada posição (em pedaços; puras, sem leitura de blocos do orçamento).
+  for (const ctx of positions) yield* selection.warmJob(ctx);
+  // 2. Os mesmos sorteios de runSelection, na mesma ordem; os dados do bucket sorteado são montados em fatias antes
+  // de escolher (como getDataForBucket faria na hora, com as mesmas leituras de espaço).
+  const maxSpawns = Math.max(0, opts.maxSpawns ?? 1);
+  const pool = opts.poolBuckets ?? poolBuckets();
+  while (selection.actions.length < maxSpawns) {
+    const bucket = selection.guaranteedBucket ?? chooseBucket(opts.buckets, opts.influences, pool, random);
+    yield* selection.bucketDataJob(bucket);
+    const action = selection.selectSpawnAction(bucket);
+    if (!action) break;
+    selection.actions.push(action);
+    // Cada sorteio remove posições/entradas de todos os buckets já montados (herds: vários por passe).
+    yield "sorteio";
+  }
+  return completeActions(selection);
+}
+
+function runSelection(selection: Selection, opts: SelectOptions, random: () => number): SpawnAction[] {
   const maxSpawns = Math.max(0, opts.maxSpawns ?? 1);
   const pool = opts.poolBuckets ?? poolBuckets();
   while (selection.actions.length < maxSpawns) {
@@ -492,6 +759,10 @@ export function selectSpawnActions(positions: SpawnContext[], opts: SelectOption
     if (!action) break;
     selection.actions.push(action);
   }
+  return completeActions(selection);
+}
+
+function completeActions(selection: Selection): SpawnAction[] {
   const actions = selection.actions.filter(a => !a.empty);
   // SpawnAction.complete: influências mexem na ação antes de criar a entidade.
   for (const action of actions) {

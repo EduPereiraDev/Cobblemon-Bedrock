@@ -71,6 +71,13 @@ export interface SpawnContext {
    * hitbox (blocos). Montado pelo spawner com cache de blocos da zona; ausente = só a coluna (`height`).
    */
   hasSpace?: (width: number, height: number) => boolean;
+  /** hasSpace em fatias (passe fatiado do spawner): cede o tick entre leituras de bloco; mesma memória de hasSpace. */
+  hasSpaceJob?: (width: number, height: number) => Generator<string, boolean, void>;
+  /**
+   * Relógio do mundo lido uma vez no passe (frente cliente-log: timeRange/moonPhase em centenas de condições por
+   * posição eram uma chamada nativa cada). Ausente: consulta `worldClock` a cada condição.
+   */
+  clock?: { timeOfDay: number; moonPhase: number };
 }
 
 /** Raio de busca de `neededNearbyBlocks` (config maxNearbyBlocksHorizontalRange/VerticalRange). */
@@ -166,12 +173,12 @@ export function conditionMatches(c: SpawnCondition, ctx: SpawnContext): boolean 
   if (c.maxY !== undefined && y > c.maxY) return false;
   if (c.minZ !== undefined && z < c.minZ) return false;
   if (c.maxZ !== undefined && z > c.maxZ) return false;
-  if (c.moonPhase !== undefined && !moonPhaseInRange(c.moonPhase, worldClock.moonPhase())) return false;
+  if (c.moonPhase !== undefined && !moonPhaseInRange(c.moonPhase, ctx.clock?.moonPhase ?? worldClock.moonPhase())) return false;
   if (c.maxLight !== undefined && ctx.light > c.maxLight) return false;
   if (c.minLight !== undefined && ctx.light < c.minLight) return false;
   if (c.maxSkyLight !== undefined && ctx.skyLight > c.maxSkyLight) return false;
   if (c.minSkyLight !== undefined && ctx.skyLight < c.minSkyLight) return false;
-  if (c.timeRange !== undefined && !timeInRange(c.timeRange, worldClock.timeOfDay() % 24000)) return false;
+  if (c.timeRange !== undefined && !timeInRange(c.timeRange, (ctx.clock?.timeOfDay ?? worldClock.timeOfDay()) % 24000)) return false;
   if (c.canSeeSky !== undefined && ctx.canSeeSky !== c.canSeeSky) return false;
   if (c.isRaining !== undefined && ctx.isRaining !== c.isRaining) return false;
   if (c.isThundering !== undefined && ctx.isThundering !== c.isThundering) return false;

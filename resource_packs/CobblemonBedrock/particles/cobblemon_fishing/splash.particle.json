@@ -52,12 +52,6 @@
                         8
                     ]
                 }
-            },
-            "minecraft:particle_motion_collision": {
-                "expire_on_contact": true
-            },
-            "cobblemon:emitter_space": {
-                "scaling": "entity"
             }
         }
     }

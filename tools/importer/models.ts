@@ -2,9 +2,11 @@
 // arquivo ("cobblemon:pikachu_male.geo" → pikachu_male.geo.json); o Bedrock usa o identificador interno.
 // Mantemos o identificador original quando ele é único; senão, renomeamos para geometry.<arquivo>.
 import { basename, relative } from "node:path";
-import { BEDROCK_POKEMON, HAND_RP, OUT_RP, readJson, splitId, tryReadJson, walk, warn, writeJson } from "./util.ts";
+import { BEDROCK_POKEMON, HAND_RP, OUT_RP, count, readJson, splitId, tryReadJson, walk, warn, writeJson } from "./util.ts";
 import { patchHeldItemBones } from "./mundoDetalhes.ts"; // frente mundo-detalhes: ossos do item segurado
 import { recordEyeLocators } from "./visualFinal.ts"; // frente visual-final: locators de olho (alpha_eyes)
+import { GEOMETRY_ID, dedupeLocators, locatorsOf, pinArmorNeckLocator } from "./locators.ts"; // frente cliente-modelos
+import type { LocatorRegistry } from "./locators.ts";
 
 export interface ModelInfo {
 	/** Chave do Cobblemon, ex.: "pikachu_male.geo". */
@@ -51,9 +53,10 @@ export class ModelIndex {
 				continue;
 			}
 			const original: string = geos[0].description?.identifier ?? "";
-			let id = original && idCount.get(original) === 1 ? original : `geometry.${key.replace(/\.geo$/, "")}`;
+			const base = `geometry.${key.replace(/\.geo$/, "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9_.\-]/g, "_")}`;
+			let id = original && idCount.get(original) === 1 && GEOMETRY_ID.test(original) ? original : base;
 			let n = 2;
-			while (used.has(id)) id = `geometry.${key.replace(/\.geo$/, "")}_${n++}`;
+			while (used.has(id)) id = `${base}_${n++}`;
 			used.add(id);
 			const bones = new Set<string>();
 			for (const b of geos[0].bones ?? []) if (b.name) bones.add(b.name);
@@ -68,16 +71,32 @@ export class ModelIndex {
 	}
 
 	private written = new Set<string>();
+	/** Locators finais de cada geometria gravada (frente cliente-modelos). */
+	private finalLocators = new Map<string, Map<string, string>>();
 
-	/** Copia a geometria (minificada, com o identificador final). */
-	emit(info: ModelInfo): void {
-		if (this.written.has(info.key)) return;
+	/**
+	 * Copia a geometria (minificada, com o identificador final). Frente cliente-modelos: `registry` = locators já
+	 * declarados pelas geometrias anteriores da mesma client entity (ver locators.ts); `multi` = a entidade tem mais de
+	 * uma geometria.
+	 */
+	emit(info: ModelInfo, registry?: LocatorRegistry, multi = false): void {
+		if (this.written.has(info.key)) {
+			// Já gravada por outra entidade: só entra na tabela desta (o validador acusa se colidir).
+			if (registry) for (const [name, def] of this.finalLocators.get(info.key) ?? []) if (!registry.has(name)) registry.set(name, def);
+			return;
+		}
 		this.written.add(info.key);
 		const json = readJson(info.file);
 		const geo = json["minecraft:geometry"][0];
 		geo.description.identifier = info.geometryId;
 		wrapRootPart(geo);
 		patchHeldItemBones(geo, info.geometryId);
+		if (registry) {
+			if (multi && pinArmorNeckLocator(geo)) count("geometrias com armor_offset.default_neck fixo (várias formas)");
+			const renamed = dedupeLocators(geo, registry, info.geometryId);
+			if (renamed.size) count("locators renomeados (colidiam com outra geometria da entidade)", renamed.size);
+		}
+		this.finalLocators.set(info.key, locatorsOf(geo));
 		recordEyeLocators(geo, info.geometryId);
 		writeJson(info.outPath, { format_version: json.format_version ?? "1.12.0", "minecraft:geometry": [geo] });
 	}

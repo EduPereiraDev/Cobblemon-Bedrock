@@ -132,9 +132,15 @@ function cell(index: number, offset: Vec, size: Vec, controls: Json[]): Json {
 	};
 }
 
-/** Painel que contém células (precisa do `collection_name` do form). */
+/**
+ * Contêiner das células. Frente ui-cliente: tem de ser `collection_panel` (padrão vanilla de
+ * `store_common.json` `screenshots_grid`: filhos com `collection_index` em posições livres). Num `panel` o cliente
+ * acusa "Unknown property [collection_name]" e, nos filhos, "Unknown property [collection_index]": a coleção não
+ * existe e toda célula lê o botão 0.
+ */
+const COLLECTION_PANEL = "collection_panel";
 function cellPanel(offset: Vec, size: Vec, controls: Json[], extra: Json = {}): Json {
-	return { type: "panel", collection_name: "form_buttons", layer: 2, ...at(offset, size), ...extra, controls };
+	return { type: COLLECTION_PANEL, collection_name: "form_buttons", layer: 2, ...at(offset, size), ...extra, controls };
 }
 
 /** 18 cópias do tile pintadas com a cor do tipo, cada uma visível quando o ícone do botão é a chave do tipo. */
@@ -662,7 +668,7 @@ function pcFile(): Json {
 		namespace: "pc",
 		// Roteado por ui/cobblemon_forms.json (marcador §0§1§r).
 		"pc_form": {
-			type: "panel",
+			type: COLLECTION_PANEL,
 			size: [349, 205],
 			anchor_from: "center",
 			anchor_to: "center",
@@ -692,7 +698,7 @@ function pcFile(): Json {
 		// Caixa: papel de parede (corpo do form = caminho da textura; vazio = sem papel) atrás dos 30 espaços 6×5
 		// (frente extras-final: o 1º controle continua sendo o papel de parede ligado a #form_text).
 		"pc_content": {
-			type: "panel",
+			type: COLLECTION_PANEL,
 			collection_name: "form_buttons",
 			layer: 3,
 			...at([85, 27], [174, 155]),
@@ -811,7 +817,31 @@ export function generate(): Record<string, string> {
 	};
 	// Um elemento por linha (compacto; o cliente lê ~5× menos texto que com indentação).
 	const serialize = (json: Json) => "{\n" + Object.entries(json).map(([k, v]) => `${JSON.stringify(k)}: ${JSON.stringify(v)}`).join(",\n") + "\n}\n";
-	return Object.fromEntries(Object.entries(files).map(([name, json]) => [name, HEADER + serialize(json)]));
+	return Object.fromEntries(Object.entries(files).map(([name, json]) => [name, HEADER + serialize(nameControls(json) as Json)]));
+}
+
+/**
+ * Frente ui-cliente: todo item de `controls` precisa ser `{ "nome[@base]": { ... } }`. Os ajudantes `img`/`icon`/`text`
+ * devolvem a definição crua, e dentro das células ela entrava sem nome: o cliente registra "Type not specified (or
+ * @-base not found)" e descarta o controle (ícones, textos e fundos das células sumiam; o BDS não carrega UI e não vê).
+ * Aqui cada item sem nome ganha um nome estável pelo tipo e pela posição (`image_0`, `label_1`...).
+ */
+function nameControls(node: unknown): unknown {
+	if (Array.isArray(node)) return node.map(nameControls);
+	if (!node || typeof node !== "object") return node;
+	const out: Json = {};
+	for (const [key, value] of Object.entries(node as Json)) {
+		if (key === "controls" && Array.isArray(value)) {
+			out[key] = value.map((el: Json, i: number) => {
+				const keys = Object.keys(el);
+				const named = keys.length === 1 && el[keys[0]] && typeof el[keys[0]] === "object" && !Array.isArray(el[keys[0]]);
+				return named ? { [keys[0]]: nameControls(el[keys[0]]) } : { [`${typeof el.type === "string" ? el.type : "control"}_${i}`]: nameControls(el) };
+			});
+		}
+		else if (key === "bindings" || key === "property_bag") out[key] = value;
+		else out[key] = nameControls(value);
+	}
+	return out;
 }
 
 // Só como CLI (não quando empacotado nos testes, onde import.meta.url é o bundle).

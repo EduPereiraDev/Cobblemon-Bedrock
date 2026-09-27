@@ -15,7 +15,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
 	BATTLE_HEAD_FIELDS, BATTLE_MOVE_FIELDS, BATTLE_MOVES, BATTLE_TAIL_OFFSET, BATTLE_TILE_FIELDS, BATTLE_TILES_PER_SIDE, CHANNEL,
-	HEADER_BYTES, HUD_PREFIX, PARTY_FIELDS, PARTY_SLOTS, TOAST_FIELDS, fieldOffsets, recordBytes,
+	HEADER_BYTES, HUD_PREFIX, PARTY_FIELDS, PARTY_SLOTS, TOAST_FIELDS, fieldOffsets, numLiteral, recordBytes,
 } from "../../scripts/ui/hudProtocol.ts";
 import type { FieldSpec } from "../../scripts/ui/hudProtocol.ts";
 
@@ -72,6 +72,9 @@ function label(offset: [number, number], layer: number, extra: Json = {}): Json 
 
 /** Condição "campo = um destes valores". */
 const oneOf = (field: string, values: string[]) => values.length === 1 ? `(#${field} = '${values[0]}')` : `(${values.map(v => `(#${field} = '${v}')`).join(" or ")})`;
+/** Frente ui-cliente: campos numéricos chegam com o prefixo `NUM_LEAD` (hudProtocol.ts), nunca só dígitos. */
+const isNum = (field: string, value: string | number) => `(#${field} = '${numLiteral(value)}')`;
+const oneOfNum = (field: string, values: string[]) => oneOf(field, values.map(v => numLiteral(v)));
 
 // ---------------------------------------------------------------------------------------------------------------
 // Party (PartyOverlay.kt): slot 62×30, espaçamento 4, selecionado desloca 6 px.
@@ -88,14 +91,14 @@ function partyContent(slot: string, dx: number): Json[] {
 		{ name: label([x(2), 24], 4, { size: [44, 5], text: "#text", localize: false, font_scale_factor: 0.5, bindings: [src("('§r' + #name)", "#text")] }) },
 		{ gender_m: image([2.5, 3.5], [x(40), 25], 4, { texture: `${GUI}/party/party_gender_male`, bindings: [src("(#g = 'm')", "#visible")] }) },
 		{ gender_f: image([2.5, 3.5], [x(40), 25], 4, { texture: `${GUI}/party/party_gender_female`, bindings: [src("(#g = 'f')", "#visible")] }) },
-		{ hp: image([2, 18], [x(46), 5], 4, { bindings: [src(`('${HUD}/hp_v_' + #hp)`, "#texture"), src("(not (#hp = ''))", "#visible")] }) },
-		{ exp: image([1, 18], [x(49), 5], 4, { bindings: [src(`('${HUD}/exp_v_' + #exp)`, "#texture"), src("(not (#exp = ''))", "#visible")] }) },
+		{ hp: image([2, 18], [x(46), 5], 4, { bindings: [src(`('${HUD}/hp_v' + #hp)`, "#texture"), src("(not (#hp = ''))", "#visible")] }) },
+		{ exp: image([1, 18], [x(49), 5], 4, { bindings: [src(`('${HUD}/exp_v' + #exp)`, "#texture"), src("(not (#exp = ''))", "#visible")] }) },
 		{ ball: image([9, 11], [x(43.5), 22], 5, { uv: [0, 0], uv_size: [18, 22], bindings: [src(`('${GUI}/ball/' + #ball)`, "#texture"), src("(not (#ball = ''))", "#visible")] }) },
 		{ status: image([4, 14], [x(51), 8], 4, { bindings: [src(`('${GUI}/party/status_' + #st)`, "#texture"), src("(not (#st = ''))", "#visible")] }) },
 		{ popup_evo: image([18.5, 10], [x(56.5), 4], 6, { texture: `${GUI}/party/party_slot_notification_evolution`, bindings: [src("(#pop = 'e')", "#visible")] }) },
 		{ popup_move: image([18.5, 10], [x(56.5), 17], 6, { texture: `${GUI}/party/party_slot_notification_new_move`, bindings: [src("(#pop = 'm')", "#visible")] }) },
 		// Frente dados-ui: rolo de level-up sobre o retrato e "+N EXP" ao lado do slot (PartyOverlay).
-		{ level_up: image([17, 17], [x(24), 4], 5, { texture: `${GUI}/party/party_slot_portrait_level_up`, uv: [0, 13], uv_size: [17, 17], bindings: [src("(#lu = '1')", "#visible")] }) },
+		{ level_up: image([17, 17], [x(24), 4], 5, { texture: `${GUI}/party/party_slot_portrait_level_up`, uv: [0, 13], uv_size: [17, 17], bindings: [src(isNum("lu", 1), "#visible")] }) },
 		{ exp_gain: label([x(57), 17], 7, { size: [40, 5], text: "#text", localize: false, font_scale_factor: 0.5, bindings: [src("('§l+' + #xp + ' §oEXP')", "#text"), src("(not (#xp = ''))", "#visible")] }) },
 	];
 }
@@ -145,14 +148,14 @@ function battleTileContent(tile: string, right: boolean): Json[] {
 		{ base: image([140, 40], [0, 0], 3, { texture: `${GUI}/battle/battle_info_base${right ? "_flipped" : ""}` }) },
 		{ status_bar: image([37, 7], [right ? 65 : 38, 28], 4, { uv: [right ? 0 : 37, 0], uv_size: [37, 7], bindings: [src(`('${GUI}/battle/battle_status_' + #st)`, "#texture"), src("(not (#st = ''))", "#visible")] }) },
 		{ status_text: label([right ? 86 : 41, 27], 5, { size: [40, 8], text: "#text", localize: true, font_scale_factor: 0.8, bindings: [src("('cobblemon.ui.status.' + #st)", "#text"), src("(not (#st = ''))", "#visible")] }) },
-		{ owned: image([5, 5], [7, 9], 5, { texture: `${GUI}/battle/battle_owned_indicator`, bindings: [src("(#own = '1')", "#visible")] }) },
-		{ name: label([info, 7], 5, { size: [70, 10], text: "#text", localize: false, bindings: [src("('§l' + #name)", "#text"), src("(not (#own = '1'))", "#visible")] }) },
-		{ name_owned: label([info + 7, 7], 5, { size: [63, 10], text: "#text", localize: false, bindings: [src("('§l' + #name)", "#text"), src("(#own = '1')", "#visible")] }) },
+		{ owned: image([5, 5], [7, 9], 5, { texture: `${GUI}/battle/battle_owned_indicator`, bindings: [src(isNum("own", 1), "#visible")] }) },
+		{ name: label([info, 7], 5, { size: [70, 10], text: "#text", localize: false, bindings: [src("('§l' + #name)", "#text"), src(`(not ${isNum("own", 1)})`, "#visible")] }) },
+		{ name_owned: label([info + 7, 7], 5, { size: [63, 10], text: "#text", localize: false, bindings: [src("('§l' + #name)", "#text"), src(isNum("own", 1), "#visible")] }) },
 		{ gender_m: image([5, 7], [info + 63, 7], 5, { texture: `${GUI}/party/party_gender_male`, bindings: [src("(#g = 'm')", "#visible")] }) },
 		{ gender_f: image([5, 7], [info + 63, 7], 5, { texture: `${GUI}/party/party_gender_female`, bindings: [src("(#g = 'f')", "#visible")] }) },
 		{ lv_label: label([info + 69, 7], 5, { size: [14, 10], text: "cobblemon.ui.lv", localize: true }) },
 		{ lv: label([info + 82, 7], 5, { size: [18, 10], text: "#text", localize: false, bindings: [src("('§l' + #lvl)", "#text")] }) },
-		{ hp: image([97, 4], [info - 2, 22], 5, { bindings: [src(`('${HUD}/hp_h${right ? "r" : ""}_' + #hpw)`, "#texture"), src("(not (#hpw = ''))", "#visible")] }) },
+		{ hp: image([97, 4], [info - 2, 22], 5, { bindings: [src(`('${HUD}/hp_h${right ? "r" : ""}' + #hpw)`, "#texture"), src("(not (#hpw = ''))", "#visible")] }) },
 		{ hp_text: label([info + (right ? 44.5 : 39.5) - 30, 22], 6, { size: [60, 5], text: "#text", localize: false, font_scale_factor: 0.5, text_alignment: "center", bindings: [src("('§r' + #hpt)", "#text")] }) },
 	];
 }
@@ -165,7 +168,7 @@ function battleTile(side: "l" | "r", rank: number): Json {
 	const base = recordBytes(BATTLE_HEAD_FIELDS) + index * rec;
 	// Recuo de 4 px por posição à frente desta (visível conforme #n do cabeçalho).
 	const spacer = (id: string, minN: number) => ({
-		[id]: { type: "panel", size: [4, 1], bindings: [view(oneOf("n", Array.from({ length: 4 - minN }, (_, k) => String(minN + k))), "#visible", "cbhud_battle_head")] },
+		[id]: { type: "panel", size: [4, 1], bindings: [view(oneOfNum("n", Array.from({ length: 4 - minN }, (_, k) => String(minN + k))), "#visible", "cbhud_battle_head")] },
 	});
 	const spacers = [2, 3].filter(minN => minN - rank - 1 >= 1).map((minN, k) => spacer(`spacer${k}`, minN));
 	// Painel com os dados da caixa (os filhos leem os campos pelo nome único). Frente batalha-minimizavel: o conteúdo
@@ -174,7 +177,7 @@ function battleTile(side: "l" | "r", rank: number): Json {
 	const opacity = (id: string, alpha: number, minimised: boolean) => ({
 		[id]: {
 			type: "panel", size: [140, 40], ...anchor, alpha, propagate_alpha: true,
-			bindings: [view(minimised ? "(#min = '1')" : "(not (#min = '1'))", "#visible", "cbhud_battle_head")],
+			bindings: [view(minimised ? isNum("min", 1) : `(not ${isNum("min", 1)})`, "#visible", "cbhud_battle_head")],
 			controls: battleTileContent(name, right),
 		},
 	});
@@ -182,7 +185,7 @@ function battleTile(side: "l" | "r", rank: number): Json {
 		[name]: {
 			type: "panel",
 			size: [140, 40],
-			bindings: [...recordBindings("cbhud_battle_rx", BATTLE_TILE_FIELDS, base), view("(#v = '1')", "#visible")],
+			bindings: [...recordBindings("cbhud_battle_rx", BATTLE_TILE_FIELDS, base), view(isNum("v", 1), "#visible")],
 			controls: [opacity("bright", 1, false), opacity("dim", 0.5, true)],
 		},
 	};
@@ -247,7 +250,7 @@ function promptLabel(prompt: string, extra: Json): Json {
 		text_alignment: "center",
 		text: "#text",
 		localize: false,
-		bindings: [view("('§r' + #tail)", "#text", "cbhud_battle_prompt"), view(`(#pr = '${prompt}')`, "#visible", "cbhud_battle_head")],
+		bindings: [view("('§r' + #tail)", "#text", "cbhud_battle_prompt"), view(isNum("pr", prompt), "#visible", "cbhud_battle_head")],
 		...extra,
 	};
 }
@@ -260,7 +263,7 @@ function moveTile(i: number): Json {
 	const content = (id: string, alpha: number, usable: boolean): Json => ({
 		[id]: {
 			type: "panel", size: [90, 26], ...anchor, alpha, propagate_alpha: true,
-			bindings: [src(usable ? "(#use = '1')" : "(not (#use = '1'))", "#visible")],
+			bindings: [src(usable ? isNum("use", 1) : `(not ${isNum("use", 1)})`, "#visible")],
 			controls: [
 				{ bg: image([90, 26], [0, 0], 1, { bindings: [src(`('${GUI}/pokedex/platform_base_' + #type)`, "#texture"), src("(not (#type = ''))", "#visible")] }) },
 				{ move: label([6, 5], 3, { size: [80, 10], text: "#text", localize: true, bindings: [src("('cobblemon.move.' + #id)", "#text")] }) },
@@ -283,7 +286,7 @@ function moveTile(i: number): Json {
 					content("usable", 1, true),
 					content("unusable", 0.5, false),
 					// Cursor: seta amarela no espaço selecionado da hotbar (o Java usa o hover do mouse).
-					{ cursor: label([-8, 8], 4, { size: [8, 10], text: "▶", localize: false, color: [1, 0.85, 0.2], bindings: [view(`(#cur = '${i}')`, "#visible", "cbhud_battle_head")] }) },
+					{ cursor: label([-8, 8], 4, { size: [8, 10], text: "▶", localize: false, color: [1, 0.85, 0.2], bindings: [view(isNum("cur", i), "#visible", "cbhud_battle_head")] }) },
 				],
 			},
 		}],
@@ -300,7 +303,7 @@ function moveMenu(): Json {
 		anchor_to: "bottom_middle",
 		offset: [0, -56],
 		layer: 8,
-		bindings: [view("(#pr = '3')", "#visible", "cbhud_battle_head")],
+		bindings: [view(isNum("pr", 3), "#visible", "cbhud_battle_head")],
 		controls: [
 			{ title: label([0, -10], 3, { size: [184, "default"], text: "#text", localize: false, text_alignment: "center", bindings: [view("('§r' + #tail)", "#text", "cbhud_battle_prompt")] }) },
 			{
@@ -309,8 +312,8 @@ function moveMenu(): Json {
 					controls: Array.from({ length: BATTLE_MOVES }, (_, i) => ({ [`move_${i}@${NS}.battle_move_${i}`]: {} })),
 				},
 			},
-			{ full_menu: label([0, 68], 3, { size: [184, 10], text: "cobblemon.port.battle_ui.full_menu_hint", localize: true, text_alignment: "center", color: [0.7, 0.7, 0.7], bindings: [view(`(not ${oneOf("cur", full)})`, "#visible", "cbhud_battle_head")] }) },
-			{ full_menu_on: label([0, 68], 3, { size: [184, 10], text: "cobblemon.port.battle_ui.full_menu_hint", localize: true, text_alignment: "center", color: [1, 0.85, 0.2], bindings: [view(oneOf("cur", full), "#visible", "cbhud_battle_head")] }) },
+			{ full_menu: label([0, 68], 3, { size: [184, 10], text: "cobblemon.port.battle_ui.full_menu_hint", localize: true, text_alignment: "center", color: [0.7, 0.7, 0.7], bindings: [view(`(not ${oneOfNum("cur", full)})`, "#visible", "cbhud_battle_head")] }) },
+			{ full_menu_on: label([0, 68], 3, { size: [184, 10], text: "cobblemon.port.battle_ui.full_menu_hint", localize: true, text_alignment: "center", color: [1, 0.85, 0.2], bindings: [view(oneOfNum("cur", full), "#visible", "cbhud_battle_head")] }) },
 		],
 	};
 }
@@ -332,7 +335,7 @@ function toast(): Json {
 		anchor_to: "top_right",
 		offset: [0, 0],
 		layer: 50,
-		bindings: [...recordBindings("cbhud_toast_rx", TOAST_FIELDS, 0), view("(#v = '1')", "#visible")],
+		bindings: [...recordBindings("cbhud_toast_rx", TOAST_FIELDS, 0), view(isNum("v", 1), "#visible")],
 		controls: [
 			frame("frame_task", "toast_task", "t"),
 			frame("frame_goal", "toast_goal", "g"),

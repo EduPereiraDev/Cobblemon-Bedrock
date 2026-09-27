@@ -416,3 +416,45 @@ cobblemon.port.battle_ui.gimmick_off=§7(off)
 
 ## msd-fase2 (Mega Showdown, Fase 2: Mega/Primal/Z/Ultra; tipo Stellar da mensagem de Tera)
 cobblemon.type.stellar=Stellar
+
+## msd-fase3 (Mega Showdown, Fase 3: tipo Tera na batalha e no resumo)
+cobblemon.port.battle.ui.tera_type=§eTera: %1$s
+cobblemon.port.summary.tera_type=Tera Type
+
+## selftest (/cobblemon:selftest: in-world self-test that fills the client ContentLog)
+cobblemon.selftest.usage=§c[Selftest] Usage: /cobblemon:selftest [%1$s]
+cobblemon.selftest.started=§e[Selftest]§r Starting mode §l%1$s§r. Do not close the game; stop at any time with §e/cobblemon:selftest stop§r.
+cobblemon.selftest.already_running=§c[Selftest] A self-test is already running (%1$s).
+cobblemon.selftest.recovering=§c[Selftest] An interrupted self-test is still being cleaned up. Try again in a few seconds.
+cobblemon.selftest.in_battle=§c[Selftest] Leave the battle first.
+cobblemon.selftest.riding=§c[Selftest] Dismount first.
+cobblemon.selftest.no_space=§c[Selftest] No free space above you (25×15×31 blocks of air are needed, 16+ blocks up). Go to an open area in the Overworld.
+cobblemon.selftest.error=§c[Selftest] Could not start: %1$s
+cobblemon.selftest.no_manifest=§6[Selftest] This build has no pack manifest: particles, sounds, blocks and non-Pokémon entities will be skipped.
+cobblemon.selftest.not_running=§7[Selftest] No self-test running.
+cobblemon.selftest.stopping=§e[Selftest] Stopping and restoring everything...
+cobblemon.selftest.status=§e[Selftest]§r %1$s, mode %2$s: %3$s %4$s/%5$s (%6$s)
+cobblemon.selftest.progress=§e[Selftest]§r %1$s: %2$s/%3$s §7(%4$s) - /cobblemon:selftest stop
+cobblemon.selftest.phase.entities=Entities
+cobblemon.selftest.phase.blocks=Blocks
+cobblemon.selftest.phase.particles=Particles
+cobblemon.selftest.phase.sounds=Sounds
+cobblemon.selftest.phase.ui=Screens
+cobblemon.selftest.phase.battle=Battle
+cobblemon.selftest.phase.movement=Movement
+cobblemon.selftest.finished=§a[Selftest] Finished in %1$s (mode %2$s).
+cobblemon.selftest.interrupted=§6[Selftest] Interrupted after %1$s (mode %2$s); everything was restored.
+cobblemon.selftest.summary.entities=§7- Pokémon: %1$s variants of %2$s species; other entities: %3$s; thrown balls: %4$s
+cobblemon.selftest.summary.blocks=§7- Blocks: %1$s states of %2$s blocks
+cobblemon.selftest.summary.particles=§7- Particles: %1$s of %2$s
+cobblemon.selftest.summary.sounds=§7- Sounds: %1$s of %2$s
+cobblemon.selftest.summary.ui=§7- Screens and HUD: %1$s
+cobblemon.selftest.summary.battle=§7- Battle: %1$s turns (move, switch, bag)
+cobblemon.selftest.summary.movement=§7- Movement: %1$s in the pen (%2$s walked), %3$s in the pool (%4$s swam), %5$s in the air (%6$s flew); rides: %7$s of %8$s
+cobblemon.selftest.summary.failures=§6- %1$s item(s) failed on the server (see the log lines with [selftest]).
+cobblemon.selftest.summary.restored=§7- Area, entities, inventory, team and progress restored.
+cobblemon.selftest.log.header=§b[Selftest] Now get the ContentLog:
+cobblemon.selftest.log.enable=§7- Settings > Creator: turn on "Enable Content Log File" and set the log level to "Info" (run the test again if it was off).
+cobblemon.selftest.log.windows=§7- Windows: %1$s (older versions: %2$s)
+cobblemon.selftest.log.mobile=§7- Phone: folder %1$s inside the Minecraft data; file ContentLog__<date>.txt
+cobblemon.selftest.restored_after_crash=§e[Selftest] A self-test was interrupted; your position, game mode and data were restored.

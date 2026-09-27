@@ -80,9 +80,6 @@
                         "1.0": "#00FFFFFF"
                     }
                 }
-            },
-            "cobblemon:emitter_space": {
-                "scaling": "entity"
             }
         }
     }

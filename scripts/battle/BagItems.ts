@@ -122,6 +122,15 @@ for (const id of ["leppa", "hopo"])
 
 export const BAG_ITEMS: ReadonlyMap<string, BagItemDef> = new Map(BAG_ITEM_LIST.map(def => [def.typeId, def]));
 
+/**
+ * Frente msd-fase3: item de mochila de uma extensão (Max Honey e Max Mushroom do Mega Showdown). O script do Showdown
+ * vai em BAG_ITEM_SCRIPTS (showdown.ts). Sem registro (mundo sem a extensão), a mochila fica igual.
+ */
+export function registerBagItem(def: Omit<BagItemDef, "itemName"> & { itemName?: string }): void {
+  const full: BagItemDef = { ...def, itemName: def.itemName ?? `item.${def.typeId.replace(":", ".")}` };
+  (BAG_ITEMS as Map<string, BagItemDef>).set(full.typeId, full);
+}
+
 /** Ordem do menu: cura, status, reviver, PP, batalha. */
 const CATEGORY_ORDER: BagItemDef["category"][] = ["heal", "status", "revive", "pp", "battle"];
 

@@ -30,6 +30,7 @@ import { onPokemonCapturedWallpapers } from "../GUI/PCWallpapers";
 import { toSpeciesId } from "../speciesData";
 import { MOUTH_ITEM_PROPERTY } from "../spawning/Despawner";
 import { setBeamTint } from "../pokemon/BeamTint";
+import { CobblemonEvents } from "../events/CobblemonEvents"; // frente msd-fase4: POKEMON_CAPTURED
 
 /**
  * Sons do Cobblemon (EmptyPokeBallEntity e as animações `poke_ball`/`ancient_poke_ball`), com os ids `cobblemon.*`
@@ -551,6 +552,9 @@ function completeCapture(attempt: CaptureAttempt): PokemonData | undefined {
   pokemon.aspects = pokemon.aspects.filter(aspect => !ASPECTS_REMOVED_ON_CAPTURE.includes(aspect));
   // Callback pokemon_captured/apply_marks: sorteia uma das marcas em potencial juntadas no spawn.
   applyPotentialMarks(pokemon);
+  // Frente msd-fase4: POKEMON_CAPTURED (antes de gravar; ouvinte com erro não impede a captura).
+  try { CobblemonEvents.emit("POKEMON_CAPTURED", pokemon, thrower); }
+  catch (e) { console.warn(`POKEMON_CAPTURED: ${e}`); }
   // Guarda primeiro: se gravar falhar, o Pokémon continua no mundo em vez de sumir.
   const storageMessage = storePokemonInFirstSpace(pokemon, thrower);
   target.triggerEvent("cobblemon:instant_kill");

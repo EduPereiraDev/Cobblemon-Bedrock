@@ -24,6 +24,7 @@ import type { ItemIdMapper } from "./loot.ts";
 import { nbt, readJavaNbt, writeBedrockNbt } from "./nbt.ts";
 import type { NbtTyped } from "./nbt.ts";
 import type { BiomeResolver } from "./worldgen.ts";
+import { heightDependsOnXz } from "./clientRules.ts";
 import { biomeFilter, VANILLA_BLOCKS } from "./vanilla.ts";
 import { DATA, OUT_BP, ROOT, UPSTREAM, count, readJson, splitId, walk, warn, writeJson } from "./util.ts";
 
@@ -615,7 +616,9 @@ export function buildStructures(opts: { mapper: BlockMapper; biomes: BiomeResolv
 		const p = placementOf(placed.placement ?? [], dim);
 		const distribution: Record<string, unknown> = {
 			iterations: p.iterations,
-			coordinate_eval_order: "zyx",
+			// Frente cliente-log: y = q.heightmap(v.worldx, v.worldz) precisa de x e z já avaliados ("xzy"); com "zyx"
+			// o cliente acusa "unknown variable 'variable.worldx'" a cada chunk e a feature não é posta.
+			coordinate_eval_order: heightDependsOnXz(p.y) ? "xzy" : "zyx",
 			x: { distribution: "uniform", extent: [0, 16] },
 			y: p.y,
 			z: { distribution: "uniform", extent: [0, 16] },

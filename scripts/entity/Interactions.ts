@@ -13,6 +13,7 @@ import { Entity, GameMode, ItemStack, Player, system, world } from "@minecraft/s
 import { PokemonData } from "../Pokemon";
 import { getEntityInfo, getInteractionSets, speciesIdOfType } from "./EntityData";
 import type { Interaction, InteractionEffect, InteractionSet } from "./EntityData";
+import { playParticleSounds } from "../visual/ParticleSounds";
 
 // ---------------------------------------------------------------------------------------------
 // Lógica pura (testada em tests/entidades.test.ts)
@@ -239,7 +240,8 @@ export const FURFROU_TRIM_PARTICLE_TICKS = [0, 4, 14];
 
 /**
  * Partículas do corte no locator `middle` (meio do hitbox). Sem corante vestido, nenhuma (as expressões da timeline
- * só disparam com `cosmetic_item.is_of(<corante>)`). O som de tesoura vem dos eventos da própria partícula.
+ * só disparam com `cosmetic_item.is_of(<corante>)`). O som de tesoura vem dos eventos da própria partícula, tocados
+ * pelo script (scripts/visual/ParticleSounds.ts: o Bedrock não aceita esse som no JSON da partícula).
  */
 function trimParticles(pokemon: Entity, dye: string | undefined) {
   const particle = dye ? FURFROU_TRIM_PARTICLES[dye] : undefined;
@@ -250,7 +252,11 @@ function trimParticles(pokemon: Entity, dye: string | undefined) {
     const spawn = () => {
       if (!pokemon.isValid) return;
       const { x, y, z } = pokemon.location;
-      try { pokemon.dimension.spawnParticle(particle, { x, y: y + middle, z }); }
+      try {
+        pokemon.dimension.spawnParticle(particle, { x, y: y + middle, z });
+        // Frente cliente-log: o som de tesoura dos eventos da partícula toca pelo script.
+        playParticleSounds(pokemon.dimension, particle, { x, y: y + middle, z });
+      }
       catch { }
     };
     if (delay <= 0) spawn();
