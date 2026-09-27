@@ -1,0 +1,129 @@
+{
+	"_source": "CombeeModel.kt",
+	"rootBone": "combee",
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('combee', 'air_sleep')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('combee', 'faint')"
+			}
+		},
+		"hover": {
+			"poseTypes": [
+				"PROFILE",
+				"PORTRAIT",
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"animations": [
+				"q.bedrock('combee', 'air_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('combee', 'blink_right', 8, 30, 1)",
+				"q.bedrock_quirk('combee', 'blink_gender', 8, 30, 1)",
+				"q.bedrock_quirk('combee', 'blink_left', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('combee', 'faint')"
+			}
+		},
+		"fly": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('combee', 'air_fly')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('combee', 'blink_right', 8, 30, 1)",
+				"q.bedrock_quirk('combee', 'blink_gender', 8, 30, 1)",
+				"q.bedrock_quirk('combee', 'blink_left', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('combee', 'faint')"
+			}
+		},
+		"shoulder_left": {
+			"poseTypes": [
+				"SHOULDER_LEFT"
+			],
+			"animations": [
+				"q.bedrock('combee', 'air_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('combee', 'blink_right', 8, 30, 1)",
+				"q.bedrock_quirk('combee', 'blink_gender', 8, 30, 1)",
+				"q.bedrock_quirk('combee', 'blink_left', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "combee",
+					"position": [
+						4,
+						0,
+						0
+					]
+				},
+				{
+					"part": "combee",
+					"position": [
+						0,
+						0,
+						8
+					]
+				}
+			]
+		},
+		"shoulder_right": {
+			"poseTypes": [
+				"SHOULDER_RIGHT"
+			],
+			"animations": [
+				"q.bedrock('combee', 'air_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('combee', 'blink_right', 8, 30, 1)",
+				"q.bedrock_quirk('combee', 'blink_gender', 8, 30, 1)",
+				"q.bedrock_quirk('combee', 'blink_left', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "combee",
+					"position": [
+						-4,
+						0,
+						0
+					]
+				},
+				{
+					"part": "combee",
+					"position": [
+						0,
+						0,
+						8
+					]
+				}
+			]
+		}
+	},
+	"portraitScale": 1.8,
+	"profileScale": 0.9,
+	"portraitTranslation": [
+		-0.11,
+		-0.77,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.35,
+		0
+	]
+}

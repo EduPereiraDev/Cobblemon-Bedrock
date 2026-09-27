@@ -2,6 +2,7 @@ import { Player } from "@minecraft/server";
 import { Behavior, CatchRateModifier, BehaviorMutators } from "./CatchRateModifier";
 import { PokemonData } from "../Pokemon";
 
+/** LabelModifier.kt: vale se o Pokémon tem (matching) ou não tem (!matching) todos os rótulos. */
 export class LabelModifier extends CatchRateModifier {
   labels: string[]
   constructor(
@@ -15,17 +16,11 @@ export class LabelModifier extends CatchRateModifier {
   value(thrower: Player, pokemon: PokemonData) {
     return this.multiplier
   }
-  behavior(thrower: Player, pokmeon: PokemonData): Behavior {
+  behavior(thrower: Player, pokemon: PokemonData): Behavior {
     return BehaviorMutators.MULTIPLY;
   }
   isValid(thrower: Player, pokemon: PokemonData): boolean {
-    let speciesData = pokemon.getSpeciesData();
-    if (speciesData === undefined || speciesData.labels === undefined)
-      return false;
-    for (let label in speciesData.labels) {
-      if (this.labels.includes(label))
-        return true;
-    }
-    return false;
+    const has = pokemon.hasLabels(...this.labels);
+    return this.matching ? has : !has;
   }
 }

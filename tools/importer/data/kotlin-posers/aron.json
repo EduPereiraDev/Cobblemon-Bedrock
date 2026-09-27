@@ -1,0 +1,51 @@
+{
+	"_source": "AronModel.kt",
+	"rootBone": "aron",
+	"animations": {
+		"cry": "q.bedrock_stateful('aron', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"PROFILE",
+				"PORTRAIT",
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('aron', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('aron', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('aron', 'ground_walk2')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('aron', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 1.55,
+	"profileScale": 0.66,
+	"portraitTranslation": [
+		-0.28,
+		-0.55,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.74,
+		0
+	]
+}

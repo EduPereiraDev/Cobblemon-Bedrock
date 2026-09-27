@@ -46,7 +46,7 @@ function addUserToPCTop(pc: Block) {
   if (currentUsers > 14) return; //state exceeds the max value of 15
   let newPermutation = pc.permutation.withState("cobblemon:user_count", currentUsers + 1);
   pc.setPermutation(newPermutation);
-  pc.dimension.playSound("pc.on", pc.location);
+  pc.dimension.playSound("cobblemon.pc.on", pc.location);
 }
 function removeUserFromPCTop(pc: Block) {
   if (pc.typeId != "cobblemon:pc_top") return;
@@ -54,5 +54,5 @@ function removeUserFromPCTop(pc: Block) {
   if (currentUsers < 1) throw new Error("PC User Count cannot go below zero."); //Going subzero ????
   let newPermutation = pc.permutation.withState("cobblemon:user_count", currentUsers - 1);
   pc.setPermutation(newPermutation);
-  pc.dimension.playSound("pc.off", pc.location);
+  pc.dimension.playSound("cobblemon.pc.off", pc.location);
 }

@@ -1,5 +1,5 @@
 import { ElementalType, PokemonData } from "../../Pokemon";
-import { Dex } from "../../showdown/sim";
+import { Dex } from "../../showdown";
 import { EvoRequirement } from "../../speciesData";
 import { toID } from "../../utils";
 import { EvolutionRequirement } from "../EvolutionRequirement";

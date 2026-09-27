@@ -1,0 +1,107 @@
+{
+	"_source": "BarraskewdaModel.kt",
+	"rootBone": "barraskewda",
+	"poses": {
+		"sleeping": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isTouchingWater": false,
+			"animations": [
+				"q.bedrock('barraskewda', 'sleep')"
+			]
+		},
+		"water_sleeping": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isTouchingWater": true,
+			"animations": [
+				"q.bedrock('barraskewda', 'water_sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"PROFILE",
+				"PORTRAIT",
+				"STAND"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.bedrock('barraskewda', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('barraskewda', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK"
+			],
+			"animations": [
+				"q.bedrock('barraskewda', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('barraskewda', 'blink', 8, 30, 1)"
+			]
+		},
+		"floating": {
+			"poseTypes": [
+				"FLOAT"
+			],
+			"animations": [
+				"q.bedrock('barraskewda', 'water_idle')"
+			]
+		},
+		"swimming": {
+			"poseTypes": [
+				"SWIM"
+			],
+			"animations": [
+				"q.bedrock('barraskewda', 'water_swim')"
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"isTouchingWater": false,
+			"animations": [
+				"q.bedrock('barraskewda', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('barraskewda', 'blink', 8, 30, 1)"
+			]
+		},
+		"water_battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"isTouchingWater": true,
+			"animations": [
+				"q.bedrock('barraskewda', 'water_battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('barraskewda', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2.8,
+	"profileScale": 0.8,
+	"portraitTranslation": [
+		-0.7,
+		-2.8,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.5,
+		0
+	]
+}

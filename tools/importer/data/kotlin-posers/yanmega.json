@@ -1,0 +1,97 @@
+{
+	"_source": "YanmegaModel.kt",
+	"rootBone": "yanmega",
+	"animations": {
+		"cry": "q.bedrock_stateful('yanmega', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('yanmega', 'ground_idle')"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('yanmega', 'air_idle')",
+				"q.cobblemon_wing_flap('triangle', 0.5, 0.1, 0, 0, 'z', 'wing_left1', 'wing_right1', 'q.anim_time')",
+				"q.cobblemon_wing_flap('triangle', 0.5, 0.1, 0, 0, 'z', 'wing_left2', 'wing_right2', '0.01 + q.anim_time')"
+			],
+			"transformedParts": [
+				{
+					"part": "yanmega",
+					"position": [
+						0,
+						-4,
+						0
+					]
+				}
+			]
+		},
+		"hovering": {
+			"poseTypes": [
+				"HOVER"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('yanmega', 'air_idle')",
+				"q.cobblemon_wing_flap('triangle', 0.5, 0.1, 0, 0, 'z', 'wing_left1', 'wing_right1', 'q.anim_time')",
+				"q.cobblemon_wing_flap('triangle', 0.5, 0.1, 0, 0, 'z', 'wing_left2', 'wing_right2', '0.01 + q.anim_time')"
+			],
+			"transformedParts": [
+				{
+					"part": "yanmega",
+					"position": [
+						0,
+						-4,
+						0
+					]
+				}
+			]
+		},
+		"flying": {
+			"poseTypes": [
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('yanmega', 'air_idle')",
+				"q.cobblemon_wing_flap('triangle', 0.5, 0.1, 0, 0, 'z', 'wing_left1', 'wing_right1', 'q.anim_time')",
+				"q.cobblemon_wing_flap('triangle', 0.5, 0.1, 0, 0, 'z', 'wing_left2', 'wing_right2', '0.01 + q.anim_time')"
+			],
+			"transformedParts": [
+				{
+					"part": "yanmega",
+					"position": [
+						0,
+						-4,
+						0
+					]
+				}
+			]
+		}
+	},
+	"portraitScale": 1.6,
+	"profileScale": 0.61,
+	"portraitTranslation": [
+		-0.55,
+		-0.9,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.8,
+		0
+	]
+}

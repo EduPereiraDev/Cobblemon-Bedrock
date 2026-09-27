@@ -1,33 +1,14 @@
-import { Dex, toID } from "../showdown/sim";
+import { Dex, toID } from "../showdown";
 import { AdditionalMoveData, AdditionalMoveDataManager, ElementalType, PokemonData } from "../Pokemon";
 import { ItemStack, RawMessage } from "@minecraft/server";
 import { CaptureContext } from "../catching";
+import { CATEGORY_GLYPHS, TYPE_GLYPHS } from "../ui/glyphs";
 
 export * as message from "./MessageHelperFunctions";
 export { ColorCodes, FormatCodes } from "./ColorCodes";
-export { renderBattleMessage } from "./BattleMessage";
 
-export const typeSymbols: { [key in ElementalType]: string } = {
-  //These characters aren't valid ascii characters but should be interpreted by minecraft as the corresponding type symbol
-  normal: "",
-  fire: "",
-  water: "",
-  grass: "",
-  electric: "",
-  ice: "",
-  fighting: "",
-  poison: "",
-  ground: "",
-  flying: "",
-  psychic: "",
-  bug: "",
-  rock: "",
-  ghost: "",
-  dragon: "",
-  dark: "",
-  steel: "",
-  fairy: ""
-}
+/** Glifos dos tipos (página E2 do port, gerada de `gui/types.png`; ver scripts/ui/glyphs.ts). */
+export const typeSymbols: { [key in ElementalType]: string } = TYPE_GLYPHS as { [key in ElementalType]: string };
 
 export const typeColorCodes: { [key in ElementalType]: string } = {
   //These characters aren't valid ascii characters but should be interpreted by minecraft as the corresponding type symbol
@@ -51,11 +32,8 @@ export const typeColorCodes: { [key in ElementalType]: string } = {
   fairy: "§d"
 }
 
-const moveCategorySymbols: { [key: string]: string } = {
-  Physical: "",
-  Special: "",
-  Status: ""
-}
+/** Glifos das categorias de golpe (página E2 do port). */
+const moveCategorySymbols: { [key: string]: string } = CATEGORY_GLYPHS;
 
 export function renderMove(move: string, info?: AdditionalMoveData): string | RawMessage {
   let moveData = Dex.moves.get(move);

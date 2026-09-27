@@ -1,0 +1,98 @@
+{
+	"_source": "ComfeyModel.kt",
+	"rootBone": "comfey",
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('comfey', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"PROFILE",
+				"PORTRAIT",
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"animations": [
+				"q.look('spin', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('comfey', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('comfey', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('spin', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('comfey', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('comfey', 'blink', 8, 30, 1)"
+			]
+		},
+		"shoulder_left": {
+			"poseTypes": [
+				"SHOULDER_LEFT"
+			],
+			"animations": [
+				"q.bedrock('comfey', 'shoulder_left')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('comfey', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "comfey",
+					"position": [
+						1.5,
+						0,
+						0
+					]
+				}
+			]
+		},
+		"shoulder_right": {
+			"poseTypes": [
+				"SHOULDER_RIGHT"
+			],
+			"animations": [
+				"q.bedrock('comfey', 'shoulder_right')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('comfey', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "comfey",
+					"position": [
+						-1.5,
+						0,
+						0
+					]
+				}
+			]
+		}
+	},
+	"portraitScale": 2.3,
+	"profileScale": 0.5,
+	"portraitTranslation": [
+		-0.4,
+		2,
+		0
+	],
+	"profileTranslation": [
+		0.1,
+		1,
+		0
+	]
+}

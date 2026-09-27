@@ -1,4 +1,4 @@
-import { BlockComponentPlayerDestroyEvent, BlockComponentPlayerInteractEvent, BlockCustomComponent, GameMode, ItemStack } from "@minecraft/server";
+import { BlockComponentPlayerBreakEvent, BlockComponentPlayerInteractEvent, BlockCustomComponent, GameMode, ItemStack } from "@minecraft/server";
 import { decrementItemInHand, getItemInHand } from "../utils/ItemUtils"
 import { changeBlockState } from "../utils/BlockUtils"
 
@@ -19,10 +19,10 @@ export default class SlabComponent implements BlockCustomComponent {
       arg.dimension.playSound(this.placeSound, arg.block.location);
     }
   }
-  onPlayerDestroy(arg: BlockComponentPlayerDestroyEvent) {
-    if (arg.player != undefined && arg.player.getGameMode() == GameMode.creative)
+  onPlayerBreak(arg: BlockComponentPlayerBreakEvent) {
+    if (arg.player != undefined && arg.player.getGameMode() == GameMode.Creative)
       return;
-    if (arg.destroyedBlockPermutation.getState("cobblemon:double") === true) {
+    if (arg.brokenBlockPermutation.getState("cobblemon:double") === true) {
       arg.dimension.spawnItem(new ItemStack(this.blockIdentifier, 2), arg.block.location);
     }
     else {

@@ -1,40 +1,30 @@
-/* This File was generated and/or processed with CobbleBuild.
- * These files might be overwritable in the future, but for now please submit any issues to CobbleBuild
- * instead of fixing them here. This file should not be overwritten in cobblemon-bedrock.
- */
 {
-  "format_version": "1.20.50",
+  "format_version": "1.21.90",
   "minecraft:item": {
     "description": {
-      "identifier": "cobblemon:strange_ball"
+      "identifier": "cobblemon:strange_ball",
+      "menu_category": {
+        "category": "equipment",
+        "group": "cobblemon:itemGroup.cobblemon.utility_item"
+      }
     },
     "components": {
-      "minecraft:icon": {
-        "texture": "strange_ball"
-      },
+      "minecraft:icon": "strange_ball",
       "minecraft:projectile": {
         "projectile_entity": "cobblemon:strange_ball"
-      },
-      "minecraft:shooter": {
-        "ammunition": [
-          {
-            "item": "cobblemon:strange_ball",
-            "use_offhand": false,
-            "search_inventory": true,
-            "use_in_creative": true
-          }
-        ]
-      },
-      "minecraft:use_modifiers": {
-        "use_duration": 0.5,
-        "movement_modifier": 1.0
       },
       "minecraft:display_name": {
         "value": "item.cobblemon.strange_ball"
       },
       "minecraft:tags": {
         "tags": []
-      }
+      },
+      "minecraft:throwable": {
+        "do_swing_animation": true,
+        "launch_power_scale": 1.0,
+        "max_launch_power": 1.0
+      },
+      "minecraft:max_stack_size": 64
     }
   }
 }

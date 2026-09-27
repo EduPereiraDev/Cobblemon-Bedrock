@@ -1,0 +1,84 @@
+{
+	"_source": "BergmiteModel.kt",
+	"rootBone": "bergmite",
+	"animations": {
+		"cry": "q.bedrock_stateful('bergmite', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('bergmite', 'sleep')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('bergmite', 'faint')"
+			}
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.bedrock('bergmite', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('bergmite', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('bergmite', 'faint')"
+			}
+		},
+		"walking": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('bergmite', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('bergmite', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('bergmite', 'faint')"
+			}
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.bedrock('bergmite', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('bergmite', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('bergmite', 'faint')"
+			}
+		}
+	},
+	"portraitScale": 2.4,
+	"profileScale": 0.9,
+	"portraitTranslation": [
+		-0.2,
+		-1.8,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.4,
+		0
+	]
+}

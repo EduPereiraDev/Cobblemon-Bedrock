@@ -1,4 +1,4 @@
-import { Block, BlockComponentOnPlaceEvent, BlockComponentPlayerDestroyEvent, BlockComponentPlayerPlaceBeforeEvent, BlockComponentRandomTickEvent, BlockComponentTickEvent, BlockCustomComponent, BlockPermutation, GameMode, ItemStack } from "@minecraft/server";
+import { Block, BlockComponentOnPlaceEvent, BlockComponentPlayerBreakEvent, BlockComponentPlayerPlaceBeforeEvent, BlockComponentRandomTickEvent, BlockComponentTickEvent, BlockCustomComponent, BlockPermutation, GameMode, ItemStack } from "@minecraft/server";
 import { changeBlockState, tryChangeBlockState } from "../utils/BlockUtils";
 import { decrementDurability, getItemInHand, spawnLootFromTable } from "../utils/ItemUtils";
 
@@ -45,8 +45,8 @@ export default class LeavesDecayComponent implements BlockCustomComponent {
     tryChangeBlockState(block, this.distanceFromLogState, newLogDistance);
     return newLogDistance;
   }
-  onPlayerDestroy(arg: BlockComponentPlayerDestroyEvent) {
-    if (arg.player?.getGameMode() == GameMode.creative)
+  onPlayerBreak(arg: BlockComponentPlayerBreakEvent) {
+    if (arg.player?.getGameMode() == GameMode.Creative)
       return;
     if (arg.player !== undefined && getItemInHand(arg.player)?.typeId == "minecraft:shears") {
       arg.dimension.spawnItem(new ItemStack(this.blockIdentifier), arg.block.location);

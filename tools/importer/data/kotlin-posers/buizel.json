@@ -1,0 +1,175 @@
+{
+	"_source": "BuizelModel.kt",
+	"rootBone": "buizel",
+	"animations": {
+		"cry": "q.bedrock_stateful('buizel', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isTouchingWater": false,
+			"animations": [
+				"q.bedrock('buizel', 'sleep')"
+			]
+		},
+		"water_sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isUnderWater": true,
+			"animations": [
+				"q.bedrock('buizel', 'water_sleep')"
+			]
+		},
+		"surface_water_sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isTouchingWater": true,
+			"isUnderWater": false,
+			"animations": [
+				"q.bedrock('buizel', 'surfacewater_sleep')"
+			],
+			"transformedParts": [
+				{
+					"part": "buizel",
+					"position": [
+						0,
+						-8,
+						0
+					]
+				}
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isTouchingWater": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('buizel', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('buizel', 'blink', 8, 30, 1)"
+			]
+		},
+		"walking": {
+			"poseTypes": [
+				"WALK",
+				"FLY"
+			],
+			"isTouchingWater": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('buizel', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('buizel', 'blink', 8, 30, 1)"
+			]
+		},
+		"float": {
+			"poseTypes": [
+				"FLOAT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('buizel', 'water_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('buizel', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "buizel",
+					"position": [
+						0,
+						-8,
+						0
+					]
+				}
+			]
+		},
+		"swim": {
+			"poseTypes": [
+				"SWIM"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('buizel', 'water_swim')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('buizel', 'blink', 8, 30, 1)"
+			]
+		},
+		"surface_water_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isTouchingWater": true,
+			"isUnderWater": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('buizel', 'surfacewater_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('buizel', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "buizel",
+					"position": [
+						0,
+						-8,
+						0
+					]
+				}
+			]
+		},
+		"surface_water_swim": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"isTouchingWater": true,
+			"isUnderWater": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('buizel', 'surfacewater_swim')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('buizel', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "buizel",
+					"position": [
+						0,
+						-8,
+						0
+					]
+				}
+			]
+		}
+	},
+	"portraitScale": 2.3,
+	"profileScale": 0.7,
+	"portraitTranslation": [
+		-0.2,
+		0.1,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.65,
+		0
+	]
+}

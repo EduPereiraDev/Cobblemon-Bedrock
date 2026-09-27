@@ -1,0 +1,52 @@
+{
+	"_source": "ZoruaModel.kt",
+	"rootBone": "zorua",
+	"animations": {
+		"cry": "q.bedrock_stateful('zorua', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"PROFILE",
+				"PORTRAIT",
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('zorua', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('zorua', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.quadruped_walk(1.1, 1.4, 'leg_front_left', 'leg_front_right', 'leg_back_left', 'leg_back_right')",
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('zorua', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('zorua', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2,
+	"profileScale": 0.81,
+	"portraitTranslation": [
+		-0.28,
+		-0.79,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.54,
+		0
+	]
+}

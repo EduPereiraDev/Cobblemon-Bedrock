@@ -1,0 +1,75 @@
+{
+	"_source": "GranbullModel.kt",
+	"rootBone": "granbull",
+	"animations": {
+		"cry": "q.bedrock_stateful('granbull', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('granbull', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('granbull', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('granbull', 'blink', 8, 30, 1)"
+			]
+		},
+		"walking": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('granbull', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('granbull', 'blink', 8, 30, 1)"
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('granbull', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('granbull', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 1.6,
+	"profileScale": 0.65,
+	"portraitTranslation": [
+		-0.4,
+		1.1,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.76,
+		0
+	]
+}

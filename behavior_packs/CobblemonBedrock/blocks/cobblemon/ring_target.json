@@ -1,0 +1,137 @@
+{
+	"format_version": "1.21.120",
+	"minecraft:block": {
+		"description": {
+			"states": {
+				"cobblemon:power": {
+					"values": {
+						"min": 0,
+						"max": 15
+					}
+				}
+			}
+		},
+		"permutations": [
+			{
+				"condition": "q.block_state('cobblemon:power') == 1",
+				"components": {
+					"minecraft:redstone_producer": {
+						"power": 1
+					}
+				}
+			},
+			{
+				"condition": "q.block_state('cobblemon:power') == 2",
+				"components": {
+					"minecraft:redstone_producer": {
+						"power": 2
+					}
+				}
+			},
+			{
+				"condition": "q.block_state('cobblemon:power') == 3",
+				"components": {
+					"minecraft:redstone_producer": {
+						"power": 3
+					}
+				}
+			},
+			{
+				"condition": "q.block_state('cobblemon:power') == 4",
+				"components": {
+					"minecraft:redstone_producer": {
+						"power": 4
+					}
+				}
+			},
+			{
+				"condition": "q.block_state('cobblemon:power') == 5",
+				"components": {
+					"minecraft:redstone_producer": {
+						"power": 5
+					}
+				}
+			},
+			{
+				"condition": "q.block_state('cobblemon:power') == 6",
+				"components": {
+					"minecraft:redstone_producer": {
+						"power": 6
+					}
+				}
+			},
+			{
+				"condition": "q.block_state('cobblemon:power') == 7",
+				"components": {
+					"minecraft:redstone_producer": {
+						"power": 7
+					}
+				}
+			},
+			{
+				"condition": "q.block_state('cobblemon:power') == 8",
+				"components": {
+					"minecraft:redstone_producer": {
+						"power": 8
+					}
+				}
+			},
+			{
+				"condition": "q.block_state('cobblemon:power') == 9",
+				"components": {
+					"minecraft:redstone_producer": {
+						"power": 9
+					}
+				}
+			},
+			{
+				"condition": "q.block_state('cobblemon:power') == 10",
+				"components": {
+					"minecraft:redstone_producer": {
+						"power": 10
+					}
+				}
+			},
+			{
+				"condition": "q.block_state('cobblemon:power') == 11",
+				"components": {
+					"minecraft:redstone_producer": {
+						"power": 11
+					}
+				}
+			},
+			{
+				"condition": "q.block_state('cobblemon:power') == 12",
+				"components": {
+					"minecraft:redstone_producer": {
+						"power": 12
+					}
+				}
+			},
+			{
+				"condition": "q.block_state('cobblemon:power') == 13",
+				"components": {
+					"minecraft:redstone_producer": {
+						"power": 13
+					}
+				}
+			},
+			{
+				"condition": "q.block_state('cobblemon:power') == 14",
+				"components": {
+					"minecraft:redstone_producer": {
+						"power": 14
+					}
+				}
+			},
+			{
+				"condition": "q.block_state('cobblemon:power') == 15",
+				"components": {
+					"minecraft:redstone_producer": {
+						"power": 15
+					}
+				}
+			}
+		]
+	}
+}

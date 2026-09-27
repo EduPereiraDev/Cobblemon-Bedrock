@@ -1,0 +1,54 @@
+{
+	"_source": "ZoroarkHisuianModel.kt",
+	"rootBone": "zoroark",
+	"animations": {
+		"cry": "q.bedrock_stateful('zoroark_hisuian', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('zoroark_hisuian', 'ground_idle')"
+			]
+		},
+		"walking": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('zoroark_hisuian', 'ground_walk')",
+				"q.bedrock('zoroark_hisuian', 'hair_setup')"
+			]
+		},
+		"portrait": {
+			"poseTypes": [
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('zoroark_hisuian', 'portrait')"
+			]
+		}
+	},
+	"portraitScale": 1.8,
+	"profileScale": 0.46,
+	"portraitTranslation": [
+		-1.15,
+		1.54,
+		0
+	],
+	"profileTranslation": [
+		-0.05,
+		1.06,
+		0
+	]
+}

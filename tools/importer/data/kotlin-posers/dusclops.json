@@ -1,0 +1,110 @@
+{
+	"_source": "DusclopsModel.kt",
+	"rootBone": "dusclops",
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('dusclops', 'sleep')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('dusclops', 'faint')"
+			}
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.bedrock('dusclops', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('dusclops', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('dusclops', 'faint')"
+			}
+		},
+		"walking": {
+			"poseTypes": [
+				"WALK"
+			],
+			"animations": [
+				"q.bedrock('dusclops', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('dusclops', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('dusclops', 'faint')"
+			}
+		},
+		"hover": {
+			"poseTypes": [
+				"PROFILE",
+				"PORTRAIT",
+				"HOVER",
+				"FLOAT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.bedrock('dusclops', 'air_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('dusclops', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('dusclops', 'faint')"
+			}
+		},
+		"fly": {
+			"poseTypes": [
+				"FLY",
+				"SWIM",
+				"WALK"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.bedrock('dusclops', 'air_fly')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('dusclops', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('dusclops', 'faint')"
+			}
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.bedrock('dusclops', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('dusclops', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('dusclops', 'faint')"
+			}
+		}
+	},
+	"portraitScale": 1.6,
+	"profileScale": 0.6,
+	"portraitTranslation": [
+		-0.2,
+		1.1,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.8,
+		0
+	]
+}

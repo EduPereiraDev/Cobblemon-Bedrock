@@ -1,0 +1,86 @@
+{
+	"_source": "BewearModel.kt",
+	"rootBone": "bewear",
+	"animations": {
+		"cry": "q.bedrock_stateful('bewear', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('bewear', 'sleep')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('bewear', 'faint')"
+			}
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('bewear', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('bewear', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('bewear', 'faint')"
+			}
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('bewear', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('bewear', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('bewear', 'faint')"
+			}
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('bewear', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('bewear', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('bewear', 'faint')"
+			}
+		}
+	},
+	"portraitScale": 1.2,
+	"profileScale": 0.45,
+	"portraitTranslation": [
+		-0.2,
+		2.2,
+		0
+	],
+	"profileTranslation": [
+		0,
+		1.1,
+		0
+	]
+}

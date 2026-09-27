@@ -1,0 +1,49 @@
+{
+	"_source": "TangrowthModel.kt",
+	"rootBone": "tangrowth",
+	"animations": {
+		"cry": "q.bedrock_stateful('tangrowth', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.bedrock('tangrowth', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('tangrowth', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('tangrowth', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('tangrowth', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2.4,
+	"profileScale": 1,
+	"portraitTranslation": [
+		-0.3,
+		-0.8,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.25,
+		0
+	]
+}

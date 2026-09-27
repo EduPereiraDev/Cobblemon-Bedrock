@@ -1,0 +1,49 @@
+{
+	"_source": "DragalgeModel.kt",
+	"rootBone": "dragalge",
+	"animations": {
+		"cry": "q.bedrock_stateful('dragalge', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.bedrock('dragalge', 'water_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('dragalge', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('dragalge', 'water_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('dragalge', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2.4,
+	"profileScale": 0.7,
+	"portraitTranslation": [
+		-0.55,
+		1.5,
+		0
+	],
+	"profileTranslation": [
+		0,
+		1,
+		-6
+	]
+}

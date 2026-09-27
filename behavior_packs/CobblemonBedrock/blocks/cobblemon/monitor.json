@@ -1,0 +1,12 @@
+{
+	"minecraft:block": {
+		"permutations": [
+			{
+				"condition": "q.block_state('cobblemon:screen') != 'off' || q.block_state('cobblemon:screen_2') != 'none' || q.block_state('cobblemon:screen_3') != 'none'",
+				"components": {
+					"minecraft:light_emission": 13
+				}
+			}
+		]
+	}
+}

@@ -1,0 +1,77 @@
+{
+	"_source": "ChimcharModel.kt",
+	"rootBone": "chimchar",
+	"animations": {
+		"cry": "q.bedrock_stateful('chimchar', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('chimchar', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('chimchar', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('chimchar', 'faint')"
+			}
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('chimchar', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('chimchar', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('chimchar', 'faint')"
+			}
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('chimchar', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('chimchar', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('chimchar', 'faint')"
+			}
+		}
+	},
+	"portraitScale": 2,
+	"profileScale": 0.7,
+	"portraitTranslation": [
+		-0.1,
+		0,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.7,
+		0
+	]
+}

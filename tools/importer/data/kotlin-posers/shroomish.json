@@ -1,0 +1,87 @@
+{
+	"_source": "ShroomishModel.kt",
+	"rootBone": "shroomish",
+	"animations": {
+		"cry": "q.bedrock_stateful('shroomish', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('torso', 0.5, 1, 70, -45, 45, -45)",
+				"q.bedrock('shroomish', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('shroomish', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('shroomish', 'faint')"
+			}
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('torso', 0.5, 1, 70, -45, 45, -45)",
+				"q.bedrock('shroomish', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('shroomish', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('shroomish', 'faint')"
+			}
+		},
+		"battlestanding": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('torso', 0.5, 1, 70, -45, 45, -45)",
+				"q.bedrock('shroomish', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('shroomish', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('shroomish', 'faint')"
+			}
+		},
+		"sleeping": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('shroomish', 'sleep')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('shroomish', 'faint')"
+			}
+		}
+	},
+	"portraitScale": 2,
+	"profileScale": 1,
+	"portraitTranslation": [
+		-0.1,
+		-1.2,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.3,
+		0
+	]
+}

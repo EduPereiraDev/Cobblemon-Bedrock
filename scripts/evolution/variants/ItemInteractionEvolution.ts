@@ -6,9 +6,9 @@ import { PokemonProperties } from "../../PokemonProperties";
 import { initializeRequirements } from "../requirements";
 
 export class ItemInteractionEvolution extends ContextEvolution<ItemStack, string> {
-  /** DO NOT USE, THIS IS HANDLED BY THE ENTITY FILE ITSELF */
+  /** O item usado no Pokémon precisa ser o item exigido (ex.: cobblemon:thunder_stone). */
   testContext(pokemon: PokemonData, context: ItemStack): boolean {
-    return true;
+    return context.typeId === this.requiredContext;
   }
   static getFromSerializied(evolution: EvolutionEntry): ItemInteractionEvolution {
     return new ItemInteractionEvolution(

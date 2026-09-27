@@ -1,0 +1,51 @@
+{
+	"_source": "GliscorModel.kt",
+	"rootBone": "gliscor",
+	"animations": {
+		"cry": "q.bedrock_stateful('gliscor', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('gliscor', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('gliscor', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('gliscor', 'ground_idle')",
+				"q.biped_walk(1, 0.6, 'left_thigh', 'right_thigh')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('gliscor', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2.2,
+	"profileScale": 0.7,
+	"portraitTranslation": [
+		-0.4,
+		0.4,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.7,
+		0
+	]
+}

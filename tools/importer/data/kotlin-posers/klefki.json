@@ -1,0 +1,113 @@
+{
+	"_source": "KlefkiModel.kt",
+	"rootBone": "klefki",
+	"animations": {
+		"cry": "q.bedrock_stateful('klefki', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT",
+				"SLEEP"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('body', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('klefki', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('klefki', 'blink', 8, 30, 1)"
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"SLEEP"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('body', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('klefki', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('klefki', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('body', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('klefki', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('klefki', 'blink', 8, 30, 1)"
+			]
+		},
+		"shoulder_left": {
+			"poseTypes": [
+				"SHOULDER_LEFT"
+			],
+			"animations": [
+				"q.look('body', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('klefki', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('klefki', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "klefki",
+					"position": [
+						25,
+						0,
+						0
+					]
+				}
+			]
+		},
+		"shoulder_right": {
+			"poseTypes": [
+				"SHOULDER_RIGHT"
+			],
+			"animations": [
+				"q.look('body', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('klefki', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('klefki', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "klefki",
+					"position": [
+						-25,
+						0,
+						0
+					]
+				}
+			]
+		}
+	},
+	"portraitScale": 1.65,
+	"profileScale": 0.59,
+	"portraitTranslation": [
+		0.06,
+		1.35,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.95,
+		0
+	]
+}

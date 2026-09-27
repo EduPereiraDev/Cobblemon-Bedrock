@@ -4,6 +4,7 @@ export * as BlockUtils from "./BlockUtils";
 export * as ItemUtils from "./ItemUtils";
 export * as EntityUtils from "./EntityUtils";
 export * as UUID from "./UUID";
+export { getWeather, isInBiome } from "./World";
 
 /** Takes in text and removes all nonstandard characters from it and replaces spaces with underscores.
  * Almost Identical to the showndown function of the same name.

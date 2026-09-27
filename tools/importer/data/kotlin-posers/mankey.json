@@ -1,0 +1,66 @@
+{
+	"_source": "MankeyModel.kt",
+	"rootBone": "mankey",
+	"animations": {
+		"cry": "q.bedrock_stateful('mankey', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.bedrock('mankey', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('mankey', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('mankey', 'faint')"
+			}
+		},
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('mankey', 'sleep')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('mankey', 'faint')"
+			}
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('mankey', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('mankey', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('mankey', 'faint')"
+			}
+		}
+	},
+	"portraitScale": 1.72,
+	"profileScale": 0.9,
+	"portraitTranslation": [
+		0,
+		-0.4,
+		0
+	],
+	"profileTranslation": [
+		-0.03,
+		0.4,
+		0
+	]
+}

@@ -8,7 +8,7 @@ export default class FriendshipRequirement extends EvolutionRequirement {
     public amount = 0
   ) { super() }
   check(pokemon: PokemonData): boolean {
-    return pokemon.happiness >= this.amount;
+    return pokemon.friendship >= this.amount;
   }
   static getFromSerialized(requirement: EvoRequirement): FriendshipRequirement {
     return new FriendshipRequirement(requirement.amount);

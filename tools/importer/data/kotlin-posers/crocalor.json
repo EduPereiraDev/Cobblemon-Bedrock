@@ -1,0 +1,74 @@
+{
+	"_source": "CrocalorModel.kt",
+	"rootBone": "crocalor",
+	"animations": {
+		"cry": "q.bedrock_stateful('crocalor', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('crocalor', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 0, 70, -45, 45, -45)",
+				"q.bedrock('crocalor', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('crocalor', 'blink', 8, 30, 1)"
+			]
+		},
+		"walking": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 0, 70, -45, 45, -45)",
+				"q.bedrock('crocalor', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('crocalor', 'blink', 8, 30, 1)"
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 0, 70, -45, 45, -45)",
+				"q.bedrock('crocalor', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('crocalor', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 1.5,
+	"profileScale": 0.7,
+	"portraitTranslation": [
+		-0.5,
+		0.2,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.65,
+		0
+	]
+}

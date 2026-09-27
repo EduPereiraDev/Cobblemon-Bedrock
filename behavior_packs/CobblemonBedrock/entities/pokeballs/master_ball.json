@@ -95,7 +95,15 @@
       "minecraft:damage_sensor": {
         "triggers": [
           {
-            "cause": "fall",
+            "cause": "self_destruct",
+            "deals_damage": true
+          },
+          {
+            "cause": "void",
+            "deals_damage": true
+          },
+          {
+            "cause": "all",
             "deals_damage": false
           }
         ]
@@ -114,7 +122,7 @@
       "minecraft:projectile": {
         "anchor": 1,
         "gravity": 0.1,
-        "liquid_inertia": 0.6,
+        "liquid_inertia": 0.8,
         "power": 1.5,
         "stop_on_hurt": true
       },

@@ -1,10 +1,12 @@
 //Handles Importing Data from JSON Files
 
 import { Block, Entity, WeatherType, world } from "@minecraft/server"
-import { toID } from "./showdown/sim/dex-data"
+import { toID } from "./showdown"
+import { SPECIES } from "../generated/scripts/species";
 import { ElementalType } from "./Pokemon";
 import { getConfig } from "./Config";
 import { BlockUtils, toDimensionLocation } from "./utils";
+import { Learnset, getLevelUpMovesUpTo, parseLearnset } from "./pokemon/Learnset";
 
 
 //Interfaces for typesafety for decoding the json files
@@ -15,9 +17,9 @@ export interface SpeciesData {
   maleRatio: number;
   catchRate: number;
   baseScale: number;
-  baseExperienceYeild: number;
+  baseExperienceYield: number;
   baseFriendship: number;
-  evYeild: StatSet;
+  evYield: StatSet;
   experienceGroup: string;
   hitbox: HitboxEntry;
   primaryType: ElementalType;
@@ -40,26 +42,25 @@ export interface SpeciesData {
   height: number,
   weight: number,
   forms?: FormData[];
-
-  //Additional Stuff
-  /** Only use minLevel and maxLevel if not obtainable by spawn condition */
-  minLevel: number;
-  /** Only use minLevel and maxLevel if not obtainable by spawn condition */
-  maxLevel: number;
-  variationMap: { [key: number]: string[] }
-  spawnConditionsMap: { [key: string]: SpawnConditionData }
+  labels?: string[];
+  aspects?: string[];
+  preEvolution?: string;
 }
 
 export interface FormData {
   name: string;
+  aspects?: string[];
   baseStats?: StatSet;
   maleRatio?: number;
   hitbox?: HitboxEntry;
+  baseScale?: number;
+  eggCycles?: number;
+  behaviour?: unknown;
   catchRate?: number;
   experienceGroup?: string;
   baseExperienceYield?: number;
   baseFriendship?: number;
-  evYeild?: StatSet;
+  evYield?: StatSet;
   primaryType?: string;
   secondaryType?: string;
   shoulderMountable?: boolean;
@@ -84,7 +85,7 @@ export interface FormData {
   battleOnly?: boolean;
 }
 
-interface StatSet {
+export interface StatSet {
   hp: number;
   attack: number;
   defence: number;
@@ -93,7 +94,7 @@ interface StatSet {
   speed: number;
 }
 
-interface DropTable {
+export interface DropTable {
   amount?: number;
   entries?: DropEntry[];
 }
@@ -104,7 +105,7 @@ interface DropEntry {
   quantityRange?: string;
 }
 
-interface HitboxEntry {
+export interface HitboxEntry {
   width: number;
   height: number;
   fixed: boolean;
@@ -119,10 +120,16 @@ export interface EvolutionEntry {
   requiredContext?: unknown;
   requirements: EvoRequirement[];
   optional: boolean;
+  /** Evolution.shedder (Nincada → Shedinja). */
+  shedder?: string;
+  /** Evolution.drops (entradas `type: "evolution"` com requisitos opcionais). */
+  drops?: { amount?: number | string; entries?: { item: string; percentage?: number; quantityRange?: string; requirements?: EvoRequirement[]; type?: string }[] };
 }
 
 export interface EvoRequirement {
   variant: string;
+  biomeCondition?: string;
+  biomeAnticondition?: string;
   minLevel?: number;
   maxLevel?: number;
   amount?: number;
@@ -192,39 +199,87 @@ interface IdleData {
   pointAtSpawn: boolean;
 }
 
-export interface SpawnConditionData {
-  isRaining?: boolean,
-  isThundering?: boolean,
-  timeRange?: string,
-  minLevel: number,
-  maxLevel: number,
-  /** Different sets of needed nearby blocks. One of each of these needs to be present nearby */
-  neededNearbyBlocks?: string[][],
-  preventedNearbyBlocks: string[][]
+
+
+const speciesCache = new Map<string, SpeciesData>();
+
+/** Id de espécie do Cobblemon (nome do arquivo de espécie, ex.: "mrmime") a partir de nome ou id. */
+export function toSpeciesId(species: string): string {
+  return toID(species.replace(/^cobblemon:/, ""));
 }
 
+/** Todas as espécies importadas (ids). */
+export function getAllSpeciesIds(): string[] {
+  return Object.keys(SPECIES);
+}
+
+/** Dados da espécie, parseados sob demanda a partir do JSON gerado pelo importador. */
 export function getSpeciesData(species: string): SpeciesData | undefined {
-  species = toID(species);
-  try {
-    return require(`./pokemon_data/${species}.json`);
+  const id = toSpeciesId(species);
+  let data = speciesCache.get(id);
+  if (!data) {
+    const json = SPECIES[id];
+    if (json === undefined)
+      return undefined;
+    data = JSON.parse(json) as SpeciesData;
+    speciesCache.set(id, data);
   }
-  catch (e) { } //An error will print to log either way
-  return undefined
+  return data;
 }
 
-export function getAvaliableMoves(species: string, maxLevel?: number): string[] {
-  species = toID(species);
-  const { moves: moves } = require(`./pokemon_data/${species}.json`);
-  if (maxLevel) {
-    return moves.filter(x => (!isNaN(parseInt(x.split(":")[0])) && parseInt(x.split(":")[0]) <= maxLevel)).map((x: string) => { return x.split(":")[1] });
+/**
+ * Forma ativa para um conjunto de aspectos (Species.getForm do Cobblemon): a última forma cujos
+ * aspectos estão todos presentes. Undefined = forma padrão (os dados da própria espécie).
+ */
+export function getFormForAspects(speciesData: SpeciesData, aspects: readonly string[] = []): FormData | undefined {
+  const forms = speciesData.forms ?? [];
+  for (let i = forms.length - 1; i >= 0; i--) {
+    const formAspects = forms[i].aspects ?? [];
+    if (formAspects.every(aspect => aspects.includes(aspect))) return forms[i];
   }
-  else {
-    return moves.filter(x => (!isNaN(parseInt(x.split(":")[0])))).map((x: string) => { return x.split(":")[1] });
+  return undefined;
+}
+
+/** Forma pelo nome (Species.getFormByName), sem diferenciar maiúsculas. */
+export function getFormByName(speciesData: SpeciesData, name: string): FormData | undefined {
+  return speciesData.forms?.find(form => form.name.toLowerCase() === name.toLowerCase());
+}
+
+const learnsetCache = new Map<string, Learnset>();
+
+/**
+ * Frente msd-fase2: esquece o que foi parseado da espécie (dados e learnsets). Usado quando uma extensão troca a
+ * entrada de SPECIES no worldLoad (scripts/extensions/megaShowdown/tables.ts).
+ */
+export function forgetSpeciesData(species: string): void {
+  const id = toSpeciesId(species);
+  speciesCache.delete(id);
+  for (const key of [...learnsetCache.keys()]) if (key.startsWith(`${id}/`)) learnsetCache.delete(key);
+}
+
+/** Learnset (golpes por origem) da espécie ou da forma, em cache. */
+export function getLearnset(species: string, form?: FormData): Learnset {
+  const speciesData = getSpeciesData(species);
+  const key = `${toSpeciesId(species)}/${form?.moves ? form.name : ""}`;
+  let learnset = learnsetCache.get(key);
+  if (!learnset) {
+    learnset = parseLearnset(form?.moves ?? speciesData?.moves ?? []);
+    learnsetCache.set(key, learnset);
   }
+  return learnset;
+}
+
+/**
+ * Golpes aprendidos por nível até `maxLevel` (ou todos, se omitido). Formato do Cobblemon: "nível:golpe".
+ * Com `aspects`, usa o learnset da forma correspondente (ex.: Raichu de Alola).
+ */
+export function getAvaliableMoves(species: string, maxLevel?: number, aspects?: readonly string[]): string[] {
+  const speciesData = getSpeciesData(species);
+  if (!speciesData) return [];
+  const form = aspects ? getFormForAspects(speciesData, aspects) : undefined;
+  return getLevelUpMovesUpTo(getLearnset(species, form), maxLevel ?? Number.MAX_SAFE_INTEGER);
 }
 
 export function getFullName(species: string): string {
-  species = toID(species);
-  const { name: name } = require(`./pokemon_data/${species}.json`);
-  return name;
+  return getSpeciesData(species)?.name ?? species;
 }

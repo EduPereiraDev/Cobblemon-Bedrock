@@ -1,0 +1,82 @@
+{
+	"_source": "VenonatModel.kt",
+	"rootBone": "venonat",
+	"animations": {
+		"cry": "q.bedrock_stateful('venonat', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('venonat', 'sleep')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('venonat', 'quirk1', 8, 30, 1)",
+				"q.bedrock_quirk('venonat', 'quirk2', 8, 30, 1)"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.bedrock('venonat', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('venonat', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('venonat', 'quirk1', 8, 30, 1)",
+				"q.bedrock_quirk('venonat', 'quirk2', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('venonat', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('venonat', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('venonat', 'quirk1', 8, 30, 1)",
+				"q.bedrock_quirk('venonat', 'quirk2', 8, 30, 1)"
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.bedrock('venonat', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('venonat', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('venonat', 'quirk1', 8, 30, 1)",
+				"q.bedrock_quirk('venonat', 'quirk2', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 1.66,
+	"profileScale": 0.86,
+	"portraitTranslation": [
+		-0.08,
+		-0.66,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.43,
+		0
+	]
+}

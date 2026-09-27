@@ -1,0 +1,355 @@
+{
+	"_source": "AnorithModel.kt",
+	"rootBone": "anorith",
+	"animations": {
+		"cry": "q.bedrock_stateful('anorith', 'cry')"
+	},
+	"poses": {
+		"ui_poses": {
+			"poseTypes": [
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.bedrock('anorith', 'summary_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('anorith', 'blink', 8, 30, 1)"
+			]
+		},
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isTouchingWater": false,
+			"animations": [
+				"q.bedrock('anorith', 'sleep')"
+			]
+		},
+		"water_surface_sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isUnderWater": false,
+			"isTouchingWater": true,
+			"animations": [
+				"q.bedrock('anorith', 'water_sleep')"
+			],
+			"transformedParts": [
+				{
+					"part": "anorith",
+					"position": [
+						0,
+						1,
+						0
+					]
+				}
+			]
+		},
+		"water_sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isUnderWater": true,
+			"isTouchingWater": true,
+			"animations": [
+				"q.bedrock('anorith', 'water_sleep')"
+			],
+			"transformedParts": [
+				{
+					"part": "anorith",
+					"position": [
+						0,
+						-4.5,
+						0
+					]
+				}
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": false,
+			"isTouchingWater": false,
+			"animations": [
+				"q.bedrock('anorith', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('anorith', 'blink', 8, 30, 1)"
+			]
+		},
+		"water_surface_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isUnderWater": false,
+			"isTouchingWater": true,
+			"isBattle": false,
+			"animations": [
+				"q.bedrock('anorith', 'water_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('anorith', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "anorith",
+					"position": [
+						0,
+						1,
+						0
+					]
+				}
+			]
+		},
+		"water_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isUnderWater": true,
+			"isTouchingWater": true,
+			"isBattle": false,
+			"animations": [
+				"q.bedrock('anorith', 'water_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('anorith', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "anorith",
+					"position": [
+						0,
+						-4.5,
+						0
+					]
+				}
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"isTouchingWater": false,
+			"animations": [
+				"q.bedrock('anorith', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('anorith', 'blink', 8, 30, 1)"
+			]
+		},
+		"surface_battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isUnderWater": false,
+			"isTouchingWater": true,
+			"isBattle": true,
+			"animations": [
+				"q.bedrock('anorith', 'water_battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('anorith', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "anorith",
+					"position": [
+						0,
+						1,
+						0
+					]
+				}
+			]
+		},
+		"water_battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isUnderWater": true,
+			"isTouchingWater": true,
+			"isBattle": true,
+			"animations": [
+				"q.bedrock('anorith', 'water_battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('anorith', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "anorith",
+					"position": [
+						0,
+						-4.5,
+						0
+					]
+				}
+			]
+		},
+		"walking": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"isUnderWater": false,
+			"isTouchingWater": false,
+			"animations": [
+				"q.bedrock('anorith', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('anorith', 'blink', 8, 30, 1)"
+			]
+		},
+		"surface_swim": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"isUnderWater": false,
+			"isTouchingWater": true,
+			"animations": [
+				"q.bedrock('anorith', 'water_swim')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('anorith', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "anorith",
+					"position": [
+						0,
+						1,
+						0
+					]
+				}
+			]
+		},
+		"water_swim": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"isUnderWater": true,
+			"isTouchingWater": true,
+			"animations": [
+				"q.bedrock('anorith', 'water_swim')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('anorith', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "anorith",
+					"position": [
+						0,
+						-4.5,
+						0
+					]
+				}
+			]
+		},
+		"shoulder_left": {
+			"poseTypes": [
+				"SHOULDER_LEFT"
+			],
+			"animations": [
+				"q.bedrock('anorith', 'shoulder_left')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('anorith', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "anorith",
+					"position": [
+						5.5,
+						0,
+						0
+					]
+				},
+				{
+					"part": "anorith",
+					"position": [
+						0,
+						2,
+						0
+					]
+				},
+				{
+					"part": "anorith",
+					"position": [
+						0,
+						0,
+						2
+					]
+				}
+			]
+		},
+		"shoulder_right": {
+			"poseTypes": [
+				"SHOULDER_RIGHT"
+			],
+			"animations": [
+				"q.bedrock('anorith', 'shoulder_right')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('anorith', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "anorith",
+					"position": [
+						-5.5,
+						0,
+						0
+					]
+				},
+				{
+					"part": "anorith",
+					"position": [
+						0,
+						2,
+						0
+					]
+				},
+				{
+					"part": "anorith",
+					"position": [
+						0,
+						0,
+						2
+					]
+				}
+			]
+		}
+	},
+	"portraitScale": 1.8,
+	"profileScale": 1.03,
+	"portraitTranslation": [
+		-0.14,
+		-1.56,
+		0
+	],
+	"profileTranslation": [
+		-0.05,
+		-0.19,
+		0
+	]
+}

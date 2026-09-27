@@ -1,0 +1,45 @@
+{
+	"_source": "PupitarModel.kt",
+	"rootBone": "pupitar",
+	"animations": {
+		"cry": "q.bedrock_stateful('pupitar', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [],
+			"quirks": [
+				"q.bedrock_quirk('pupitar', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [],
+			"quirks": [
+				"q.bedrock_quirk('pupitar', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 1.01,
+	"profileScale": 0.74,
+	"portraitTranslation": [
+		0.18,
+		0.54,
+		0
+	],
+	"profileTranslation": [
+		0.09,
+		0.7,
+		0
+	]
+}

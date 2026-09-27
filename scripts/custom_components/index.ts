@@ -1,5 +1,5 @@
 //https://learn.microsoft.com/en-us/minecraft/creator/documents/customcomponents?view=minecraft-bedrock-stable
-import { BlockCustomComponent, ItemCustomComponent, WorldInitializeBeforeEvent } from "@minecraft/server";
+import { BlockCustomComponent, ItemCustomComponent, StartupEvent } from "@minecraft/server";
 import { PCBottomComponent, PCTopComponent } from "./PCComponents";
 import { EnforceTopHalfComponent, EnforceBottomHalfComponent } from "./DoubleBlockComponents";
 import DoorComponent from "./DoorComponent"
@@ -15,6 +15,13 @@ import SlabComponent from "./SlabComponent";
 import PressurePlateComponent from "./PressurePlateComponent";
 import ButtonComponent from "./ButtonComponent";
 import CannotFloatComponent from "./CannotFloatComponent";
+import DripstoneGrowthComponent from "./DripstoneGrowthComponent"; // frente mundo-detalhes
+// Redstone por projétil (Ring Target, flechas nos botões de madeira): assina o evento de mundo ao carregar.
+import "./RedstoneEvents";
+import { PLANT_BLOCK_COMPONENTS, PLANT_ITEM_COMPONENTS } from "./plants";
+import { MACHINE_BLOCK_COMPONENTS } from "./machines";
+import { ITEM_CUSTOM_COMPONENTS } from "../items/components";
+import { FISHING_ITEM_COMPONENTS } from "../fishing/components";
 
 const blockComponents: Record<string, BlockCustomComponent> = {
   "cobblemon:pc_bottom_component": new PCBottomComponent(),
@@ -45,6 +52,7 @@ const blockComponents: Record<string, BlockCustomComponent> = {
   "cobblemon:pressure_plate_component": new PressurePlateComponent(),
   "cobblemon:button_component": new ButtonComponent(),
   "cobblemon:cannot_float_component": new CannotFloatComponent(),
+  "cobblemon:dripstone_growable": new DripstoneGrowthComponent(),
   "cobblemon:door_component": new DoorComponent(),
   "cobblemon:apricorn_door_enforce_top_component": new EnforceTopHalfComponent("cobblemon:apricorn_door_top_left", "minecraft:cardinal_direction", "cobblemon:opened"),
   "cobblemon:apricorn_door_enforce_bottom_component": new EnforceBottomHalfComponent("cobblemon:apricorn_door_bottom_left", "minecraft:cardinal_direction", "cobblemon:opened")
@@ -54,46 +62,28 @@ const itemComponents: Record<string, ItemCustomComponent> = {
   "cobblemon:give_leftovers_component": new GiveLeftoversComponent()
 }
 
-export function registerCustomComponents(event: WorldInitializeBeforeEvent) {
-  //Register Blocks
-  Object.entries(blockComponents).forEach(([key, value]) => {
+// Cada frente registra os próprios componentes no seu arquivo; aqui só juntamos.
+Object.assign(blockComponents, PLANT_BLOCK_COMPONENTS, MACHINE_BLOCK_COMPONENTS);
+Object.assign(itemComponents, ITEM_CUSTOM_COMPONENTS, FISHING_ITEM_COMPONENTS, PLANT_ITEM_COMPONENTS);
+
+export function registerCustomComponents(event: StartupEvent) {
+  Object.keys(blockComponents).forEach(key => {
     event.blockComponentRegistry.registerCustomComponent(key, workAroundBlockWrapper(key));
   })
-  //Register Items
   Object.entries(itemComponents).forEach(([key, value]) => {
     event.itemComponentRegistry.registerCustomComponent(key, value);
   })
 }
+
+const blockCallbacks = ["beforeOnPlayerPlace", "onBreak", "onEntityFallOn", "onPlace", "onPlayerBreak", "onPlayerInteract", "onRandomTick", "onRedstoneUpdate", "onStepOff", "onStepOn", "onTick"] as const;
+
 /** Attempts to work around wierd bug where Component cannot make refrences to itself */
 function workAroundBlockWrapper(key: string): BlockCustomComponent {
-  let returnObj: BlockCustomComponent = {};
-  if (blockComponents[key].beforeOnPlayerPlace != undefined) {
-    returnObj.beforeOnPlayerPlace = (arg) => { blockComponents[key].beforeOnPlayerPlace?.(arg) }
+  const component = blockComponents[key] as Record<string, unknown>;
+  const returnObj: Record<string, unknown> = {};
+  for (const callback of blockCallbacks) {
+    if (typeof component[callback] === "function")
+      returnObj[callback] = (arg: unknown, params: unknown) => (component[callback] as Function).call(component, arg, params);
   }
-  if (blockComponents[key].onEntityFallOn != undefined) {
-    returnObj.onEntityFallOn = (arg) => { blockComponents[key].onEntityFallOn?.(arg) }
-  }
-  if (blockComponents[key].onPlace != undefined) {
-    returnObj.onPlace = (arg) => { blockComponents[key].onPlace?.(arg) }
-  }
-  if (blockComponents[key].onPlayerDestroy != undefined) {
-    returnObj.onPlayerDestroy = (arg) => { blockComponents[key].onPlayerDestroy?.(arg) }
-  }
-  if (blockComponents[key].onPlayerInteract != undefined) {
-    returnObj.onPlayerInteract = (arg) => { blockComponents[key].onPlayerInteract?.(arg) }
-  }
-  if (blockComponents[key].onRandomTick != undefined) {
-    returnObj.onRandomTick = (arg) => { blockComponents[key].onRandomTick?.(arg) }
-  }
-  if (blockComponents[key].onStepOff != undefined) {
-    returnObj.onStepOff = (arg) => { blockComponents[key].onStepOff?.(arg) }
-  }
-  if (blockComponents[key].onStepOn != undefined) {
-    returnObj.onStepOn = (arg) => { blockComponents[key].onStepOn?.(arg) }
-  }
-  if (blockComponents[key].onTick != undefined) {
-    returnObj.onTick = (arg) => { blockComponents[key].onTick?.(arg) }
-  }
-
-  return returnObj;
+  return returnObj as BlockCustomComponent;
 }

@@ -1,0 +1,87 @@
+{
+	"_source": "RapidashModel.kt",
+	"rootBone": "rapidash",
+	"animations": {
+		"cry": "q.bedrock_stateful('rapidash', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('rapidash', 'sleep')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('rapidash', 'faint')"
+			}
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('rapidash', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('rapidash', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('rapidash', 'faint')"
+			}
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('rapidash', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('rapidash', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('rapidash', 'faint')"
+			}
+		},
+		"battlestanding": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('rapidash', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('rapidash', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('rapidash', 'battle_faint')"
+			}
+		}
+	},
+	"portraitScale": 2.5,
+	"profileScale": 0.75,
+	"portraitTranslation": [
+		-0.7,
+		1.11,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.65,
+		0
+	]
+}

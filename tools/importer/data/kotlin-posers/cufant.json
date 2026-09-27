@@ -1,0 +1,81 @@
+{
+	"_source": "CufantModel.kt",
+	"rootBone": "cufant",
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('cufant', 'sleep')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_primary('cufant', 'faint', q.curve('one'))"
+			}
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.bedrock('cufant', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('cufant', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_primary('cufant', 'faint', q.curve('one'))"
+			}
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('cufant', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('cufant', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_primary('cufant', 'faint', q.curve('one'))"
+			}
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.bedrock('cufant', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('cufant', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_primary('cufant', 'faint', q.curve('one'))"
+			}
+		}
+	},
+	"portraitScale": 1.5,
+	"profileScale": 0.62,
+	"portraitTranslation": [
+		-0.32,
+		0.13,
+		0
+	],
+	"profileTranslation": [
+		0.05,
+		0.8,
+		0
+	]
+}

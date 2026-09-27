@@ -1,41 +1,26 @@
-// I dont actually use this file, its just here for vscode completion and tests
+// Só para type-check (`npm run check`); o bundle é feito pelo esbuild em tools/build.mjs.
 {
   "compilerOptions": {
     "noEmit": true,
-    "target": "ES2020",
-    "moduleResolution": "node",
-    "module": "es2020",
-    "declaration": false,
-    "noLib": false,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "sourceMap": true,
-    "pretty": true,
-    "forceConsistentCasingInFileNames": true,
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "types": [],
     "strict": true,
+    "noImplicitAny": false,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "experimentalDecorators": true,
+    "forceConsistentCasingInFileNames": true,
     "allowUnreachableCode": true,
     "allowUnusedLabels": true,
-    "noImplicitAny": false,
-    "noImplicitReturns": false,
-    "noImplicitUseStrict": false,
-    "outDir": "build/",
-    "rootDir": ".",
-    "baseUrl": "behavior_packs/",
-    "listFiles": false,
-    "lib": [
-      "es2020",
-      "dom"
-    ],
-    "resolveJsonModule": true
+    // Extensões privadas (fora do repositório público): a primeira opção existe só na árvore privada; sem ela, o stub.
+    // O esbuild lê o mesmo `paths`; o build público força o stub (tools/cleanBuild.mjs).
+    "paths": {
+      "@private/mega-showdown": ["./scripts/extensions/megaShowdown/index.ts", "./scripts/extensions/privateStub.ts"],
+      "@private/mega-showdown/content": ["./scripts/extensions/megaShowdown/content.ts", "./scripts/extensions/privateStub.ts"]
+    }
   },
-  "include": [
-    "scripts/*"
-  ],
-  "exclude": [
-    "node_modules/**/*",
-    "scripts/showdown/.*-dist/**/*",
-    "scripts/showdown/server/chat-plugins/private/*/*.d.ts",
-    "scripts/showdown/test/**/*"
-  ],
-  "compileOnSave": false
+  "include": ["scripts/**/*.ts", "generated/scripts/**/*.ts"]
 }

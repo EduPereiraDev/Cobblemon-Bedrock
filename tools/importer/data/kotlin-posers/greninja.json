@@ -1,0 +1,178 @@
+{
+	"_source": "GreninjaModel.kt",
+	"rootBone": "greninja",
+	"animations": {
+		"cry": "q.bedrock_stateful('greninja', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('greninja', 'sleep')"
+			],
+			"transformedParts": [
+				{
+					"part": "hand_shuriken_left",
+					"isVisible": false
+				},
+				{
+					"part": "hand_shuriken_right",
+					"isVisible": false
+				}
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('greninja', 'faint')"
+			}
+		},
+		"standing": {
+			"poseTypes": [
+				"PROFILE",
+				"PORTRAIT",
+				"STAND",
+				"HOVER"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('greninja', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('greninja', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "hand_shuriken_left",
+					"isVisible": false
+				},
+				{
+					"part": "hand_shuriken_right",
+					"isVisible": false
+				}
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('greninja', 'faint')"
+			}
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('greninja', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('greninja', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "hand_shuriken_left",
+					"isVisible": false
+				},
+				{
+					"part": "hand_shuriken_right",
+					"isVisible": false
+				}
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('greninja', 'faint')"
+			}
+		},
+		"swim_idle": {
+			"poseTypes": [
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('greninja', 'water_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('greninja', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "hand_shuriken_left",
+					"isVisible": false
+				},
+				{
+					"part": "hand_shuriken_right",
+					"isVisible": false
+				}
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('greninja', 'faint')"
+			}
+		},
+		"swim": {
+			"poseTypes": [
+				"SWIM",
+				"FLY"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('greninja', 'water_swim')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('greninja', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "hand_shuriken_left",
+					"isVisible": false
+				},
+				{
+					"part": "hand_shuriken_right",
+					"isVisible": false
+				}
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('greninja', 'faint')"
+			}
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('greninja', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('greninja', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "hand_shuriken_left",
+					"isVisible": false
+				},
+				{
+					"part": "hand_shuriken_right",
+					"isVisible": false
+				}
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('greninja', 'faint')"
+			}
+		}
+	},
+	"portraitScale": 2.2,
+	"profileScale": 0.7,
+	"portraitTranslation": [
+		-0.1,
+		1.34,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.7,
+		0
+	]
+}

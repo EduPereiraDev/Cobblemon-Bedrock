@@ -1,0 +1,56 @@
+{
+  "minecraft:entity": {
+    "component_groups": {
+      "cobblemon:instant_kill": {
+        "minecraft:instant_despawn": {}
+      }
+    },
+    "events": {
+      "cobblemon:instant_kill": {
+        "add": {
+          "component_groups": [
+            "cobblemon:instant_kill"
+          ]
+        }
+      }
+    },
+    "description": {
+      "is_spawnable": false,
+      "is_summonable": true,
+      "is_experimental": false,
+      "identifier": "cobblemon:ancient_great_ball_dummy"
+    },
+    "components": {
+      "minecraft:collision_box": {
+        "width": 0.01,
+        "height": 0.01
+      },
+      "minecraft:damage_sensor": {
+        "triggers": [
+          {
+            "cause": "self_destruct",
+            "deals_damage": true
+          },
+          {
+            "cause": "void",
+            "deals_damage": true
+          },
+          {
+            "cause": "all",
+            "deals_damage": false
+          }
+        ]
+      },
+      "minecraft:type_family": {
+        "family": [
+          "cobblemon",
+          "pokeball_dummy"
+        ]
+      },
+      "minecraft:scale": {
+        "value": 0.4
+      }
+    }
+  },
+  "format_version": "1.20.40"
+}

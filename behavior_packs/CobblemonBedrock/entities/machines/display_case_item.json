@@ -1,0 +1,23 @@
+{
+  "format_version": "1.21.90",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "cobblemon:display_case_item",
+      "is_spawnable": false,
+      "is_summonable": true
+    },
+    "components": {
+      "minecraft:type_family": { "family": ["cobblemon_display", "inanimate"] },
+      "minecraft:collision_box": { "width": 0.1, "height": 0.1 },
+      "minecraft:inventory": { "container_type": "inventory", "inventory_size": 1 },
+      "minecraft:physics": { "has_gravity": false, "has_collision": false },
+      "minecraft:pushable": { "is_pushable": false, "is_pushable_by_piston": false },
+      "minecraft:damage_sensor": { "triggers": [{ "cause": "all", "deals_damage": "no" }] },
+      "minecraft:health": { "value": 1, "max": 1 },
+      "minecraft:knockback_resistance": { "value": 1 },
+      "minecraft:fire_immune": true,
+      "minecraft:breathable": { "breathes_air": true, "breathes_water": true, "suffocate_time": 0, "total_supply": 15 },
+      "minecraft:persistent": {}
+    }
+  }
+}

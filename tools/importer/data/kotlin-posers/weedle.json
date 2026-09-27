@@ -1,0 +1,118 @@
+{
+	"_source": "WeedleModel.kt",
+	"rootBone": "weedle",
+	"animations": {
+		"cry": "q.bedrock_stateful('weedle', 'cry')",
+		"faint": "q.bedrock_stateful('weedle', 'faint')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('weedle', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('weedle', 'ground_idle2')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('weedle', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('weedle', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('weedle', 'blink', 8, 30, 1)"
+			]
+		},
+		"shoulder_left": {
+			"poseTypes": [
+				"SHOULDER_LEFT"
+			],
+			"animations": [
+				"q.bedrock('weedle', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('weedle', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "weedle",
+					"position": [
+						3.8,
+						0,
+						0
+					]
+				},
+				{
+					"part": "weedle",
+					"position": [
+						0,
+						0,
+						-3
+					]
+				}
+			]
+		},
+		"shoulder_right": {
+			"poseTypes": [
+				"SHOULDER_RIGHT"
+			],
+			"animations": [
+				"q.bedrock('weedle', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('weedle', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "weedle",
+					"position": [
+						-3.8,
+						0,
+						0
+					]
+				},
+				{
+					"part": "weedle",
+					"position": [
+						0,
+						0,
+						-3
+					]
+				}
+			]
+		}
+	},
+	"portraitScale": 2.2,
+	"profileScale": 0.8,
+	"portraitTranslation": [
+		-0.31,
+		-1.83,
+		0
+	],
+	"profileTranslation": [
+		0.1,
+		0.6,
+		0
+	]
+}

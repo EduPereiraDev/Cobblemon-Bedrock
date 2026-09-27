@@ -1,0 +1,44 @@
+{
+	"_source": "GengarModel.kt",
+	"rootBone": "gengar",
+	"animations": {
+		"cry": "q.bedrock_stateful('gengar', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.bedrock('gengar', 'ground_idle')"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.biped_walk(1, 0.9, 'leg_left', 'leg_right')",
+				"q.bedrock('gengar', 'ground_idle')"
+			]
+		}
+	},
+	"portraitScale": 1.1,
+	"profileScale": 0.6,
+	"portraitTranslation": [
+		-0.3,
+		0.55,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.77,
+		0
+	]
+}

@@ -1,0 +1,51 @@
+{
+	"_source": "MachokeModel.kt",
+	"rootBone": "machoke",
+	"animations": {
+		"cry": "q.bedrock_stateful('machoke', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('machoke', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('machoke', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('machoke', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('machoke', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 1.9,
+	"profileScale": 0.71,
+	"portraitTranslation": [
+		-0.1,
+		1,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.69,
+		0
+	]
+}

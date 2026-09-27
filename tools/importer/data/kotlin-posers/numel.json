@@ -1,0 +1,69 @@
+{
+	"_source": "NumelModel.kt",
+	"rootBone": "numel",
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('numel', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"PROFILE",
+				"PORTRAIT",
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 0, 70, -45, 45, -45)",
+				"q.bedrock('numel', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('numel', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 0, 70, -45, 45, -45)",
+				"q.bedrock('numel', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('numel', 'blink', 8, 30, 1)"
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 0, 70, -45, 45, -45)",
+				"q.bedrock('numel', 'battle_idle')"
+			]
+		}
+	},
+	"portraitScale": 1.8,
+	"profileScale": 0.9,
+	"portraitTranslation": [
+		-0.6,
+		-0.25,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.35,
+		0
+	]
+}

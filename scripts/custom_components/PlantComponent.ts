@@ -42,7 +42,9 @@ export default class PlantComponent implements BlockCustomComponent {
     else {
       if (typeof currentGrowthState == "number" && currentGrowthState == this.maxGrowth) {
         arg.block.setPermutation(arg.block.permutation.withState(this.growthBlockState, 0));
-        arg.dimension.runCommandAsync(`loot spawn ${arg.block.location.x} ${arg.block.location.y} ${arg.block.location.z} loot "${this.lootTable}"`);
+        arg.dimension.runCommand(`loot spawn ${arg.block.location.x} ${arg.block.location.y} ${arg.block.location.z} loot "${this.lootTable}"`);
+        // ApricornBlock.doHarvest.
+        arg.dimension.playSound("cobblemon.block.apricorn.harvest", arg.block.location);
       }
 
     }

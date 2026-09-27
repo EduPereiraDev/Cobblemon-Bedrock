@@ -1,0 +1,65 @@
+{
+	"_source": "GligarModel.kt",
+	"rootBone": "gligar",
+	"animations": {
+		"cry": "q.bedrock_stateful('gligar', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('gligar', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('gligar', 'blink', 8, 30, 1)"
+			]
+		},
+		"battling": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.bedrock('gligar', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('gligar', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('gligar', 'ground_idle')",
+				"q.biped_walk(1, 0.6, 'left_upper_leg', 'right_upper_leg')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('gligar', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2.4,
+	"profileScale": 0.8,
+	"portraitTranslation": [
+		-0.1,
+		-0.8,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.6,
+		0
+	]
+}

@@ -1,0 +1,50 @@
+{
+	"_source": "OverqwilModel.kt",
+	"rootBone": "overqwil",
+	"animations": {
+		"cry": "q.bedrock_stateful('overqwil', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.bedrock('overqwil', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('overqwil', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('overqwil', 'ground_idle')",
+				"q.cobblemon_wave_chain('sine', 0.4, 8, 0, 0, 8, 0.1, 'y', 'q.modified_distance_moved', 'tail:7')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('overqwil', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 1.99,
+	"profileScale": 0.62,
+	"portraitTranslation": [
+		-0.65,
+		0.87,
+		0
+	],
+	"profileTranslation": [
+		-0.02,
+		0.95,
+		0
+	]
+}

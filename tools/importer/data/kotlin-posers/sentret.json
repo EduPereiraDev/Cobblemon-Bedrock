@@ -1,0 +1,51 @@
+{
+	"_source": "SentretModel.kt",
+	"rootBone": "sentret",
+	"animations": {
+		"cry": "q.bedrock_stateful('sentret', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.bedrock('sentret', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('sentret', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('sentret', 'ground_idle')",
+				"q.biped_walk(0.6, 0.9, 'foot_left', 'foot_right')",
+				"q.bimanual_swing(0.6, 0.9, 'arm_left', 'arm_right')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('sentret', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2.34,
+	"profileScale": 0.65,
+	"portraitTranslation": [
+		-0.37,
+		-0.67,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.76,
+		0
+	]
+}

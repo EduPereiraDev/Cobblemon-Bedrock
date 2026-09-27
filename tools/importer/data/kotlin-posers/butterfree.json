@@ -1,0 +1,74 @@
+{
+	"_source": "ButterfreeModel.kt",
+	"rootBone": "butterfree",
+	"animations": {
+		"cry": "q.bedrock_stateful('butterfree', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('butterfree', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"NONE",
+				"PROFILE",
+				"PORTRAIT",
+				"STAND",
+				"HOVER",
+				"FLOAT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('butterfree', 'air_idle')"
+			],
+			"transformedParts": [
+				{
+					"part": "butterfree",
+					"position": [
+						0,
+						-5,
+						0
+					]
+				}
+			]
+		},
+		"walking": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('butterfree', 'air_fly')"
+			],
+			"transformedParts": [
+				{
+					"part": "butterfree",
+					"position": [
+						0,
+						-5,
+						0
+					]
+				}
+			]
+		}
+	},
+	"portraitScale": 2.4,
+	"profileScale": 0.7,
+	"portraitTranslation": [
+		-0.1,
+		0.2,
+		0
+	],
+	"profileTranslation": [
+		0.1,
+		0.8,
+		0
+	]
+}

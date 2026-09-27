@@ -1,0 +1,80 @@
+{
+	"_source": "GurdurrModel.kt",
+	"rootBone": "gurdurr",
+	"animations": {
+		"cry": "q.bedrock_stateful('gurdurr', 'cry')",
+		"faint": "q.bedrock_stateful('gurdurr', 'faint')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('gurdurr', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('gurdurr', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('gurdurr', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('gurdurr', 'quirk_idle', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('gurdurr', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('gurdurr', 'blink', 8, 30, 1)"
+			]
+		},
+		"battleidle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('gurdurr', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('gurdurr', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"cry": "q.bedrock_stateful('gurdurr', 'battle_cry')"
+			}
+		}
+	},
+	"portraitScale": 1.7,
+	"profileScale": 0.47,
+	"portraitTranslation": [
+		-0.36,
+		1.1,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.98,
+		0
+	]
+}

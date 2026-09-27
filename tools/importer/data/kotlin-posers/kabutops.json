@@ -1,0 +1,79 @@
+{
+	"_source": "KabutopsModel.kt",
+	"rootBone": "kabutops",
+	"animations": {
+		"cry": "q.bedrock_stateful('kabutops', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('kabutops', 'sleep')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('kabutops', 'blink', 8, 30, 1)"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"PROFILE",
+				"PORTRAIT",
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('kabutops', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('kabutops', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('kabutops', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('kabutops', 'blink', 8, 30, 1)"
+			]
+		},
+		"battleidle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('kabutops', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('kabutops', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2,
+	"profileScale": 0.8,
+	"portraitTranslation": [
+		-0.35,
+		0.2,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.6,
+		0
+	]
+}

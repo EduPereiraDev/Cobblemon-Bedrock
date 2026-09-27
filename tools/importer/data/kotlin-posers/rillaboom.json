@@ -1,0 +1,109 @@
+{
+	"_source": "RillaboomModel.kt",
+	"rootBone": "rillaboom",
+	"animations": {
+		"cry": "q.bedrock_stateful('rillaboom', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('rillaboom', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('rillaboom', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "drum",
+					"isVisible": false
+				},
+				{
+					"part": "stick_left",
+					"isVisible": true
+				},
+				{
+					"part": "stick_right",
+					"isVisible": true
+				}
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('rillaboom', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('rillaboom', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "drum",
+					"isVisible": false
+				},
+				{
+					"part": "stick_left",
+					"isVisible": true
+				},
+				{
+					"part": "stick_right",
+					"isVisible": true
+				}
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('rillaboom', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('rillaboom', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "drum",
+					"isVisible": true
+				},
+				{
+					"part": "stick_left",
+					"isVisible": true
+				},
+				{
+					"part": "stick_right",
+					"isVisible": true
+				}
+			]
+		}
+	},
+	"portraitScale": 2.3,
+	"profileScale": 0.65,
+	"portraitTranslation": [
+		-0.85,
+		1.65,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.76,
+		0
+	]
+}

@@ -1,0 +1,81 @@
+{
+	"_source": "LileepModel.kt",
+	"rootBone": "lileep",
+	"animations": {
+		"cry": "q.bedrock_stateful('lileep', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('lileep', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('lileep', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('lileep', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('lileep', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('lileep', 'blink', 8, 30, 1)"
+			]
+		},
+		"water_idle": {
+			"poseTypes": [
+				"FLOAT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('lileep', 'water_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('lileep', 'blink', 8, 30, 1)"
+			]
+		},
+		"water_swim": {
+			"poseTypes": [
+				"SWIM"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('lileep', 'water_swim')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('lileep', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2,
+	"profileScale": 0.8,
+	"portraitTranslation": [
+		-0.3,
+		-0.5,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.55,
+		0
+	]
+}

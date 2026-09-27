@@ -1,0 +1,52 @@
+{
+	"_source": "MorgremModel.kt",
+	"rootBone": "morgrem",
+	"animations": {
+		"cry": "q.bedrock_stateful('morgrem', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('morgrem', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('morgrem', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('morgrem', 'ground_idle')",
+				"q.biped_walk(0.6, 0.9, 'leg_left', 'leg_right')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('morgrem', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 1.54,
+	"profileScale": 0.69,
+	"portraitTranslation": [
+		0.1,
+		1,
+		0
+	],
+	"profileTranslation": [
+		0.04,
+		0.71,
+		0
+	]
+}

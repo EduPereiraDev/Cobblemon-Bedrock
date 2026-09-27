@@ -1,0 +1,96 @@
+{
+	"_source": "DubwoolModel.kt",
+	"rootBone": "dubwool",
+	"animations": {
+		"cry": "q.bedrock_stateful('dubwool', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('dubwool', 'sleep')"
+			],
+			"transformedParts": [
+				{
+					"part": "wool_shearable",
+					"isVisible": "q.has_aspect('sheared') == false"
+				},
+				{
+					"part": "neck_wool_shearable",
+					"isVisible": "q.has_aspect('sheared') == false"
+				}
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('dubwool', 'faint')"
+			}
+		},
+		"standing": {
+			"poseTypes": [
+				"NONE",
+				"STAND",
+				"PORTRAIT",
+				"PROFILE"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('dubwool', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('dubwool', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "wool_shearable",
+					"isVisible": "q.has_aspect('sheared') == false"
+				},
+				{
+					"part": "neck_wool_shearable",
+					"isVisible": "q.has_aspect('sheared') == false"
+				}
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('dubwool', 'faint')"
+			}
+		},
+		"walking": {
+			"poseTypes": [
+				"SWIM",
+				"WALK"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('dubwool', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('dubwool', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "wool_shearable",
+					"isVisible": "q.has_aspect('sheared') == false"
+				},
+				{
+					"part": "neck_wool_shearable",
+					"isVisible": "q.has_aspect('sheared') == false"
+				}
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('dubwool', 'faint')"
+			}
+		}
+	},
+	"portraitScale": 3.1,
+	"profileScale": 0.9,
+	"portraitTranslation": [
+		-1.2,
+		-0.7,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.4,
+		0
+	]
+}

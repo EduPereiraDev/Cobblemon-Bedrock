@@ -1,0 +1,7 @@
+{
+	"minecraft:block": {
+		"permutations": [
+			{ "condition": "q.block_state('cobblemon:screen') == 'glitching'", "components": { "minecraft:light_emission": 10 } }
+		]
+	}
+}

@@ -1,0 +1,57 @@
+{
+	"_source": "PonytaGalarianModel.kt",
+	"rootBone": "ponyta_galar",
+	"animations": {
+		"cry": "q.bedrock_stateful('ponyta_galar', 'cry')",
+		"faint": "q.bedrock_stateful('ponyta_galar', 'faint')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('ponyta_galar', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"PROFILE",
+				"PORTRAIT",
+				"STAND"
+			],
+			"animations": [
+				"q.look('neck', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('ponyta_galar', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('ponyta_galar', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('ponyta_galar', 'quirk', 60, 360, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK"
+			],
+			"animations": [
+				"q.look('neck', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('ponyta_galar', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('ponyta_galar', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2.2,
+	"profileScale": 0.9,
+	"portraitTranslation": [
+		-0.4,
+		0.2,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.43,
+		0
+	]
+}

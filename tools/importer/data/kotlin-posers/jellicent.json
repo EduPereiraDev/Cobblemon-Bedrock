@@ -1,0 +1,48 @@
+{
+	"_source": "JellicentModel.kt",
+	"rootBone": "jellicent",
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('jellicent', 'render')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('jellicent', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('jellicent', 'render')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('jellicent', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 1.13,
+	"profileScale": 0.51,
+	"portraitTranslation": [
+		-0.56,
+		1.64,
+		0
+	],
+	"profileTranslation": [
+		0,
+		1.05,
+		0
+	]
+}

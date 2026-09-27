@@ -1,0 +1,150 @@
+{
+	"_source": "SizzlipedeModel.kt",
+	"rootBone": "sizzlipede",
+	"animations": {
+		"cry": "q.bedrock_stateful('sizzlipede', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('sizzlipede', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('sizzlipede', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('sizzlipede', 'blink', 8, 30, 1)"
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.bedrock('sizzlipede', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('sizzlipede', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('sizzlipede', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('sizzlipede', 'blink', 8, 30, 1)"
+			]
+		},
+		"shoulder_left": {
+			"poseTypes": [
+				"SHOULDER_LEFT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('sizzlipede', 'shoulder_left')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('sizzlipede', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "sizzlipede",
+					"position": [
+						0,
+						1.3,
+						0
+					]
+				},
+				{
+					"part": "sizzlipede",
+					"position": [
+						3.8,
+						0,
+						0
+					]
+				},
+				{
+					"part": "sizzlipede",
+					"position": [
+						0,
+						0,
+						1.1
+					]
+				}
+			]
+		},
+		"shoulder_right": {
+			"poseTypes": [
+				"SHOULDER_RIGHT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('sizzlipede', 'shoulder_right')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('sizzlipede', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "sizzlipede",
+					"position": [
+						0,
+						1.3,
+						0
+					]
+				},
+				{
+					"part": "sizzlipede",
+					"position": [
+						-3.8,
+						0,
+						0
+					]
+				},
+				{
+					"part": "sizzlipede",
+					"position": [
+						0,
+						0,
+						1.1
+					]
+				}
+			]
+		}
+	},
+	"portraitScale": 3.24,
+	"profileScale": 0.9,
+	"portraitTranslation": [
+		-0.89,
+		-3.35,
+		0
+	],
+	"profileTranslation": [
+		0.07,
+		0.21,
+		0
+	]
+}

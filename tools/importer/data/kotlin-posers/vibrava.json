@@ -1,0 +1,97 @@
+{
+	"_source": "VibravaModel.kt",
+	"rootBone": "vibrava",
+	"animations": {
+		"cry": "q.bedrock_stateful('vibrava', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 0.6, 0.3, 70, -45, 45, -45)",
+				"q.bedrock('vibrava', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('vibrava', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "wing_front_left",
+					"rotation": [
+						0,
+						-75,
+						0
+					]
+				},
+				{
+					"part": "wing_front_right",
+					"rotation": [
+						0,
+						75,
+						0
+					]
+				}
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY",
+				"HOVER"
+			],
+			"animations": [
+				"q.look('head', 0.6, 0.3, 70, -45, 45, -45)",
+				"q.bedrock('vibrava', 'ground_idle')",
+				"q.cobblemon_wing_flap('triangle', 0.6, 0.08, 0, 0, 'z', 'wing_front_left', 'wing_front_right', 'q.anim_time')",
+				"q.cobblemon_wing_flap('triangle', 0.4, 0.1, 0, 0, 'z', 'wing_back_left', 'wing_back_right', '0.01 + q.anim_time')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('vibrava', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "vibrava",
+					"position": [
+						0,
+						-4,
+						0
+					]
+				},
+				{
+					"part": "wing_front_left",
+					"rotation": [
+						0,
+						0,
+						-30
+					]
+				},
+				{
+					"part": "wing_front_right",
+					"rotation": [
+						0,
+						0,
+						30
+					]
+				}
+			]
+		}
+	},
+	"portraitScale": 1.36,
+	"profileScale": 0.54,
+	"portraitTranslation": [
+		-0.37,
+		-0.55,
+		0
+	],
+	"profileTranslation": [
+		-0.01,
+		0.71,
+		0
+	]
+}

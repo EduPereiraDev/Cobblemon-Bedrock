@@ -1,7 +1,11 @@
+import { requestPokemonUUID, RequestData } from "./Request";
 import { toID } from "../utils";
 import { ActivePokemon } from "./ActivePokemon";
-import { RequestMove } from "./Request";
-import { BattleMoveset, MoveTargets } from "./BattleMoveset";
+import { BattleMoveset } from "./BattleMoveset";
+import type { BattleActor } from "./BattleActor";
+import { bagItemChoiceString } from "../showdown";
+import type { BagItemDef } from "./BagItems";
+import { gimmickFromChoice, getGimmicks, moveTileInfo } from "./Gimmicks";
 
 export enum ActionResponseType {
   SWITCH,
@@ -9,84 +13,70 @@ export enum ActionResponseType {
   DEFAULT,
   FORCE_PASS,
   PASS,
-  HEAL_ITEM
+  HEAL_ITEM,
+  BAG_ITEM,
+  FORFEIT,
+  FLEE_ATTEMPT
+}
+
+/** Tudo o que uma resposta precisa saber sobre a posição (slot) que ela ocupa no turno. */
+export interface ResponseContext {
+  actor: BattleActor;
+  request: RequestData;
+  /** Índice da posição ativa (0 = "a", 1 = "b", 2 = "c"). */
+  slot: number;
+  active: ActivePokemon | null;
+  moveset?: BattleMoveset;
+  forceSwitch: boolean;
 }
 
 export abstract class ActionResponse {
   constructor(
     public type: ActionResponseType
   ) { }
-  abstract isValid(pokemon: ActivePokemon, moveset: BattleMoveset | undefined, forceSwtich: boolean): boolean;
-  abstract toShowdownString(pokemon: ActivePokemon, moveset?: BattleMoveset): string;
+  abstract isValid(context: ResponseContext): boolean;
+  abstract toShowdownString(context: ResponseContext): string;
 }
 
 export class MoveActionResponse extends ActionResponse {
+  /**
+   * @param moveName Id do golpe (como no request).
+   * @param targetLoc Alvo relativo do Showdown (1..3 inimigo, -1..-3 aliado), só em duplas/triplas.
+   * @param gimmickID Sufixo do gimmick (`mega`, `ultra`, `zmove`, `dynamax`, `terastallize`; Gimmicks.GIMMICK_CHOICE).
+   */
   constructor(
     public moveName: string,
-    public targetShowdownPosition?: string,
+    public targetLoc?: number,
     public gimmickID?: string
   ) { super(ActionResponseType.MOVE) }
-  isValid(pokemon: ActivePokemon, moveset: BattleMoveset | undefined, forceSwtich: boolean): boolean {
-    if (forceSwtich || !moveset)
+  isValid(context: ResponseContext): boolean {
+    if (context.forceSwitch || !context.moveset)
       return false;
-    let move = moveset.moves.find(x => x.id == toID(this.moveName));
-    if (move == undefined)
-      throw new Error("Pokemon Moveset does not contain the move from MoveActionResponse.");
-    //TODO: Support Gimmick Moves
-    let gimmickMove = move.gimmickMove;
-    let validGimmickMove = false;
-    if (!validGimmickMove && !move.canBeUsed())
+    let index = context.moveset.moves.findIndex(x => x.id == toID(this.moveName));
+    if (index === -1)
       return false;
-
-    let avaliableTargets = MoveTargets[move.target]?.(pokemon);
-    if (!avaliableTargets)
-      return true; //Handled by showdown, does not need a specified target
-
-    if (!this.targetShowdownPosition) {
-      //If there is only one possible target, then hit it.
-      if (avaliableTargets.length == 1) {
-        this.targetShowdownPosition = avaliableTargets[0].getShowdownPosition();
-        return true;
-      }
-      //A target needed to be specified.
+    let move = context.moveset.moves[index];
+    // Frente msd-fase1: o gimmick tem de estar no request já passado pelo sanitize (item-chave do jogador).
+    let gimmick = this.gimmickID ? gimmickFromChoice(this.gimmickID) : undefined;
+    if (this.gimmickID && (!gimmick || !getGimmicks(context.moveset).includes(gimmick)))
       return false;
-    }
-
-    if (!avaliableTargets.find(x => x.getShowdownPosition() == this.targetShowdownPosition))
-      return false; //The specified pokemon was not targetable.
-
-    return true;
+    // Golpe Z/Max (ou já em Dynamax): vale o golpe Z/Max (MoveActionResponse.isValid: validGimmickMove).
+    if (gimmick === "zmove" || gimmick === "max" || (!gimmick && context.moveset.maxMoves && !context.moveset.canDynamax))
+      return moveTileInfo(context.moveset, index, gimmick).selectable || (!gimmick && move.canBeUsed());
+    return move.canBeUsed() || move.id == "struggle";
   }
-  toShowdownString(pokemon: ActivePokemon, moveset?: BattleMoveset): string {
-    if (!moveset)
+  toShowdownString(context: ResponseContext): string {
+    if (!context.moveset)
       throw new Error("Moveset must be provided with MoveActionResponse .toShowdownString");
-
-    let moveIndex = moveset.moves.findIndex(x => x.id == toID(this.moveName)) + 1;
+    let moveIndex = context.moveset.moves.findIndex(x => x.id == toID(this.moveName)) + 1;
     if (moveIndex === 0)
       throw new Error("Move from MoveActionResponse was not found in moveset!");
-
     let output = "move " + moveIndex.toString();
-    if (this.targetShowdownPosition) {
-      let [_, targetPokemon] = pokemon.battle.getActorAndActiveSlotFromShowdownPosition(this.targetShowdownPosition);
-      let digit = targetPokemon!.getSignedDigitRelativeTo(pokemon);
-      output += ` ${digit}`
-    }
+    if (this.targetLoc)
+      output += ` ${this.targetLoc > 0 ? "+" : ""}${this.targetLoc}`;
     if (this.gimmickID)
       output += ` ${this.gimmickID}`;
     return output;
-  }
-
-}
-
-export class HealItemActionResponse extends ActionResponse {
-  constructor(
-    public item: string
-  ) { super(ActionResponseType.HEAL_ITEM) }
-  isValid(pokemon: ActivePokemon, moveset: BattleMoveset | undefined, forceSwitch: boolean): boolean {
-    return !forceSwitch;
-  }
-  toShowdownString(pokemon: ActivePokemon, moveset?: BattleMoveset): string {
-    return `healitem ${pokemon.getShowdownPosition()} ${toID(this.item)}`
   }
 }
 
@@ -94,77 +84,104 @@ export class SwitchActionResponse extends ActionResponse {
   constructor(
     public newPokemonUUID: string
   ) { super(ActionResponseType.SWITCH) }
-  isValid(pokemon: ActivePokemon, moveset: BattleMoveset | undefined, forceSwtich: boolean): boolean {
-    let newPokemon = pokemon.actor.pokemon.find(x => x.uuid == this.newPokemonUUID)
-    if (!newPokemon)
+  isValid(context: ResponseContext): boolean {
+    let index = context.request.side.pokemon.findIndex(x => requestPokemonUUID(x) === this.newPokemonUUID);
+    if (index === -1)
       return false;
-    if (newPokemon.currentHealth <= 0)
+    let requestPokemon = context.request.side.pokemon[index];
+    if (requestPokemon.condition.endsWith(" fnt") || requestPokemon.condition.startsWith("0"))
       return false;
-    if (moveset && moveset.trapped)
+    if (requestPokemon.active)
       return false;
-    if (pokemon.actor.activePokemon.some(x => x?.data.uuid == this.newPokemonUUID))
+    if (!context.forceSwitch && context.moveset?.trapped)
       return false;
     return true;
   }
-  toShowdownString(pokemon: ActivePokemon, moveset?: BattleMoveset): string {
-    return `switch ${pokemon.actor.request!.side.pokemon.findIndex(x => x.details.split(", ")[1] === this.newPokemonUUID) + 1}`;
+  toShowdownString(context: ResponseContext): string {
+    return `switch ${context.request.side.pokemon.findIndex(x => requestPokemonUUID(x) === this.newPokemonUUID) + 1}`;
   }
 }
 
 export class DefaultActionResponse extends ActionResponse {
   constructor() { super(ActionResponseType.DEFAULT) }
-  isValid(pokemon: ActivePokemon, moveset: BattleMoveset | undefined, forceSwtich: boolean): boolean {
+  isValid(): boolean {
     return true;
   }
-  toShowdownString(pokemon: ActivePokemon, moveset?: BattleMoveset): string {
+  toShowdownString(): string {
     return "default";
   }
 }
 
+/** Posição que não escolhe nada (Pokémon desmaiado sem reserva, ou sem troca obrigatória). */
 export class PassActionResponse extends ActionResponse {
   constructor() { super(ActionResponseType.PASS) }
-  isValid(pokemon: ActivePokemon, moveset: BattleMoveset | undefined, forceSwtich: boolean): boolean {
+  isValid(): boolean {
     return true;
   }
-  toShowdownString(pokemon: ActivePokemon, moveset?: BattleMoveset): string {
+  toShowdownString(): string {
     return "pass";
   }
 }
 
+/**
+ * Marca a posição que será ocupada por uma ação forçada (`BattleActor.forceChoose`), como arremessar
+ * uma Poké Bola: o Pokémon perde a vez. Vira `skip` no adaptador (showdown.ts).
+ */
 export class ForcePassActionResponse extends ActionResponse {
   constructor() { super(ActionResponseType.FORCE_PASS) }
-  isValid(pokemon: ActivePokemon, moveset: BattleMoveset | undefined, forceSwtich: boolean): boolean {
-    if (forceSwtich)
-      return false;
-    if (!moveset)
-      return false;
-    return pokemon.actor.expectingPassActions.length > 0;
+  isValid(context: ResponseContext): boolean {
+    return !context.forceSwitch;
   }
-  toShowdownString(pokemon: ActivePokemon, moveset?: BattleMoveset): string {
-    return "pass";
+  toShowdownString(): string {
+    return "skip";
   }
 }
 
+/** Item da mochila (BagItemActionResponse do Cobblemon): `useitem <uuid> <item> <script> [dados]`. */
 export class BagItemActionResponse extends ActionResponse {
   /**
-   * Use an item from the bag
-   * @param bagItem Item name as a string (do not include namespace)
-   * @param target target pokemon
-   * @param data idk
+   * @param bagItem Definição do item (BagItems.ts).
+   * @param targetUUID Pokémon do time que recebe o item (pode estar no banco).
+   * @param data Dados extras (Ether: id do golpe).
+   * @param scriptData Dados já calculados para o script (preenchido pelo BattleActor ao enviar).
    */
   constructor(
-    public bagItem: string,
-    public target: ActivePokemon,
-    public data: string
-  ) { super(ActionResponseType.FORCE_PASS) }
-  isValid(pokemon: ActivePokemon, moveset: BattleMoveset | undefined, forceSwtich: boolean): boolean {
-    if (forceSwtich)
+    public bagItem: BagItemDef,
+    public targetUUID: string,
+    public data?: string,
+    public scriptData: string[] = []
+  ) { super(ActionResponseType.BAG_ITEM) }
+  isValid(context: ResponseContext): boolean {
+    if (context.forceSwitch || !context.moveset)
       return false;
-    if (!moveset)
-      return false;
-    return pokemon.actor.expectingPassActions.length > 0;
+    return context.request.side.pokemon.some(x => requestPokemonUUID(x) === this.targetUUID);
   }
-  toShowdownString(pokemon: ActivePokemon, moveset?: BattleMoveset): string {
-    return `useitem ${this.target.data.uuid} ${toID(this.bagItem)} `
+  toShowdownString(): string {
+    return bagItemChoiceString({ targetUuid: this.targetUUID, itemName: this.bagItem.itemName, script: this.bagItem.script, data: this.scriptData });
+  }
+}
+
+/** Desistir (PvP/PvN). Encerra a batalha com `>forcelose`. */
+export class ForfeitActionResponse extends ActionResponse {
+  constructor() { super(ActionResponseType.FORFEIT) }
+  isValid(): boolean {
+    return true;
+  }
+  toShowdownString(): string {
+    return "forfeit";
+  }
+}
+
+/**
+ * Fugir de selvagem. No Cobblemon 1.8.2 o botão Run só avisa que é preciso se afastar do Pokémon
+ * (`run_prompt`); a fuga acontece por distância (config.defaultFleeDistance).
+ */
+export class FleeAttemptActionResponse extends ActionResponse {
+  constructor() { super(ActionResponseType.FLEE_ATTEMPT) }
+  isValid(): boolean {
+    return true;
+  }
+  toShowdownString(): string {
+    return "flee-attempt";
   }
 }

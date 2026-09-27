@@ -1,0 +1,96 @@
+{
+	"_source": "SamurottHisuianModel.kt",
+	"rootBone": "samurott_hisui",
+	"animations": {
+		"cry": "q.bedrock_stateful('samurott_hisuian', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"NONE",
+				"STAND",
+				"PORTRAIT",
+				"PROFILE"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('samurott_hisuian', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('samurott_hisuian', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "seamitar_hand_right",
+					"isVisible": false
+				},
+				{
+					"part": "seamitar_hand_left",
+					"isVisible": false
+				}
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('samurott_hisuian', 'battle_pose')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('samurott_hisuian', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "seamitar_hand_right",
+					"isVisible": false
+				},
+				{
+					"part": "seamitar_hand_left",
+					"isVisible": false
+				}
+			]
+		},
+		"walking": {
+			"poseTypes": [
+				"SWIM",
+				"WALK"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('samurott_hisuian', 'ground_idle')",
+				"q.quadruped_walk(0.8, 0.8, 'leg_front_left', 'leg_front_right', 'leg_back_left', 'leg_back_right')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('samurott_hisuian', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "seamitar_hand_right",
+					"isVisible": false
+				},
+				{
+					"part": "seamitar_hand_left",
+					"isVisible": false
+				}
+			]
+		}
+	},
+	"portraitScale": 1.32,
+	"profileScale": 0.6,
+	"portraitTranslation": [
+		-0.67,
+		1.3,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.8,
+		0
+	]
+}

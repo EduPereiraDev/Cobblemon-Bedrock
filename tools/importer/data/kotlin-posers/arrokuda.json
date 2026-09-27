@@ -1,0 +1,109 @@
+{
+	"_source": "ArrokudaModel.kt",
+	"rootBone": "arrokuda",
+	"poses": {
+		"sleeping": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isTouchingWater": false,
+			"animations": [
+				"q.bedrock('arrokuda', 'sleep')"
+			]
+		},
+		"water_sleeping": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isTouchingWater": true,
+			"animations": [
+				"q.bedrock('arrokuda', 'water_sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"PROFILE",
+				"PORTRAIT",
+				"STAND"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.bedrock('arrokuda', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('arrokuda', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('arrokuda', 'ground_quirk', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK"
+			],
+			"animations": [
+				"q.bedrock('arrokuda', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('arrokuda', 'blink', 8, 30, 1)"
+			]
+		},
+		"floating": {
+			"poseTypes": [
+				"FLOAT"
+			],
+			"animations": [
+				"q.bedrock('arrokuda', 'water_idle')"
+			]
+		},
+		"swimming": {
+			"poseTypes": [
+				"SWIM"
+			],
+			"animations": [
+				"q.bedrock('arrokuda', 'water_swim')"
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"isTouchingWater": false,
+			"animations": [
+				"q.bedrock('arrokuda', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('arrokuda', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('arrokuda', 'ground_quirk', 8, 30, 1)"
+			]
+		},
+		"water_battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"isTouchingWater": true,
+			"animations": [
+				"q.bedrock('arrokuda', 'water_battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('arrokuda', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 3,
+	"profileScale": 0.8,
+	"portraitTranslation": [
+		-0.7,
+		-3.2,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.5,
+		0
+	]
+}

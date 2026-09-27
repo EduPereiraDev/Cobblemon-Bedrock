@@ -1,0 +1,10 @@
+{
+  "cobblemon.ui.interact": "Interagir",
+  "cobblemon.ui.interact.challenge": "Desafiar",
+  "cobblemon.ui.interact.exp_candy": "Subir de nível",
+  "cobblemon.battle.in_battle": "%1s já está em uma batalha!",
+  "cobblemon.battle.pokemon_already_fainted": "%1s está fraco demais para batalhar! Escolha um Pokémon saudável.",
+  "cobblemon.battle.already_out": "%1s já está na batalha!",
+  "cobblemon.ui.info.unsaved_changes": "Clique em enviar para salvar as alterações.",
+  "cobblemon.battle.tie": "A batalha terminou empatada!"
+}

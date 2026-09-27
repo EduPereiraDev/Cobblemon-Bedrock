@@ -1,0 +1,148 @@
+{
+	"_source": "UnfezantModel.kt",
+	"rootBone": "unfezant",
+	"animations": {
+		"cry": "q.bedrock_stateful('unfezant', 'cry')"
+	},
+	"poses": {
+		"stand": {
+			"poseTypes": [
+				"STAND",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head_ai', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('unfezant', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('unfezant', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "open_left",
+					"isVisible": false
+				},
+				{
+					"part": "open_right",
+					"isVisible": false
+				},
+				{
+					"part": "closed_left",
+					"isVisible": true
+				},
+				{
+					"part": "closed_right",
+					"isVisible": true
+				}
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK"
+			],
+			"animations": [
+				"q.look('head_ai', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('unfezant', 'ground_idle')",
+				"q.biped_walk(0.6662, 1.4, 'leg_left', 'leg_right')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('unfezant', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "open_left",
+					"isVisible": false
+				},
+				{
+					"part": "open_right",
+					"isVisible": false
+				},
+				{
+					"part": "closed_left",
+					"isVisible": true
+				},
+				{
+					"part": "closed_right",
+					"isVisible": true
+				}
+			]
+		},
+		"floating": {
+			"poseTypes": [
+				"FLOAT",
+				"HOVER"
+			],
+			"animations": [
+				"q.look('head_ai', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('unfezant', 'air_idle')",
+				"q.cobblemon_wing_flap('sine', 0.6, 0.9, 0, -0.17453, 'z', 'wing_left', 'wing_right', 'q.anim_time')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('unfezant', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "open_left",
+					"isVisible": true
+				},
+				{
+					"part": "open_right",
+					"isVisible": true
+				},
+				{
+					"part": "closed_left",
+					"isVisible": false
+				},
+				{
+					"part": "closed_right",
+					"isVisible": false
+				}
+			]
+		},
+		"flying": {
+			"poseTypes": [
+				"FLY",
+				"SWIM"
+			],
+			"animations": [
+				"q.look('head_ai', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('unfezant', 'air_idle')",
+				"q.cobblemon_wing_flap('sine', 0.9, 0.9, 0, -0.24435, 'z', 'wing_left', 'wing_right', 'q.anim_time')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('unfezant', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "open_left",
+					"isVisible": true
+				},
+				{
+					"part": "open_right",
+					"isVisible": true
+				},
+				{
+					"part": "closed_left",
+					"isVisible": false
+				},
+				{
+					"part": "closed_right",
+					"isVisible": false
+				}
+			]
+		}
+	},
+	"portraitScale": 2.1,
+	"profileScale": 0.7,
+	"portraitTranslation": [
+		-0.5,
+		1.5,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.7,
+		0
+	]
+}

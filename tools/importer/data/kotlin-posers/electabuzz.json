@@ -1,0 +1,84 @@
+{
+	"_source": "ElectabuzzModel.kt",
+	"rootBone": "electabuzz",
+	"animations": {
+		"cry": "q.bedrock_stateful('electabuzz', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.bedrock('electabuzz', 'sleep')"
+			]
+		},
+		"ambientsleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.bedrock('electabuzz', 'ambient_sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('electabuzz', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('electabuzz', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('electabuzz', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('electabuzz', 'blink', 8, 30, 1)"
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.bedrock('electabuzz', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('electabuzz', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2.5,
+	"profileScale": 0.8,
+	"portraitTranslation": [
+		-0.3,
+		0.2,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.6,
+		0
+	]
+}

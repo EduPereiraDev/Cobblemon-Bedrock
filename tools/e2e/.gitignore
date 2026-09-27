@@ -1,0 +1,2 @@
+# Dependências da suíte E2E (instaladas pelo tools/e2e/run.mjs)
+node_modules/

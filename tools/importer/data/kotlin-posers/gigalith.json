@@ -1,0 +1,78 @@
+{
+	"_source": "GigalithModel.kt",
+	"rootBone": "gigalith",
+	"animations": {
+		"cry": "q.bedrock_stateful('gigalith', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('gigalith', 'sleep')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('gigalith', 'faint')"
+			}
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('gigalith', 'ground_idle')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('gigalith', 'faint')"
+			}
+		},
+		"walking": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('gigalith', 'ground_walk')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('gigalith', 'faint')"
+			}
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('gigalith', 'battle_idle')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('gigalith', 'faint')"
+			}
+		}
+	},
+	"portraitScale": 2.1,
+	"profileScale": 0.6,
+	"portraitTranslation": [
+		-0.3,
+		0.7,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.7,
+		0
+	]
+}

@@ -1,0 +1,40 @@
+{
+	"_source": "SpiritombModel.kt",
+	"rootBone": "spiritomb",
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.bedrock('spiritomb', 'ground_idle')"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('spiritomb', 'ground_idle')"
+			]
+		}
+	},
+	"portraitScale": 1.3,
+	"profileScale": 0.75,
+	"portraitTranslation": [
+		-0.4,
+		0.3,
+		0
+	],
+	"profileTranslation": [
+		-0.2,
+		0.6,
+		0
+	]
+}

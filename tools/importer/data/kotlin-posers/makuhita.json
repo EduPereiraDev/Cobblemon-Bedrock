@@ -1,0 +1,44 @@
+{
+	"_source": "MakuhitaModel.kt",
+	"rootBone": "makuhita",
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('makuhita', 'ground_idle')"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('makuhita', 'ground_idle')",
+				"q.biped_walk(0.6, 0.9, 'foot_left', 'foot_right')",
+				"q.bimanual_swing(0.6, 0.9, 'arm_left', 'arm_right')"
+			]
+		}
+	},
+	"portraitScale": 2.21,
+	"profileScale": 0.68,
+	"portraitTranslation": [
+		-0.3,
+		-0.49,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.69,
+		0
+	]
+}

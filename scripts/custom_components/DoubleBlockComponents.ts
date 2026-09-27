@@ -1,4 +1,4 @@
-import { BlockComponentOnPlaceEvent, BlockComponentPlayerDestroyEvent, BlockComponentRandomTickEvent, BlockComponentTickEvent, BlockCustomComponent } from "@minecraft/server";
+import { BlockComponentOnPlaceEvent, BlockComponentPlayerBreakEvent, BlockComponentRandomTickEvent, BlockComponentTickEvent, BlockCustomComponent } from "@minecraft/server";
 import { BlockUtils } from "../utils";
 
 export class EnforceTopHalfComponent implements BlockCustomComponent {
@@ -9,12 +9,12 @@ export class EnforceTopHalfComponent implements BlockCustomComponent {
   onTick(arg: BlockComponentTickEvent) {
     if (!(arg.block.above(1)?.typeId == this.topHalfIdentifier)) {
       let location = arg.block.location;
-      arg.dimension.runCommandAsync(`setblock ${location.x} ${location.y} ${location.z} air destroy`);
+      arg.dimension.runCommand(`setblock ${location.x} ${location.y} ${location.z} air destroy`);
     }
   }
-  onPlayerDestroy(arg: BlockComponentPlayerDestroyEvent) {
+  onPlayerBreak(arg: BlockComponentPlayerBreakEvent) {
     let location = arg.block.location;
-    arg.dimension.runCommandAsync(`setblock ${location.x} ${location.y + 1} ${location.z} air destroy`);
+    arg.dimension.runCommand(`setblock ${location.x} ${location.y + 1} ${location.z} air destroy`);
   }
   onPlace(arg: BlockComponentOnPlaceEvent) {
     let aboveBlock = arg.block.above(1);
@@ -25,7 +25,7 @@ export class EnforceTopHalfComponent implements BlockCustomComponent {
     }
     else if (!(aboveBlock.typeId == this.topHalfIdentifier)) {
       let location = arg.block.location;
-      arg.dimension.runCommandAsync(`setblock ${location.x} ${location.y} ${location.z} air destroy`);
+      arg.dimension.runCommand(`setblock ${location.x} ${location.y} ${location.z} air destroy`);
       return;
     }
     if (this.directionStates.length > 0) {
@@ -45,12 +45,12 @@ export class EnforceBottomHalfComponent implements BlockCustomComponent {
   onTick(arg: BlockComponentTickEvent) {
     if (!(arg.block.below(1)?.typeId == this.bottomHalfIdentifier)) {
       let location = arg.block.location;
-      arg.dimension.runCommandAsync(`setblock ${location.x} ${location.y} ${location.z} air destroy`);
+      arg.dimension.runCommand(`setblock ${location.x} ${location.y} ${location.z} air destroy`);
     }
   }
-  onPlayerDestroy(arg: BlockComponentPlayerDestroyEvent) {
+  onPlayerBreak(arg: BlockComponentPlayerBreakEvent) {
     let location = arg.block.location;
-    arg.dimension.runCommandAsync(`setblock ${location.x} ${location.y - 1} ${location.z} air destroy`);
+    arg.dimension.runCommand(`setblock ${location.x} ${location.y - 1} ${location.z} air destroy`);
   }
   onPlace(arg: BlockComponentOnPlaceEvent) {
     let aboveBlock = arg.block.below(1);
@@ -61,7 +61,7 @@ export class EnforceBottomHalfComponent implements BlockCustomComponent {
     }
     else if (!(aboveBlock.typeId == this.bottomHalfIdentifier)) {
       let location = arg.block.location;
-      arg.dimension.runCommandAsync(`setblock ${location.x} ${location.y} ${location.z} air destroy`);
+      arg.dimension.runCommand(`setblock ${location.x} ${location.y} ${location.z} air destroy`);
       return;
     }
     if (this.directionStates.length > 0) {

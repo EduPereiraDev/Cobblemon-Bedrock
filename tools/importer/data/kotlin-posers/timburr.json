@@ -1,0 +1,77 @@
+{
+	"_source": "TimburrModel.kt",
+	"rootBone": "timburr",
+	"animations": {
+		"cry": "q.bedrock_stateful('timburr', 'cry')",
+		"faint": "q.bedrock_stateful('timburr', 'faint')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('timburr', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('timburr', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('timburr', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('timburr', 'idle_quirk', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('timburr', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('timburr', 'blink', 8, 30, 1)"
+			]
+		},
+		"battleidle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('timburr', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('timburr', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2,
+	"profileScale": 0.65,
+	"portraitTranslation": [
+		-0.1,
+		0,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.76,
+		0
+	]
+}

@@ -1,0 +1,42 @@
+{
+	"_source": "ExploudModel.kt",
+	"rootBone": "exploud",
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.bedrock('exploud', 'idle')"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('exploud', 'idle')",
+				"q.biped_walk(0.6, 0.9, 'leg_left', 'leg_right')",
+				"q.bimanual_swing(0.6, 0.9, 'arm_left', 'arm_right')"
+			]
+		}
+	},
+	"portraitScale": 1,
+	"profileScale": 0.65,
+	"portraitTranslation": [
+		-0.25,
+		0.55,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.76,
+		0
+	]
+}

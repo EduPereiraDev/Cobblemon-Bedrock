@@ -1,0 +1,75 @@
+{
+	"_source": "TyruntModel.kt",
+	"rootBone": "tyrunt",
+	"animations": {
+		"cry": "q.bedrock_stateful('tyrunt', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('tyrunt', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('tyrunt', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('tyrunt', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('tyrunt', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('tyrunt', 'blink', 8, 30, 1)"
+			]
+		},
+		"battleidle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('tyrunt', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('tyrunt', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 1.08,
+	"profileScale": 0.56,
+	"portraitTranslation": [
+		-0.43,
+		0.4,
+		0
+	],
+	"profileTranslation": [
+		-0.03,
+		0.89,
+		0
+	]
+}

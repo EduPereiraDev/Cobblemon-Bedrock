@@ -1,6 +1,12 @@
 {
   "ui_defs": [
     "ui/pc.json",
-    "ui/battle.json"
+    "ui/battle.json",
+    "ui/cobblemon_forms.json",
+    "ui/cobblemon_hud.json",
+    "ui/summary.json",
+    "ui/starter.json",
+    "ui/pokedex.json",
+    "ui/cobblemon_scanner.json"
   ]
 }

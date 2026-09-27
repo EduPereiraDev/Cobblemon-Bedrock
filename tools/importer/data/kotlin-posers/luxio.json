@@ -1,0 +1,51 @@
+{
+	"_source": "LuxioModel.kt",
+	"rootBone": "luxio",
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('luxio', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"PROFILE",
+				"PORTRAIT",
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('luxio', 'idle')"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.quadruped_walk(1.1, 1.4, 'front_leg_left', 'front_leg_right', 'back_leg_left', 'back_leg_right')",
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('luxio', 'idle')"
+			]
+		}
+	},
+	"portraitScale": 1.8,
+	"profileScale": 0.7,
+	"portraitTranslation": [
+		-0.6,
+		-0.25,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.7,
+		0
+	]
+}

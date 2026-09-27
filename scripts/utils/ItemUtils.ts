@@ -6,7 +6,7 @@ export function getItemInHand(player: Player) {
 }
 /** Decrements the item stack in the players hand if not in creative */
 export function decrementItemInHand(player: Player) {
-  if (player.getGameMode() == GameMode.creative)
+  if (player.getGameMode() == GameMode.Creative)
     return;
   let inventory = player.getComponent("minecraft:inventory")!;
   let currentSlot = inventory.container!.getSlot(player.selectedSlotIndex);
@@ -23,11 +23,11 @@ export function decrementItemInHand(player: Player) {
 }
 
 export function spawnLootFromTable(location: Vector3, dimension: Dimension, lootTable: string) {
-  dimension.runCommandAsync(`loot spawn ${location.x} ${location.y} ${location.z} loot ${lootTable}`);
+  dimension.runCommand(`loot spawn ${location.x} ${location.y} ${location.z} loot ${lootTable}`);
 }
 /** Decrements the durability of the item in the players hand if not in creative */
 export function decrementDurability(player: Player) {
-  if (player.getGameMode() == GameMode.creative)
+  if (player.getGameMode() == GameMode.Creative)
     return;
   let inventory = player.getComponent("minecraft:inventory")!;
   let currentSlot = inventory.container!.getSlot(player.selectedSlotIndex);

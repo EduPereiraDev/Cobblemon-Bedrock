@@ -1,0 +1,105 @@
+{
+	"_source": "ArctovishModel.kt",
+	"rootBone": "arctovish",
+	"animations": {
+		"cry": "q.bedrock_stateful('arctovish', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isTouchingWater": false,
+			"animations": [
+				"q.bedrock('arctovish', 'sleep')"
+			]
+		},
+		"water_sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isTouchingWater": true,
+			"animations": [
+				"q.bedrock('arctovish', 'water_sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"HOVER"
+			],
+			"animations": [
+				"q.bedrock('arctovish', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('arctovish', 'blink', 8, 30, 1)"
+			]
+		},
+		"ui_poses": {
+			"poseTypes": [
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.bedrock('arctovish', 'water_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('arctovish', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('arctovish', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('arctovish', 'blink', 8, 30, 1)"
+			]
+		},
+		"float": {
+			"poseTypes": [
+				"FLOAT"
+			],
+			"animations": [
+				"q.bedrock('arctovish', 'water_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('arctovish', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('arctovish', 'water_quirk', 30, 60, 1)"
+			],
+			"namedAnimations": {
+				"cry": "q.bedrock_stateful('arctovish', 'water_cry')"
+			}
+		},
+		"swim": {
+			"poseTypes": [
+				"SWIM"
+			],
+			"animations": [
+				"q.bedrock('arctovish', 'water_swim')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('arctovish', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('arctovish', 'water_quirk', 30, 60, 1)"
+			],
+			"namedAnimations": {
+				"cry": "q.bedrock_stateful('arctovish', 'water_cry')"
+			}
+		}
+	},
+	"portraitScale": 0.66,
+	"profileScale": 0.35,
+	"portraitTranslation": [
+		-0.36,
+		1.98,
+		0
+	],
+	"profileTranslation": [
+		0,
+		1.25,
+		0
+	]
+}

@@ -1,0 +1,112 @@
+{
+	"_source": "RowletHisuiBiasModel.kt",
+	"rootBone": "rowlet_hisui_bias",
+	"animations": {
+		"cry": "q.bedrock_stateful('rowlet_hisui_bias', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.bedrock('rowlet_hisui_bias', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('rowlet_hisui_bias', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "wings_open",
+					"isVisible": false
+				},
+				{
+					"part": "wings_folded",
+					"isVisible": true
+				}
+			]
+		},
+		"hover": {
+			"poseTypes": [
+				"HOVER"
+			],
+			"animations": [
+				"q.bedrock('rowlet_hisui_bias', 'flying_idle')",
+				"q.cobblemon_wing_flap('sine', 0.4, 1, 0, -0.13963, 'z', 'wing_open_left_main', 'wing_open_right_main', 'q.anim_time')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('rowlet_hisui_bias', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "wings_open",
+					"isVisible": true
+				},
+				{
+					"part": "wings_folded",
+					"isVisible": false
+				}
+			]
+		},
+		"fly": {
+			"poseTypes": [
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('rowlet_hisui_bias', 'flying_idle')",
+				"q.cobblemon_wing_flap('sine', 0.9, 0.9, 0, -0.24435, 'z', 'wing_open_left_main', 'wing_open_right_main', 'q.anim_time')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('rowlet_hisui_bias', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "wings_open",
+					"isVisible": true
+				},
+				{
+					"part": "wings_folded",
+					"isVisible": false
+				}
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM"
+			],
+			"animations": [
+				"q.bedrock('rowlet_hisui_bias', 'ground_idle')",
+				"q.biped_walk(0.8, 0.7, 'foot_left', 'foot_right')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('rowlet_hisui_bias', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "wings_open",
+					"isVisible": false
+				},
+				{
+					"part": "wings_folded",
+					"isVisible": true
+				}
+			]
+		}
+	},
+	"portraitScale": 1.77,
+	"profileScale": 0.76,
+	"portraitTranslation": [
+		-0.3,
+		-0.34,
+		0
+	],
+	"profileTranslation": [
+		-0.04,
+		0.58,
+		0
+	]
+}

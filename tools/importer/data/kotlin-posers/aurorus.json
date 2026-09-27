@@ -1,0 +1,75 @@
+{
+	"_source": "AurorusModel.kt",
+	"rootBone": "aurorus",
+	"animations": {
+		"cry": "q.bedrock_stateful('aurorus', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('aurorus', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('neck1', 1, 1, 70, -15, 45, -45)",
+				"q.bedrock('aurorus', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('aurorus', 'blink', 8, 30, 1)"
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('neck1', 1, 1, 70, -15, 45, -45)",
+				"q.bedrock('aurorus', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('aurorus', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('neck1', 1, 1, 70, -15, 45, -45)",
+				"q.bedrock('aurorus', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('aurorus', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 1.29,
+	"profileScale": 0.27,
+	"portraitTranslation": [
+		-1.11,
+		4.13,
+		0
+	],
+	"profileTranslation": [
+		0,
+		1.41,
+		-6.1
+	]
+}

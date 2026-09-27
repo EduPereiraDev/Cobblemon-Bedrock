@@ -1,0 +1,86 @@
+{
+	"_source": "StuffulModel.kt",
+	"rootBone": "stufful",
+	"animations": {
+		"cry": "q.bedrock_stateful('stufful', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('stufful', 'sleep')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('stufful', 'faint')"
+			}
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('stufful', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('stufful', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('stufful', 'faint')"
+			}
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('stufful', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('stufful', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('stufful', 'faint')"
+			}
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('stufful', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('stufful', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('stufful', 'faint')"
+			}
+		}
+	},
+	"portraitScale": 2,
+	"profileScale": 0.9,
+	"portraitTranslation": [
+		-0.4,
+		-0.8,
+		0
+	],
+	"profileTranslation": [
+		-0.1,
+		0.43,
+		0
+	]
+}

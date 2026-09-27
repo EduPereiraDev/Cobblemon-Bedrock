@@ -1,0 +1,12 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "cobblemon:machine_storage",
+      "materials": { "default": "entity_alphatest" },
+      "textures": { "default": "textures/blank" },
+      "geometry": { "default": "geometry.cobblemon.machine_empty" },
+      "render_controllers": ["controller.render.default"]
+    }
+  }
+}

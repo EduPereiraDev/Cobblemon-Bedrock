@@ -1,0 +1,14 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "cobblemon:display_case_item",
+      "materials": { "default": "entity_alphatest" },
+      "textures": { "default": "textures/blank" },
+      "geometry": { "default": "geometry.cobblemon.display_case_item" },
+      "render_controllers": ["controller.render.default"],
+      "enable_attachables": true,
+      "scripts": { "scale": "0.5" }
+    }
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "cobblemon:poke_bobber",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "poke_ball": "textures/pokeballs/poke_ball",
+        "great_ball": "textures/pokeballs/great_ball",
+        "ultra_ball": "textures/pokeballs/ultra_ball",
+        "master_ball": "textures/pokeballs/master_ball",
+        "safari_ball": "textures/pokeballs/safari_ball",
+        "fast_ball": "textures/pokeballs/fast_ball",
+        "level_ball": "textures/pokeballs/level_ball",
+        "lure_ball": "textures/pokeballs/lure_ball",
+        "heavy_ball": "textures/pokeballs/heavy_ball",
+        "love_ball": "textures/pokeballs/love_ball",
+        "friend_ball": "textures/pokeballs/friend_ball",
+        "moon_ball": "textures/pokeballs/moon_ball",
+        "sport_ball": "textures/pokeballs/sport_ball",
+        "park_ball": "textures/pokeballs/park_ball",
+        "net_ball": "textures/pokeballs/net_ball",
+        "dive_ball": "textures/pokeballs/dive_ball",
+        "nest_ball": "textures/pokeballs/nest_ball",
+        "repeat_ball": "textures/pokeballs/repeat_ball",
+        "timer_ball": "textures/pokeballs/timer_ball",
+        "luxury_ball": "textures/pokeballs/luxury_ball",
+        "premier_ball": "textures/pokeballs/premier_ball",
+        "dusk_ball": "textures/pokeballs/dusk_ball",
+        "heal_ball": "textures/pokeballs/heal_ball",
+        "quick_ball": "textures/pokeballs/quick_ball",
+        "dream_ball": "textures/pokeballs/dream_ball",
+        "beast_ball": "textures/pokeballs/beast_ball",
+        "cherish_ball": "textures/pokeballs/cherish_ball",
+        "azure_ball": "textures/pokeballs/azure_ball",
+        "citrine_ball": "textures/pokeballs/citrine_ball",
+        "roseate_ball": "textures/pokeballs/roseate_ball",
+        "slate_ball": "textures/pokeballs/slate_ball",
+        "verdant_ball": "textures/pokeballs/verdant_ball",
+        "ancient_poke_ball": "textures/poke_balls/ancient_poke_ball",
+        "ancient_great_ball": "textures/poke_balls/ancient_great_ball",
+        "ancient_ultra_ball": "textures/poke_balls/ancient_ultra_ball",
+        "ancient_heavy_ball": "textures/poke_balls/ancient_heavy_ball",
+        "ancient_feather_ball": "textures/poke_balls/ancient_feather_ball",
+        "ancient_wing_ball": "textures/poke_balls/ancient_wing_ball",
+        "ancient_jet_ball": "textures/poke_balls/ancient_jet_ball",
+        "ancient_leaden_ball": "textures/poke_balls/ancient_leaden_ball",
+        "ancient_gigaton_ball": "textures/poke_balls/ancient_gigaton_ball",
+        "ancient_azure_ball": "textures/poke_balls/ancient_azure_ball",
+        "ancient_citrine_ball": "textures/poke_balls/ancient_citrine_ball",
+        "ancient_roseate_ball": "textures/poke_balls/ancient_roseate_ball",
+        "ancient_slate_ball": "textures/poke_balls/ancient_slate_ball",
+        "ancient_verdant_ball": "textures/poke_balls/ancient_verdant_ball",
+        "ancient_ivory_ball": "textures/poke_balls/ancient_ivory_ball",
+        "ancient_origin_ball": "textures/poke_balls/ancient_origin_ball"
+      },
+      "geometry": {
+        "default": "geometry.pokeball",
+        "ancient": "geometry.ancient_poke_ball"
+      },
+      "animations": {
+        "spin": "animation.cobblemon.poke_bobber.spin",
+        "float": "animation.cobblemon.poke_bobber.float"
+      },
+      "scripts": {
+        "scale": "0.7",
+        "animate": [
+          {
+            "spin": "q.property('cobblemon:bobber_state') == 0"
+          },
+          {
+            "float": "q.property('cobblemon:bobber_state') == 1"
+          }
+        ]
+      },
+      "render_controllers": [
+        "controller.render.cobblemon.poke_bobber"
+      ]
+    }
+  }
+}

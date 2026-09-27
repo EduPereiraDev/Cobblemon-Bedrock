@@ -1,0 +1,106 @@
+{
+	"_source": "MareepModel.kt",
+	"rootBone": "mareep",
+	"animations": {
+		"cry": "q.bedrock_stateful('mareep', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('mareep', 'sleep')"
+			],
+			"transformedParts": [
+				{
+					"part": "wool",
+					"isVisible": "q.has_aspect('sheared') == false"
+				}
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('mareep', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('mareep', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "wool",
+					"isVisible": "q.has_aspect('sheared') == false"
+				}
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				{
+					"animation": "q.bedrock('mareep', 'ground_walk')",
+					"condition": "q.has_aspect('sheared') == false"
+				},
+				{
+					"animation": "q.bedrock('mareep', 'ground_walk_sheared')",
+					"condition": "q.has_aspect('sheared')"
+				}
+			],
+			"quirks": [
+				"q.bedrock_quirk('mareep', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "wool",
+					"isVisible": "q.has_aspect('sheared') == false"
+				}
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('mareep', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('mareep', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "wool",
+					"isVisible": "q.has_aspect('sheared') == false"
+				}
+			]
+		}
+	},
+	"portraitScale": 2.3,
+	"profileScale": 0.9,
+	"portraitTranslation": [
+		-0.5,
+		-1.2,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.4,
+		0
+	]
+}

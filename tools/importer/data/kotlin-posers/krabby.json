@@ -1,0 +1,108 @@
+{
+	"_source": "KrabbyModel.kt",
+	"rootBone": "krabby",
+	"animations": {
+		"cry": "q.bedrock_stateful('krabby', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"isDusk": false,
+			"animations": [
+				"q.bedrock('krabby', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('krabby', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('krabby', 'snip_left', 8, 30, 1)",
+				"q.bedrock_quirk('krabby', 'snip_right', 8, 30, 1)"
+			]
+		},
+		"standing_bubbles": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": false,
+			"isDusk": true,
+			"isInWaterOrRain": false,
+			"animations": [
+				"q.bedrock('krabby', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('krabby', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('krabby', 'snip_left', 8, 30, 1)",
+				"q.bedrock_quirk('krabby', 'snip_right', 8, 30, 1)",
+				"q.bedrock_quirk('krabby', 'quirk_bubble', 5, 24, 1)"
+			]
+		},
+		"standing_rain": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": false,
+			"isDusk": true,
+			"isInWaterOrRain": true,
+			"animations": [
+				"q.bedrock('krabby', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('krabby', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('krabby', 'snip_left', 8, 30, 1)",
+				"q.bedrock_quirk('krabby', 'snip_right', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('krabby', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('krabby', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('krabby', 'snip_left', 8, 30, 1)",
+				"q.bedrock_quirk('krabby', 'snip_right', 8, 30, 1)"
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.bedrock('krabby', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('krabby', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('krabby', 'snip_left', 8, 30, 1)",
+				"q.bedrock_quirk('krabby', 'snip_right', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2.5,
+	"profileScale": 1,
+	"portraitTranslation": [
+		-0.15,
+		-1.8,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.2,
+		0
+	]
+}

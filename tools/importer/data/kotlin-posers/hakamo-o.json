@@ -1,0 +1,48 @@
+{
+	"_source": "HakamoOModel.kt",
+	"rootBone": "hakamo_o",
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.bedrock('hakamo-o', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('hakamo-o', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('hakamo-o', 'ground_idle')",
+				"q.biped_walk(0.6, 1, 'leg_right', 'leg_left')",
+				"q.bimanual_swing(0.6, 1, 'arm_right', 'arm_left')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('hakamo-o', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 1.83,
+	"profileScale": 0.58,
+	"portraitTranslation": [
+		-0.38,
+		1.09,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.88,
+		0
+	]
+}

@@ -10,7 +10,7 @@ export default class RecoilRequirement extends EvolutionRequirement {
   check(pokemon: PokemonData): boolean {
     return pokemon.evolutionProgress
       .filter(x => x.variant == this.variant)
-      .some(progress => progress.progress >= this.amount);
+      .some(progress => (progress.progress as number) >= this.amount);
   }
   static getFromSerialized(requirement: EvoRequirement): RecoilRequirement {
     return new RecoilRequirement(requirement.amount);

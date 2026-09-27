@@ -1,0 +1,104 @@
+{
+	"_source": "PhantumpModel.kt",
+	"rootBone": "phantump",
+	"animations": {
+		"cry": "q.bedrock_stateful('phantump', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('phantump', 'sleep')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('phantump', 'faint')"
+			}
+		},
+		"stand": {
+			"poseTypes": [
+				"STAND",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.bedrock('phantump', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('phantump', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('phantump', 'faint')"
+			}
+		},
+		"hover": {
+			"poseTypes": [
+				"HOVER",
+				"FLOAT"
+			],
+			"animations": [
+				"q.bedrock('phantump', 'air_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('phantump', 'blink', 8, 30, 1)"
+			]
+		},
+		"fly": {
+			"poseTypes": [
+				"FLY",
+				"SWIM"
+			],
+			"animations": [
+				"q.bedrock('phantump', 'air_fly')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('phantump', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK"
+			],
+			"animations": [
+				"q.bedrock('phantump', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('phantump', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('phantump', 'faint')"
+			}
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.bedrock('phantump', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('phantump', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('phantump', 'battle_faint')"
+			}
+		}
+	},
+	"portraitScale": 2,
+	"profileScale": 0.9,
+	"portraitTranslation": [
+		-0.1,
+		-0.2,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.5,
+		0
+	]
+}

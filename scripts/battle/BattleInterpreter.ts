@@ -16,10 +16,21 @@ import DamageTakenRequirement from "../evolution/requirements/DamageTakenRequire
 import { EvolutionProgress, getEvolutionProgress, setEvolutionProgress } from "../evolution";
 import UseMoveRequirement from "../evolution/requirements/UseMoveRequirement";
 import DefeatRequirement from "../evolution/requirements/DefeatRequirement";
-import { Dex } from "../showdown/sim";
+import { Dex } from "../showdown";
 import BattleCriticalHitsRequirement from "../evolution/requirements/BattleCriticalHitsRequirement";
 import RecoilRequirement from "../evolution/requirements/RecoilRequirement";
 import { battleMsg } from "../language/MessageHelperFunctions";
+import { playCry, playFaintAnimation, playHurtAnimation, playMoveAnimation } from "./Animations";
+// Frente animacao: efeitos de golpe/dano/desmaio (action_effects do Cobblemon).
+import { playDamageEffect, playFaintEffect, playMoveEffects } from "./effects";
+// Frente visual-batalha: status/boost (action_effects), Illusion/Transform, trocas com bola e balsa.
+import { playActivateEffect, playBoostEffect, playCantEffect, playPrepareEffect, playStartEffect } from "./effects";
+import { endMock, startMock } from "./effects/Mock";
+import { endIllusion, midBattleSwitch, startOfBattleSwitch } from "./Switching";
+import { removePlatform } from "./Platform";
+import { dropWildLoot } from "./Rewards";
+import { giveBagItem } from "./BagItems";
+import { winMessage } from "./PokemonBattle";
 
 /** <UUID of Battle, Last Used Ability, activate, etc> */
 const lastCauser = new Map<string, BattleMessage>();
@@ -43,77 +54,80 @@ export function interpret(battle: PokemonBattle, rawMessage: string) {
   battle.log();
   battle.log(rawMessage);
   battle.log();
-  try {
-    let lines = rawMessage.split("\n");
-    if (lines[0] == "update") {
-      lines.shift();
-      while (lines.length > 0) {
-        let line = lines.shift()!;
-
+  let lines = rawMessage.split("\n");
+  if (lines[0] == "update") {
+    lines.shift();
+    while (lines.length > 0) {
+      let line = lines.shift()!;
+      // Cada linha isolada: um erro não derruba o resto da atualização.
+      try {
         if (line.startsWith("|split|")) {
           let showdownID = line.split("|split|")[1];
           let targetActor = battle.getActorFromShowdownID(showdownID);
-
+          let privateMessage = lines.shift() ?? "";
+          let publicMessage = lines.shift() ?? "";
           if (!targetActor) {
             battle.log("No actor could be found with the showdown id: " + showdownID);
-            return;
+            continue;
           }
-
-          let privateMessage = lines[0];
-          let publicMessage = lines[1];
-
-          for (let instruction of Object.entries(splitUpdateInstructions)) {
-            if (lines[0].startsWith(`|${instruction[0]}|`)) {
-              instruction[1](battle, targetActor, new BattleMessage(publicMessage), new BattleMessage(privateMessage));
-              break;
-            }
-          }
-          lines.shift();
-          lines.shift();
+          let splitId = new BattleMessage(privateMessage).id;
+          let splitInstruction = splitUpdateInstructions[splitId];
+          if (splitInstruction)
+            splitInstruction(battle, targetActor, new BattleMessage(publicMessage), new BattleMessage(privateMessage), lines);
+          else if (!ignoredInstructions.has(splitId))
+            battle.log("Unhandled showdown instruction: " + privateMessage);
         }
-        else {
-          if (line != "|") {
-            let message = new BattleMessage(line);
-            let instruction = updateInstructions[message.id]
-            if (instruction != undefined)
-              instruction(battle, message, lines);
-            else {
-              battle.dispatcher.dispatchGo(() => battle.broadcastChatMessage({ text: line }))
-            }
+        else if (line != "|") {
+          let message = new BattleMessage(line);
+          let instruction = updateInstructions[message.id]
+          if (instruction != undefined)
+            instruction(battle, message, lines);
+          else if (!ignoredInstructions.has(message.id)) {
+            // Linha do protocolo sem tratamento: registra no log em vez de mostrar texto cru ao jogador.
+            battle.log("Unhandled showdown instruction: " + line);
           }
         }
       }
-    }
-    else if (lines[0] == "sideupdate") {
-      let showdownID = lines[1];
-      let targetActor = battle.getActorFromShowdownID(showdownID);
-      let line = lines[2];
-
-      if (targetActor == undefined) {
-        battle.log("No actor could be found with the showdown id: " + showdownID);
-        return;
-      }
-
-      for (let instruction of Object.entries(sideUpdateInstructions)) {
-        if (line.startsWith(`|${instruction[0]}|`)) {
-          instruction[1](battle, targetActor, new BattleMessage(line));
-        }
+      catch (e) {
+        console.error(`BattleInterpreter Error on '${line}': ${e instanceof Error ? e.stack ?? e.message : e}`);
       }
     }
   }
-  catch (e) {
-    console.error("BattleInterpreter Error: ");
-    console.error(e);
+  else if (lines[0] == "sideupdate") {
+    let showdownID = lines[1];
+    let targetActor = battle.getActorFromShowdownID(showdownID);
+    let line = lines[2];
+
+    if (targetActor == undefined) {
+      battle.log("No actor could be found with the showdown id: " + showdownID);
+      return;
+    }
+    try {
+      let message = new BattleMessage(line);
+      sideUpdateInstructions[message.id]?.(battle, targetActor, message);
+    }
+    catch (e) {
+      console.error(`BattleInterpreter Error on '${line}': ${e instanceof Error ? e.stack ?? e.message : e}`);
+    }
   }
 }
 
 //Instruction Objects
+
+/** Linhas do protocolo do Showdown que não têm efeito visível no jogo. */
+export const ignoredInstructions = new Set([
+  // Metadados e cosméticos (Cobblemon: "player", "teamsize", "gametype", "gen", "tier", "rated", "clearpoke", "poke", "teampreview", "start", "rule", "t:", "", "capture", "-anim")
+  "player", "teamsize", "gametype", "gen", "tier", "rated", "clearpoke", "poke", "teampreview", "start", "rule", "t:", "", "capture", "-anim",
+  "debug", "-hint", "j", "l", "n", "c", "chat", "inactive", "inactiveoff", "raw", "html", "uhtml", "seed", "timestamp", "-candynamax",
+  "-center", "-combine", "-waiting"
+]);
 
 const updateInstructions: { [key: string]: (battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) => void } = {
   "turn": handleTurnInstruction,
   "upkeep": handleUpkeepInstruction,
   "faint": handleFaintInstruction,
   "win": handleWinInstruction,
+  "tie": handleTieInstruction,
   "pp_update": handlePpUpdateInstruction,
   "cant": handleCantInstruction,
   "move": handleMoveInstruction,
@@ -157,20 +171,21 @@ const updateInstructions: { [key: string]: (battle: PokemonBattle, message: Batt
   "-endability": handleEndAbilityInstruction,
   "-zpower": handleZPowerInstruction,
   "-zbroken": handleZBrokenInstruction,
-  "-terastralize": handleTerastrallizeInstruction,
+  "-terastallize": handleTerastrallizeInstruction,
   "-mega": handleMegaInstruction,
-  "player": () => { },
-  "rated": () => { },
-  "t:": () => { },
-  "teamsize": () => { },
-  "gametype": (battle, message) => battle.log(`Game Type Instruction: ${message.rawMessage}`),
-  "gen": (battle, message) => battle.log(`Gen Instruction: ${message.rawMessage}`),
-  "tier": (battle, message) => battle.log(`Tier Instruction: ${message.rawMessage}`),
-  //Unnecessary team preview stuff
-  "clearpoke": (battle, message) => battle.log(`Clear Poke Instruction: ${message.rawMessage}`),
-  "poke": (battle, message) => battle.log(`Poke Instruction: ${message.rawMessage}`),
-  "teampreview": (battle, message) => battle.log(`Team Preview Instruction: ${message.rawMessage}`),
-  "start": (battle, message) => battle.log(`Start Instruction: ${message.rawMessage}`)
+  "-clearboost": handleClearBoostInstruction,
+  "-clearpositiveboost": handleClearBoostInstruction,
+  "-setboost": handleSetBoostInstruction,
+  "-formechange": handleDetailsChangeInstruction,
+  "replace": handleReplaceInstruction,
+  "swap": handleSwapInstruction,
+  "-swapsideconditions": handleSwapSideConditionsInstruction,
+  "-notarget": (battle) => battle.dispatcher.dispatchWaiting(1, () => battle.broadcastChatMessage(messages.color("Red", battleMsg("fail")))),
+  "-ohko": (battle) => battle.dispatcher.dispatchWaiting(1, () => battle.broadcastChatMessage(messages.color("Red", { translate: "cobblemon.port.battle.ohko" }))),
+  "-primal": handleMegaInstruction,
+  "-burst": handleMegaInstruction,
+  "-message": handleRawMessageInstruction,
+  "message": handleRawMessageInstruction,
 };
 
 const sideUpdateInstructions: { [key: string]: (battle: PokemonBattle, actor: BattleActor, message: BattleMessage) => void } = {
@@ -178,7 +193,7 @@ const sideUpdateInstructions: { [key: string]: (battle: PokemonBattle, actor: Ba
   "error": handleErrorInstruction
 };
 
-const splitUpdateInstructions: { [key: string]: (battle: PokemonBattle, actor: BattleActor, message: BattleMessage, message2: BattleMessage) => void } = {
+const splitUpdateInstructions: { [key: string]: (battle: PokemonBattle, actor: BattleActor, message: BattleMessage, message2: BattleMessage, remainingLines: string[]) => void } = {
   "switch": handleSwitchInstruction,
   "drag": handleDragInstruction,
   "-damage": handleDamageInstruction,
@@ -241,15 +256,17 @@ function handleBoostInstruction(battle: PokemonBattle, message: BattleMessage, r
     }
   }
 
-  battle.dispatcher.dispatchWaiting(1.5, () => {
+  battle.dispatcher.dispatch(() => {
+    // BoostInstruction: timeline `boost`/`unboost` (partícula statup/statdown) e a mensagem; espera as holds.
+    let hold = playBoostEffect(pokemon, isBoost, stages);
     let lang: RawMessage = (message.hasOptionalArgument("zeffect"))
-      ? messages.With(`cobblemon.battle.${rootKey}.${severity}.zeffect`, [pokemon.data, statName])
-      : messages.With(`cobblemon.battle.${rootKey}.${severity}`, [pokemon.data, statName])
+      ? messages.With(`cobblemon.battle.${rootKey}.${severity}.zeffect`, [pokemon.getName(), statName])
+      : messages.With(`cobblemon.battle.${rootKey}.${severity}`, [pokemon.getName(), statName])
     battle.broadcastChatMessage(lang);
 
     //TODO: Whatever the context manager is necessary for
     battle.minorBattleActions.set(pokemon.data.uuid, message);
-
+    return new WaitDispatch(Math.max(1.5, hold));
   })
 }
 
@@ -274,11 +291,10 @@ function handleTurnInstruction(battle: PokemonBattle, message: BattleMessage, re
   if (Number.isNaN(turnNumber))
     return;
 
-  battle.dispatcher.dispatch(() => {
-    battle.actors.forEach(actor => { actor.mustChoose = true; actor.promptPlayerForRequest() });
+  // As telas de escolha abrem quando chega o |request| (BattleActor.receiveRequest).
+  battle.dispatcher.dispatchGo(() => {
     battle.broadcastChatMessage(messages.prefix(ColorCodes.Aqua, messages.With("cobblemon.battle.turn", [turnNumber.toString()])));
     battle.newTurn(turnNumber);
-    return GoDispatch
   })
 }
 
@@ -295,52 +311,56 @@ function handleFaintInstruction(battle: PokemonBattle, message: BattleMessage, r
   if (!pokemon)
     return;
 
-  battle.dispatcher.dispatchWaiting(2.5, () => {
+  // FaintInstruction.kt: HP a 0, animação de desmaio e, depois, mensagem e saída de campo.
+  battle.dispatcher.dispatch(() => {
     pokemon.data.currentHealth = 0;
     pokemon.data.status = StatusEffect.Faint;
-    pokemon.syncWithOut();
-
-    battle.broadcastChatMessage(messages.error(messages.With("cobblemon.battle.fainted", [pokemon.data])));
+    if (!battle.faintedAt.has(pokemon.data.uuid))
+      battle.faintedAt.set(pokemon.data.uuid, battle.faintCounter++);
+    if (!playFaintEffect(pokemon)) playFaintAnimation(pokemon.visual, pokemon.mock?.data ?? pokemon.data);
+    return new WaitDispatch(1.5);
+  })
+  battle.dispatcher.dispatchWaiting(1, () => {
+    battle.broadcastChatMessage(messages.error(messages.With("cobblemon.battle.fainted", [pokemon.getName()])));
     CobblemonEvents.emit("BATTLE_FAINTED", battle, pokemon);
 
-    //EXP GAIN
-    pokemon.actor.getSide().getOppositeSide().actors.forEach(actor => {
-      if (actor.showdownId == pokemon.actor.showdownId || actor.type != ActorType.PLAYER)
-        return;
-      let fainting = pokemon;
-      let expGainingPokemon = actor.pokemon.filter(x => (fainting?.seenPokemon.includes(x.uuid) || (x.item == "expshare")) && x.status != "fnt");
-      expGainingPokemon.forEach(y => {
-        let multiplier = (fainting!.seenPokemon.includes(y.uuid)) ? 1 : 0.5;
-        let expGain = calculateExpGain(y, fainting!.data, multiplier);
-        if (expGain > 0) {
-          y.gainExp(expGain, y.tryGetOwner());
-        }
+    let actor = pokemon.actor;
+    // Desmaio: some a balsa e o visual de Illusion/Transform (EffectTracker.wipe na morte).
+    removePlatform(pokemon.data.uuid);
+    endMock(pokemon, false);
+    try {
+      if (pokemon.pending) {
+        // A bola ainda estava a caminho (não há entidade para tirar).
+      }
+      else if (actor.type == ActorType.WILD) {
+        // Selvagem derrotado: drops no local e a entidade morre.
+        dropWildLoot(pokemon);
+        if (pokemon.entity.isValid)
+          pokemon.entity.kill();
+      }
+      else if (actor.Player) {
+        pokemon.data.tryUpdatePokemonInTeam(actor.Player);
+        pokemon.data.return(actor.Player);
+      }
+      else if (pokemon.entity.isValid) {
+        pokemon.entity.triggerEvent("cobblemon:instant_kill");
+      }
+    }
+    catch (e) {
+      console.warn(`Faint cleanup failed: ${e}`);
+    }
 
-        y.getEvolutions()
-          .flatMap(x => x.requirements.filter(x => x instanceof DefeatRequirement).map(y => Object.assign(y, { id: x.id })))
-          .forEach(z => {
-            if (z.target.match(pokemon.data)) {
-              let progress = getEvolutionProgress<number>(y, z.id, "defeat") || 0;
-              setEvolutionProgress(y, z.id, "defeat", progress + 1);
-            }
-          })
-
-        y.updatePokemonInTeam();
-        y.tryUpdatePokemonOut();
-      })
-    })
-
-    let activeIndex = pokemon.actor.activePokemon.findIndex(x => x?.data.uuid == posAndUUID[1]);
+    let activeIndex = actor.activePokemon.findIndex(x => x?.data.uuid == posAndUUID[1]);
     if (activeIndex != -1)
-      pokemon.actor.activePokemon[activeIndex] = null;
+      actor.activePokemon[activeIndex] = null;
 
     //Stop being followed by that species if it is out
-    let otherSide = pokemon.actor.getSide().getOppositeSide();
-    let sameSpeciesOut = pokemon.actor.getSide().getActivePokemon().some(x => x?.entity.typeId === pokemon.entity.typeId);
+    let otherSide = actor.getSide().getOppositeSide();
+    let sameSpeciesOut = actor.getSide().getActivePokemon().some(x => x?.entity.isValid && x.entity.typeId === pokemon.entity.typeId);
     let tag = `targetedBy:` + pokemon.entity.typeId
     if (!sameSpeciesOut) {
       otherSide.getActivePokemon().forEach(x => {
-        if (x?.entity.hasTag(tag))
+        if (x?.entity.isValid && x.entity.hasTag(tag))
           x.entity.removeTag(tag);
       })
     }
@@ -351,31 +371,48 @@ function handleFaintInstruction(battle: PokemonBattle, message: BattleMessage, r
 
 function handleBagItemInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
   battle.dispatcher.dispatchGo(() => {
-    let pokemon = message.pokemonByUuid(0, battle)!;
-    let item = message.argumentAt(1);
-    let ownerName = pokemon.tryGetOwner()?.name || "trainer";
-    //TODO: Item Translation
-    let itemName = "item";
-
-    battle.broadcastChatMessage(battleMsg("bagitem.use", [ownerName, itemName, pokemon.getTranslatedName()]));
+    let uuid = message.argumentAt(0);
+    let itemName = message.argumentAt(1);
+    if (!uuid || !itemName)
+      return;
+    let pokemon = message.pokemonByUuid(0, battle);
+    let owner = battle.getOwner(uuid);
+    if (!pokemon || !owner)
+      return;
+    // Uso confirmado: devolve o recipiente (garrafa, tigela) e tira da lista de reembolso.
+    let used = owner.confirmBagItemUse(itemName);
+    if (used?.returnItem && owner.Player?.isValid)
+      giveBagItem(owner.Player, used.returnItem);
+    battle.broadcastChatMessage(battleMsg("bagitem.use", [owner.getName(), { translate: itemName }, pokemon.getTranslatedName()]));
   })
 }
 
 function handleWinInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
+  // O resultado já está decidido: a partir daqui, entidades sumindo (selvagem morto no desmaio) não encerram
+  // a batalha como "stopped" antes da vitória ser despachada.
+  battle.outcomeDecided = true;
   battle.dispatcher.dispatchGo(() => {
     let user = message.argumentAt(0);
     if (!user)
       return;
 
     let ids = user.split("&").map(x => x.trim());
-    let winnners = ids.map(x => battle.getActorFromID(x)).filter(x => x != undefined);
-    let losers = battle.actors.filter(x => !winnners.some(y => y.actor.id == x.actor.id))
-    let winnersText: RawMessage = { rawtext: winnners.map(x => x.getName()) };
-    let winMessage = messages.prefix(ColorCodes.Gold, messages.With("cobblemon.battle.win", [winnersText]));
-    battle.broadcastChatMessage(winMessage);
+    let winners = ids.map(x => battle.getActorFromID(x)).filter(x => x != undefined);
+    let losers = battle.actors.filter(x => !winners.some(y => y.actor.id == x.actor.id))
+    battle.broadcastChatMessage(winMessage(winners.map(x => x.getName())));
 
-    battle.end();
-    CobblemonEvents.emit("BATTLE_VICTORY", battle, winnners, losers, false);
+    battle.end("win");
+    CobblemonEvents.emit("BATTLE_VICTORY", battle, winners, losers, false);
+  })
+}
+
+function handleTieInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
+  battle.outcomeDecided = true;
+  battle.dispatcher.dispatchGo(() => {
+    if (battle.ended)
+      return;
+    battle.broadcastChatMessage(messages.prefix(ColorCodes.Gold, { translate: "cobblemon.battle.tie" }));
+    battle.end("tie");
   })
 }
 
@@ -385,7 +422,7 @@ function handleStatusInstruction(battle: PokemonBattle, message: BattleMessage, 
   let statusLabel = message.argumentAt(1);
   if (!posAndUUID || !pokemon || !statusLabel)
     return;
-  broadcastOptionalAbility(battle, message.effect(), pokemon.data.getTranslatedName());
+  broadcastOptionalAbility(battle, message.effect(), pokemon.getName());
   battle.dispatcher.dispatchWaiting(1, () => {
     //Persistent status
     if (PersistentStatuses.includes(statusLabel)) {
@@ -393,7 +430,7 @@ function handleStatusInstruction(battle: PokemonBattle, message: BattleMessage, 
       pokemon.syncWithOut();
     }
 
-    battle.broadcastChatMessage(messages.With(`cobblemon.status.${statusNames[statusLabel]}.apply`, [pokemon.data.getTranslatedName()]));
+    battle.broadcastChatMessage(messages.With(`cobblemon.status.${statusNames[statusLabel]}.apply`, [pokemon.getName()]));
     battle.minorBattleActions.set(pokemon.data.uuid, message);
 
   })
@@ -414,7 +451,7 @@ function handleImmuneInstruction(battle: PokemonBattle, message: BattleMessage, 
     let pokemon = message.getBattlePokemon(0, battle);
     if (!pokemon)
       return;
-    battle.broadcastChatMessage(messages.color("Red", battleMsg("immune", [pokemon.data.getTranslatedName()])));
+    battle.broadcastChatMessage(messages.color("Red", battleMsg("immune", [pokemon.getName()])));
     battle.minorBattleActions.set(pokemon.data.uuid, message);
   })
 }
@@ -424,7 +461,7 @@ function handleInvertBoostInstruction(battle: PokemonBattle, message: BattleMess
     let pokemon = message.getBattlePokemon(0, battle);
     if (!pokemon)
       return;
-    let name = pokemon.data.getTranslatedName();
+    let name = pokemon.getName();
     battle.broadcastChatMessage(battleMsg("invertboost", [name]))
   })
 }
@@ -437,10 +474,10 @@ function handleMoveInstruction(battle: PokemonBattle, message: BattleMessage, re
     return;
   let optionalEffect = message.effect();
   let move = Dex.moves.get(effect.id);
-  let pokemonName = userPokemon.data.getTranslatedName();
+  let pokemonName = userPokemon.getName();
   broadcastOptionalAbility(battle, optionalEffect, pokemonName);
 
-  battle.dispatcher.dispatchGo(() => {
+  battle.dispatcher.dispatch(() => {
     lastCauser.set(battle.battleId, message);
 
     userPokemon.data.getEvolutions().forEach(x => {
@@ -454,22 +491,33 @@ function handleMoveInstruction(battle: PokemonBattle, message: BattleMessage, re
       if (optionalEffect?.id == "magicbounce")
         return battleMsg("ability.magicbounce", [pokemonName, getMoveTranslation(effect.id)]);
       else if (move.name != "struggle" && targetPokemon && targetPokemon.data.uuid != userPokemon.data.uuid)
-        return battleMsg("used_move_on", [pokemonName, getMoveTranslation(effect.id), targetPokemon.data])
+        return battleMsg("used_move_on", [pokemonName, getMoveTranslation(effect.id), targetPokemon.getName()])
       else
         return battleMsg("used_move", [pokemonName, getMoveTranslation(effect.id)])
     })();
     battle.broadcastChatMessage(msg);
+    // Timeline do action_effect (animação + partículas + sons); a fila espera as holds do Cobblemon.
+    const hold = playMoveEffects(userPokemon, targetPokemon, effect.id, remainingLines, message.argumentAt(0)?.split(":")[0], message.argumentAt(2)?.split(":")[0]);
+    // NPCBattleActor: o treinador faz o gesto de comando quando o Pokémon dele usa um golpe.
+    playNPCAnimation(userPokemon.actor, "animation.cobblemon_npc.command");
     battle.majorBattleActions.set(userPokemon.data.uuid, message);
+    return hold > 0 ? new WaitDispatch(hold) : GoDispatch;
   })
 }
 
 function handleCantInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
+  // CantInstruction: a timeline do status (paralisia, sono, paixão...) antes da mensagem.
+  battle.dispatcher.dispatch(() => {
+    let pokemon = message.getBattlePokemon(0, battle);
+    let hold = pokemon ? playCantEffect(pokemon, message.effectAt(1)?.id) : 0;
+    return hold > 0 ? new WaitDispatch(Math.min(hold, 1)) : GoDispatch;
+  });
   battle.dispatcher.dispatchWaiting(1, () => {
     let pokemon = message.getBattlePokemon(0, battle);
     let effectId = message.effectAt(1)?.id;
     if (!pokemon || !effectId)
       return;
-    let name = pokemon.data.getTranslatedName();
+    let name = pokemon.getName();
     let move = message.moveAt(2);
     if (!move) {
       //This is literally so common. For example: Sleep effects
@@ -558,7 +606,7 @@ function handleCritInstruction(battle: PokemonBattle, message: BattleMessage, re
 
 function handleWeatherInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
   let weather = message.effectAt(0)?.id;
-  let user = message.getSourceBattlePokemon(battle)?.data.getTranslatedName() || { text: "UNKNOWN" };
+  let user = message.getSourceBattlePokemon(battle)?.getName() || { text: "UNKNOWN" };
   broadcastOptionalAbility(battle, message.effect(), user);
 
   battle.dispatcher.dispatchWaiting(1.5, () => {
@@ -581,7 +629,7 @@ function handleFailInstruction(battle: PokemonBattle, message: BattleMessage, re
     let pokemon = message.getBattlePokemon(0, battle);
     if (!pokemon)
       return;
-    let pokemonName = pokemon.data.getTranslatedName();
+    let pokemonName = pokemon.getName();
     let effectID = message.effectAt(1)?.id;
 
     let msg = (() => {
@@ -619,18 +667,18 @@ function handleRechargeInstructions(battle: PokemonBattle, message: BattleMessag
     let pokemon = message.getBattlePokemon(0, battle);
     if (!pokemon)
       return;
-    battle.broadcastChatMessage(battleMsg("recharge", [pokemon.data.getTranslatedName()]));
+    battle.broadcastChatMessage(battleMsg("recharge", [pokemon.getName()]));
     battle.minorBattleActions.set(pokemon.data.uuid, message);
   })
 }
 
 function handleCureStatusInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
-  let maybeActivePokemon = message.actorAndActivePokemon(0, battle)?.[1];
-  let maybePartyPokemon = message.getBattlePokemon(0, battle);
-  let pokemon = maybeActivePokemon || maybePartyPokemon;
-  if (!pokemon)
+  // Pode ser um Pokémon no banco (Heal Bell, Aromatherapy, item da mochila).
+  let data = message.pokemonData(0, battle);
+  if (!data)
     return;
-  let pokemonName = pokemon.data.getTranslatedName();
+  let pokemonData = data;
+  let pokemonName = pokemonData.getTranslatedName();
   let status = message.argumentAt(1);
   if (!status)
     return;
@@ -638,8 +686,11 @@ function handleCureStatusInstruction(battle: PokemonBattle, message: BattleMessa
   broadcastOptionalAbility(battle, effect, pokemonName);
 
   battle.dispatcher.dispatchWaiting(1, () => {
-    pokemon.data.status = undefined;
-    pokemon.syncWithOut();
+    pokemonData.status = undefined;
+    pokemonData.statusDuration = undefined;
+    syncPokemonData(battle, pokemonData);
+    if (message.hasOptionalArgument("silent"))
+      return;
 
     let msg: RawMessage;
     if (effect?.type == EffectType.ABILITY)
@@ -648,11 +699,17 @@ function handleCureStatusInstruction(battle: PokemonBattle, message: BattleMessa
       msg = messages.With(`cobblemon.status.${statusNames[status]}.cure`, [pokemonName]);
 
     battle.broadcastChatMessage(msg);
-    battle.minorBattleActions.set(pokemon.data.uuid, message);
+    battle.minorBattleActions.set(pokemonData.uuid, message);
   })
 }
 
 function handleStartInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
+  // StartInstruction: timeline `start_<efeito>` (ex. start_alphaboost) antes da mensagem.
+  battle.dispatcher.dispatch(() => {
+    let pokemon = message.getBattlePokemon(0, battle);
+    let hold = pokemon ? playStartEffect(pokemon, message.effectAt(1)?.id) : 0;
+    return hold > 0 ? new WaitDispatch(hold) : GoDispatch;
+  });
   battle.dispatcher.dispatch(() => {
     let pokemon = message.getBattlePokemon(0, battle);
     let effectID = message.effectAt(1)?.id;
@@ -661,15 +718,20 @@ function handleStartInstruction(battle: PokemonBattle, message: BattleMessage, r
 
     let optionalEffect = message.effect();
     let optionalPokemon = message.getSourceBattlePokemon(battle);
-    let optionalPokemonName = optionalPokemon?.data.getTranslatedName();
+    let optionalPokemonName = optionalPokemon?.getName();
     let extraEffect = message.effectAt(2)?.typelessData || "UNKOWN";
 
     battle.minorBattleActions.set(pokemon.data.uuid, message);
+    // Frente msd-fase1: `-start|…|Dynamax|Gmax` → escala/visual da extensão Mega Showdown.
+    if (effectID == "dynamax") {
+      let dynamaxed = pokemon;
+      emitSafely(() => CobblemonEvents.emit("DYNAMAX", battle, dynamaxed, true, message.effectAt(2)?.id == "gmax"));
+    }
 
     if (!message.hasOptionalArgument("silent")) {
       let msg = (() => {
         if (optionalEffect?.id == "reflecttype" && optionalPokemonName)
-          return battleMsg("start.reflecttype", [pokemon.data, optionalPokemonName]);
+          return battleMsg("start.reflecttype", [pokemon.getName(), optionalPokemonName]);
         switch (effectID) {
           case "confusion":
           case "perish3":
@@ -680,13 +742,13 @@ function handleStartInstruction(battle: PokemonBattle, message: BattleMessage, r
           case "stockpile1":
           case "stockpile2":
           case "stockpile3":
-            return battleMsg(`start.${effectID.substring(0, effectID.length - 1)}`, [pokemon.data, effectID[effectID.length - 1]]);
+            return battleMsg(`start.${effectID.substring(0, effectID.length - 1)}`, [pokemon.getName(), effectID[effectID.length - 1]]);
           case "dynamax":
-            return messages.color("Yellow", battleMsg(`start.${message.effectAt(2)?.id || effectID}`, [pokemon.data]));
+            return messages.color("Yellow", battleMsg(`start.${message.effectAt(2)?.id || effectID}`, [pokemon.getName()]));
           case "curse":
-            return battleMsg("start.curse", [optionalPokemonName!, pokemon.data.getTranslatedName()]);
+            return battleMsg("start.curse", [optionalPokemonName!, pokemon.getName()]);
           default:
-            return battleMsg(`start.${effectID}`, [pokemon.data, extraEffect]);
+            return battleMsg(`start.${effectID}`, [pokemon.getName(), extraEffect]);
         }
       })();
       if (!msg)
@@ -703,8 +765,8 @@ function handleSingleTurnInstruction(battle: PokemonBattle, message: BattleMessa
     let pokemon = message.getBattlePokemon(0, battle);
     if (!pokemon)
       return;
-    let pokemonName = pokemon.data.getTranslatedName();
-    let sourceName = message.getSourceBattlePokemon(battle)?.data.getTranslatedName() || { text: "UNKOWN" };
+    let pokemonName = pokemon.getName();
+    let sourceName = message.getSourceBattlePokemon(battle)?.getName() || { text: "UNKOWN" };
     let effectID = message.effectAt(1)?.id;
     if (!effectID)
       return;
@@ -713,18 +775,25 @@ function handleSingleTurnInstruction(battle: PokemonBattle, message: BattleMessa
   })
 }
 
+/** TransformInstruction: o visual vira o do alvo (TransformEffect, grito 1 s depois) e depois a mensagem. */
 function handleTransformInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
+  let active = message.getBattlePokemon(0, battle);
+  let target = message.getBattlePokemon(1, battle);
+  let targetData = target?.data ?? message.getPokemon(1, battle);
+  if (!active || !targetData)
+    return;
+  broadcastOptionalAbility(battle, message.effect(), active.getName());
+  battle.dispatcher.dispatch(() => {
+    // Transform em quem está com Illusion copia o que aparece (o mock do alvo).
+    let copied = target?.mock?.data ?? target?.illusion ?? targetData!;
+    let wait = startMock(active, "transform", copied, battle.started);
+    return wait > 0 ? new WaitDispatch(wait) : GoDispatch;
+  });
   battle.dispatcher.dispatchWaiting(1.5, () => {
-    let pokemon = message.getBattlePokemon(0, battle)?.data;
-    let pokemonName = pokemon?.getTranslatedName();
-    let targetPokemonName = message.getPokemon(1, battle)?.getTranslatedName();
-    if (!pokemon || !pokemonName || !targetPokemonName)
-      return;
-
-    let msg = battleMsg("transform", [pokemonName, targetPokemonName]);
-    battle.broadcastChatMessage(msg);
-    battle.minorBattleActions.set(pokemon.uuid, message);
-  })
+    let targetName = target?.getName() ?? targetData!.getTranslatedName();
+    battle.broadcastChatMessage(battleMsg("transform", [active.getName(), targetName]));
+    battle.minorBattleActions.set(active.data.uuid, message);
+  });
 }
 
 function handleSingleMoveInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
@@ -732,7 +801,7 @@ function handleSingleMoveInstruction(battle: PokemonBattle, message: BattleMessa
     let pokemon = message.getBattlePokemon(0, battle);
     if (!pokemon)
       return;
-    let pokemonName = pokemon.data.getTranslatedName();
+    let pokemonName = pokemon.getName();
     let effectID = message.effectAt(1)?.id;
     if (!effectID)
       return;
@@ -747,7 +816,7 @@ function handleEndAbilityInstruction(battle: PokemonBattle, message: BattleMessa
     let pokemon = message.getBattlePokemon(0, battle);
     if (!pokemon)
       return;
-    let pokemonName = pokemon.data.getTranslatedName();
+    let pokemonName = pokemon.getName();
 
     let msg = battleMsg(`endability`, [pokemonName]);
     battle.broadcastChatMessage(msg);
@@ -760,7 +829,7 @@ function handleBlockInstruction(battle: PokemonBattle, message: BattleMessage, r
     let pokemon = message.getBattlePokemon(0, battle);
     if (!pokemon)
       return;
-    let pokemonName = pokemon.data.getTranslatedName();
+    let pokemonName = pokemon.getName();
     let effectID = message.effectAt(1)?.id;
     if (!effectID)
       return;
@@ -771,21 +840,31 @@ function handleBlockInstruction(battle: PokemonBattle, message: BattleMessage, r
 }
 
 function handleActivateInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
-  battle.dispatcher.dispatchWaiting(1.5, () => {
-    let pokemon = message.getBattlePokemon(0, battle);
-    if (!pokemon)
-      return;
-    let pokemonName = pokemon.data.getTranslatedName();
-    let sourceName = message.getSourceBattlePokemon(battle)?.data.getTranslatedName() || { text: "UNKOWN" };
-    let effect = message.effectAt(1);
-    if (!effect)
-      return;
-    let extraEffect = message.effectAt(2)?.typelessData || "UNKOWN";
-    broadcastOptionalAbility(battle, effect, pokemonName);
+  // Lido já na leitura (ActivateInstruction.preActionEffect): os despachos entram na ordem do protocolo.
+  let pokemon = message.getBattlePokemon(0, battle);
+  if (!pokemon)
+    return;
+  let pokemonName = pokemon.getName();
+  let sourceName = message.getSourceBattlePokemon(battle)?.getName() || { text: "UNKOWN" };
+  let effect = message.effectAt(1);
+  if (!effect)
+    return;
+  let extraEffect = message.effectAt(2)?.typelessData || "UNKOWN";
+  broadcastOptionalAbility(battle, effect, pokemonName);
+  {
 
+    battle.dispatcher.dispatch(() => {
+      // ActivateInstruction: timeline do status (confusão, paixão) ou `activate_<efeito>` (Protect, Powder).
+      let hold = playActivateEffect(pokemon, effect.id);
+      return hold > 0 ? new WaitDispatch(hold) : GoDispatch;
+    });
     battle.dispatcher.dispatch(() => {
       lastCauser.set(battle.battleId, message);
       battle.minorBattleActions.set(pokemon.data.uuid, message);
+      // Sketch: o golpe copiado substitui Sketch no Pokémon de verdade (fica depois da batalha).
+      if (effect.id == "sketch")
+        // (o nome vem cru no protocolo: Effect.typelessData corta a 1ª letra de efeitos sem prefixo)
+        applySketch(battle, pokemon, message.argumentAt(2));
 
       let lang = (() => {
         switch (effect.id) {
@@ -796,6 +875,9 @@ function handleActivateInstruction(battle: PokemonBattle, message: BattleMessage
             return battleMsg("activate.spite", [pokemonName, extraEffect, message.argumentAt(3)!])
           case "toxicdebris":
           case "shedskin":
+          case "iceface":
+          case "owntempo":
+          case "vitalspirit":
             return undefined;
           case "destinybond":
             battle.activePokemon.map(x => x?.data.uuid).filter(x => x != undefined).forEach(x => battle.minorBattleActions.set(x, message));
@@ -810,8 +892,11 @@ function handleActivateInstruction(battle: PokemonBattle, message: BattleMessage
           case "hyperspacefury":
           case "hyperspacehole":
             return battleMsg("activate.phantomforce", [pokemonName]);
-          default:
-            return battleMsg(`activate.${effect.id}`, [pokemonName, sourceName, extraEffect])
+          default: {
+            // `[msg]` escolhe a variante da mensagem (activate.<efeito>.<variante>), como no Cobblemon.
+            let variant = message.optionalArgument("msg");
+            return battleMsg(variant ? `activate.${effect.id}.${variant}` : `activate.${effect.id}`, [pokemonName, sourceName, extraEffect]);
+          }
         }
       })();
       if (!lang)
@@ -819,11 +904,11 @@ function handleActivateInstruction(battle: PokemonBattle, message: BattleMessage
       battle.broadcastChatMessage(lang);
       return new WaitDispatch(1);
     })
-  })
+  }
 }
 
 function handleFieldStartInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
-  let sourceName = message.getSourceBattlePokemon(battle)?.data.getTranslatedName() || { text: "UNKOWN" };
+  let sourceName = message.getSourceBattlePokemon(battle)?.getName() || { text: "UNKOWN" };
   let effect = message.effectAt(0);
   if (!effect)
     return;
@@ -859,13 +944,13 @@ function handleAbilityInstruction(battle: PokemonBattle, message: BattleMessage,
   let pokemon = message.getBattlePokemon(0, battle);
   if (!pokemon)
     return;
-  let pokemonName = pokemon.data.getTranslatedName();
+  let pokemonName = pokemon.getName();
   let effect = message.effectAt(1);
   if (!effect)
     return;
   let optionalEffect = message.effect();
   let optionalPokemon = message.getSourceBattlePokemon(battle);
-  let optionalPokemonName = optionalPokemon?.data.getTranslatedName();
+  let optionalPokemonName = optionalPokemon?.getName();
 
 
   battle.dispatcher.dispatch(() => {
@@ -914,11 +999,17 @@ function broadcastAbility(battle: PokemonBattle, effect: Effect, pokemonName: Ra
 }
 
 function handlePrepareInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
+  // PrepareInstruction: timeline `prepare_<golpe>` (se existir) antes da mensagem.
+  battle.dispatcher.dispatch(() => {
+    let pokemon = message.getBattlePokemon(0, battle);
+    let hold = pokemon ? playPrepareEffect(pokemon, message.effectAt(1)?.id) : 0;
+    return hold > 0 ? new WaitDispatch(hold) : GoDispatch;
+  });
   battle.dispatcher.dispatchWaiting(1.5, () => {
     let pokmeon = message.getBattlePokemon(0, battle);
     if (!pokmeon)
       return;
-    let pokemonName = pokmeon.data.getTranslatedName();
+    let pokemonName = pokmeon.getName();
     let effectID = message.effectAt(1)?.id;
     if (!effectID)
       return;
@@ -939,11 +1030,11 @@ function handleSwapBoostInstruction(battle: PokemonBattle, message: BattleMessag
     let pokmeon = message.getBattlePokemon(0, battle);
     if (!pokmeon)
       return;
-    let pokemonName = pokmeon.data.getTranslatedName();
+    let pokemonName = pokmeon.getName();
     let targetPokemon = message.getBattlePokemon(1, battle);
     if (!targetPokemon)
       return;
-    let targetPokemonName = targetPokemon.data.getTranslatedName();
+    let targetPokemonName = targetPokemon.getName();
     let effectID = message.effect()?.id;
     if (!effectID)
       return;
@@ -962,11 +1053,11 @@ function handleCopyBoostInstruction(battle: PokemonBattle, message: BattleMessag
     let pokmeon = message.getBattlePokemon(0, battle);
     if (!pokmeon)
       return;
-    let pokemonName = pokmeon.data.getTranslatedName();
+    let pokemonName = pokmeon.getName();
     let targetPokemon = message.getBattlePokemon(1, battle);
     if (!targetPokemon)
       return;
-    let targetPokemonName = targetPokemon.data.getTranslatedName();
+    let targetPokemonName = targetPokemon.getName();
     let effectID = message.effect()?.id;
     if (!effectID)
       return;
@@ -981,10 +1072,12 @@ function handleEndInstruction(battle: PokemonBattle, message: BattleMessage, rem
     let pokmeon = message.getBattlePokemon(0, battle);
     if (!pokmeon)
       return;
-    let pokemonName = pokmeon.data.getTranslatedName();
+    let pokemonName = pokmeon.getName();
     let effectID = message.effectAt(1)?.id;
     if (!effectID)
       return;
+    if (effectID == "dynamax")
+      emitSafely(() => CobblemonEvents.emit("DYNAMAX", battle, pokmeon, false, false)); // frente msd-fase1
     if (!message.hasOptionalArgument("silent")) {
       let msg: RawMessage;
       if (effectID === "yawn")
@@ -1026,111 +1119,90 @@ function handleSideEndInstruction(battle: PokemonBattle, message: BattleMessage,
 }
 
 function handleErrorInstruction(battle: PokemonBattle, actor: BattleActor, message: BattleMessage) {
-  battle.log("Error Instruction");
+  battle.log("Error Instruction: " + message.rawMessage);
+  if (message.rawMessage.includes("Can't choose for Team Preview") || message.rawMessage.includes("The game is over"))
+    return;
+  // Escolha recusada pelo Showdown: o ator escolhe de novo (a IA cai no "default").
+  if (actor.type != ActorType.PLAYER) {
+    if (actor.request && !battle.ended)
+      battle.writeChoice(`>${actor.showdownId} default`);
+    return;
+  }
   battle.dispatcher.dispatchGo(() => {
     let lang: RawMessage;
-    switch (message.rawMessage) {
-      case "|error|[Unavailable choice] Can't switch: The active Pokémon is trapped":
-        lang = messages.error({ translate: "cobblmeon.battle.error.pokemon_is_trapped" })
-        break;
-      case "|error|[Invalid choice] Can't choose for Team Preview: You're not in a Team Preview phase":
-        return;
-      default:
-        lang = battle.createUnimplimented(message);
-        break;
-    }
+    if (message.rawMessage.includes("is trapped") || message.rawMessage.includes("trapped"))
+      lang = messages.error({ translate: "cobblemon.port.battle.ui.trapped_generic" });
+    else if (message.rawMessage.includes("[Unavailable choice]"))
+      lang = messages.error({ translate: "cobblemon.port.battle.ui.unavailable" });
+    else
+      lang = battle.createUnimplimented(message);
     actor.Player?.sendMessage(lang);
-    actor.mustChoose = true;
+    if (actor.request) {
+      actor.mustChoose = true;
+      battle.dispatcher.doWhenClear(() => actor.promptPlayerForRequest());
+    }
   })
 }
 
 function handleRequestInstruction(battle: PokemonBattle, actor: BattleActor, message: BattleMessage) {
   battle.log("Request Instruction");
-
-  if (message.rawMessage.includes("teamPreview"))
+  let json = message.rawMessage.split("|request|")[1];
+  if (!json)
     return;
+  let request = JSON.parse(json) as RequestData & { teamPreview?: boolean };
+  if (request.teamPreview)
+    return;
+  actor.receiveRequest(request);
+}
 
-  let request = JSON.parse(message.rawMessage.split("|request|")[1]) as RequestData;
-  if (actor.type == ActorType.PLAYER) {
-    if (battle.started) {
-      battle.dispatcher.dispatchGo(() => {
-        actor.request = request;
-        actor.responses = [];
-
-        if (request.forceSwitch?.includes(true)) {
-          battle.dispatcher.doWhenClear(() => {
-            actor.mustChoose = true;
-            actor.promptPlayerForRequest();
-          })
-        }
-      })
-    }
-    else {
-      actor.request = request;
-      actor.responses = [];
-    }
+/** `[is] p1: <uuid>` (Illusion): o disfarce do Pokémon que entra (SwitchInstruction: battlePokemonFromOptional("is")). */
+function illusionOf(battle: PokemonBattle, message: BattleMessage): PokemonData | undefined {
+  let raw = message.optionalArgument("is");
+  let uuid = raw?.split(": ")[1]?.trim();
+  if (!uuid)
+    return undefined;
+  try {
+    return battle.getPokemon(uuid);
   }
-  else {
-    actor.aiPlayer?.receiveRequest(request);
+  catch {
+    return undefined;
   }
 }
 
-function handleSwitchInstruction(battle: PokemonBattle, actor: BattleActor, publicMessage: BattleMessage, privateMessage: BattleMessage) {
+/** Imposter: há um `-transform` do mesmo Pokémon logo depois (TransformInstruction.expectedTarget). */
+function isImposterSwitch(position: string, remainingLines: string[]): boolean {
+  return remainingLines.some(line => line.startsWith(`|-transform|${position}:`));
+}
+
+function handleSwitchInstruction(battle: PokemonBattle, actor: BattleActor, publicMessage: BattleMessage, privateMessage: BattleMessage, remainingLines: string[] = []) {
   let posAndUUID = publicMessage.showdownPositionAndUUID(0);
   if (!posAndUUID)
     return;
   let [position, uuid] = posAndUUID;
+  let [owner] = battle.getActorAndActiveSlotFromShowdownPosition(position);
+  let pokemon = battle.getPokemon(uuid);
+  let illusion = illusionOf(battle, publicMessage);
   if (!battle.started) {
-    let [actor, activePokemon] = battle.getActorAndActiveSlotFromShowdownPosition(position);
-    let newPokemon = battle.getPokemon(uuid);
-    //Trick to getting index from alphabet.
-    switchOut(actor, position, activePokemon, newPokemon);
+    startOfBattleSwitch(battle, owner, position, pokemon, illusion);
+    return;
   }
-  else {
-    battle.dispatcher.dispatchInsert(() => {
-      let [actor, activePokemon] = battle.getActorAndActiveSlotFromShowdownPosition(position);
-      let pokemon = battle.getPokemon(uuid);
-
-      if (activePokemon?.data.uuid == pokemon.uuid)
-        return []; // Already switched in, Showdown does this if the pokemon is going to die before it can switch
-
-      battle.majorBattleActions.set(pokemon.uuid, publicMessage);
-      //TODO: Rework when switch animations and cries are added.
-      //There shouldn't be a scenario where there isnt an entity backing the actor.
-      switchOut(actor, position, activePokemon, pokemon);
-      return [() => new WaitDispatch(1)];
-    })
-  }
+  // HP de quem entra (o dano de entrada já vem nas linhas seguintes).
+  let health = parseInt(privateMessage.argumentAt(2)?.split(" ")[0]?.split("/")[0] ?? "");
+  if (!Number.isNaN(health) && health >= 0)
+    pokemon.currentHealth = Math.min(health, pokemon.maxHealth || health);
+  battle.majorBattleActions.set(pokemon.uuid, publicMessage);
+  // Frente msd-fase1: o Showdown desfaz formas temporárias e o Dynamax de quem sai; quem entra começa sem elas.
+  emitSafely(() => CobblemonEvents.emit("POKEMON_SWITCHED_IN", battle, pokemon.uuid));
+  let old = owner.activePokemon[owner.slotFromLetter(position[2])];
+  if (old && old.data.uuid !== pokemon.uuid)
+    battle.majorBattleActions.set(old.data.uuid, publicMessage);
+  midBattleSwitch(battle, owner, position, pokemon, { illusion, imposter: isImposterSwitch(position, remainingLines) });
 }
 
-/** Switch out implimentation. Needs work when send out animations and cries are added. */
-function switchOut(actor: BattleActor, position: string, oldPokemon: ActivePokemon | null, newPokemon: PokemonData) {
-  let index = position[2].toLowerCase().charCodeAt(0) - 97;
-  let targetLocation: Vector3 | undefined = undefined;
-  if (oldPokemon?.entity.isValid() && actor.Player) {
-    targetLocation = Object.assign({}, oldPokemon.entity.location);
-    oldPokemon.data.return(actor.Player);
-  }
-  let entity = newPokemon.tryGetPokemonOut();
-  if (!entity) {
-    if (!targetLocation) {
-      let targetActor = actor.getSide().getOppositeSide().actors.find(x => true)?.actor.location
-      if (targetActor) {
-        let offset = new Vector3Builder(targetActor).subtract(actor.actor.location).scale(0.33);
-        targetLocation = Vector3Utils.add(actor.actor.location, offset);
-      }
-    }
-    //TODO: ADD ANIMATION AND WAIT FOR IT USING STILLSENDINGOUTCOUNT
-    entity = newPokemon.sendOut(actor.Player, (targetLocation) ? toDimensionLocation(targetLocation, actor.actor.dimension) : undefined);
-  }
-  //Make the pokemon stay near each other
-  actor.getSide().getOppositeSide().getActivePokemon().forEach(x => {
-    if (x) {
-      x.entity.addTag(`targetedBy:${entity.typeId}`);
-      entity.addTag(`targetedBy:${x.entity.typeId}`);
-    }
-  })
-  actor.activePokemon[index] = new ActivePokemon(newPokemon, actor, entity!);
+/** Animação do treinador NPC (ids de NPC_ANIMATIONS em generated/scripts/npcs.ts). */
+function playNPCAnimation(actor: BattleActor | undefined, animation: string) {
+  if (actor?.type !== ActorType.NPC) return;
+  try { if (actor.actor.isValid) actor.actor.playAnimation(animation); } catch { }
 }
 
 function handleDamageInstruction(battle: PokemonBattle, actor: BattleActor, publicMessage: BattleMessage, privateMessage: BattleMessage) {
@@ -1155,8 +1227,8 @@ function handleDamageInstruction(battle: PokemonBattle, actor: BattleActor, publ
   if (!newHealth)
     return;
   let effect = privateMessage.effect();
-  let pokemonName = battlePokemon.data.getTranslatedName();
-  let sourceName = privateMessage.getSourceBattlePokemon(battle)?.data.getTranslatedName() || { text: "UNKOWN" };
+  let pokemonName = battlePokemon.getName();
+  let sourceName = privateMessage.getSourceBattlePokemon(battle)?.getName() || { text: "UNKOWN" };
   broadcastOptionalAbility(battle, effect, sourceName);
 
   battle.dispatcher.dispatch(() => {
@@ -1164,6 +1236,7 @@ function handleDamageInstruction(battle: PokemonBattle, actor: BattleActor, publ
     let remainingHealth = parseInt(newHealth.split("/")[0]);
 
     if (effect) {
+      playDamageEffect(battlePokemon, effect.id);
       let msg = (() => {
         switch (effect.id) {
           case "blacksludge":
@@ -1202,6 +1275,8 @@ function handleDamageInstruction(battle: PokemonBattle, actor: BattleActor, publ
       newHealthRatio = remainingHealth / maxHealth;
       battle.dispatcher.dispatchToFront(() => {
         battlePokemon.data.currentHealth = remainingHealth;
+        if (difference > 0 && !effect)
+          playHurtAnimation(battlePokemon.visual, battlePokemon.mock?.data ?? battlePokemon.data);
         if (difference > 0) {
           let pokemon = battlePokemon.data;
           let evolutions = pokemon.getEvolutions();
@@ -1221,19 +1296,28 @@ function handleDamageInstruction(battle: PokemonBattle, actor: BattleActor, publ
   })
 }
 
-function handleDragInstruction(battle: PokemonBattle, actor: BattleActor, publicMessage: BattleMessage, privateMessage: BattleMessage) {
-  battle.dispatcher.dispatchInsert(() => {
-    let [pos, pokemonUUID] = publicMessage.showdownPositionAndUUID(0)!;
-    let [_, activePokemon] = battle.getActorAndActiveSlotFromShowdownPosition(pos);
-    let newPokemon = battle.getPokemon(pokemonUUID);
-
-    battle.broadcastChatMessage(battleMsg("dragged_out", [newPokemon.getTranslatedName()]));
-    if (activePokemon)
-      battle.majorBattleActions.set(activePokemon.data.uuid, publicMessage);
-    battle.majorBattleActions.set(newPokemon.uuid, publicMessage);
-    switchOut(actor, pos, activePokemon || null, newPokemon);
-    return [() => new WaitDispatch(1)]
-  })
+function handleDragInstruction(battle: PokemonBattle, actor: BattleActor, publicMessage: BattleMessage, privateMessage: BattleMessage, remainingLines: string[] = []) {
+  let posAndUUID = publicMessage.showdownPositionAndUUID(0);
+  if (!posAndUUID)
+    return;
+  let [pos, pokemonUUID] = posAndUUID;
+  let [owner, activePokemon] = battle.getActorAndActiveSlotFromShowdownPosition(pos);
+  let newPokemon = battle.getPokemon(pokemonUUID);
+  let health = parseInt(privateMessage.argumentAt(2)?.split(" ")[0]?.split("/")[0] ?? "");
+  if (!Number.isNaN(health) && health >= 0)
+    newPokemon.currentHealth = Math.min(health, newPokemon.maxHealth || health);
+  if (activePokemon)
+    battle.majorBattleActions.set(activePokemon.data.uuid, publicMessage);
+  battle.majorBattleActions.set(newPokemon.uuid, publicMessage);
+  // Frente msd-fase2 (B4): arrastado para dentro (Roar/Whirlwind/Dragon Tail/Red Card) também entra sem forma
+  // temporária nem Dynamax, como no `switch`.
+  emitSafely(() => CobblemonEvents.emit("POKEMON_SWITCHED_IN", battle, newPokemon.uuid));
+  midBattleSwitch(battle, owner, pos, newPokemon, {
+    illusion: illusionOf(battle, publicMessage),
+    imposter: isImposterSwitch(pos, remainingLines),
+    drag: true,
+    announce: () => battle.broadcastChatMessage(battleMsg("dragged_out", [newPokemon.getTranslatedName()])),
+  });
 }
 
 function handleHitCountInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
@@ -1249,7 +1333,7 @@ function handleHitCountInstruction(battle: PokemonBattle, message: BattleMessage
 }
 
 function handleItemInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
-  let sourceName = message.getSourceBattlePokemon(battle)?.data.getTranslatedName() || { text: "UNKOWN" };
+  let sourceName = message.getSourceBattlePokemon(battle)?.getName() || { text: "UNKOWN" };
   broadcastOptionalAbility(battle, message.effect(), sourceName);
 
   battle.dispatcher.dispatchGo(() => {
@@ -1271,7 +1355,7 @@ function handleItemInstruction(battle: PokemonBattle, message: BattleMessage, re
       return;
     }
     let effect = message.effect();
-    let battlerName = battlePokemon.data.getTranslatedName();
+    let battlerName = battlePokemon.getName();
     // Airballoon is the only item using the null effect gimmick.
     if (effect == undefined) {
       battle.broadcastChatMessage(battleMsg(`item.${itemId}.start`, [battlerName]));
@@ -1321,7 +1405,7 @@ function handleEndItemInstruction(battle: PokemonBattle, message: BattleMessage,
       battlePokemon.syncWithOut();
       return;
     }
-    let battlerName = battlePokemon.data.getTranslatedName();
+    let battlerName = battlePokemon.getName();
     //TODO: Hopefully mojang adds a way to get an item's translation key
     let itemName = itemId;
     if (message.hasOptionalArgument("eat")) {
@@ -1331,7 +1415,7 @@ function handleEndItemInstruction(battle: PokemonBattle, message: BattleMessage,
       battlePokemon.syncWithOut();
       return;
     }
-    let sourceName = message.getSourceBattlePokemon(battle)?.data.getTranslatedName() || { text: "unknown" };
+    let sourceName = message.getSourceBattlePokemon(battle)?.getName() || { text: "unknown" };
     let effect = message.effect();
     let msg = (() => {
       if (effect?.id)
@@ -1361,16 +1445,16 @@ function shouldConsumeItem(pokemon: PokemonData, battle: PokemonBattle): boolean
 }
 
 function handleHealInstruction(battle: PokemonBattle, actor: BattleActor, publicMessage: BattleMessage, privateMessage: BattleMessage) {
-  let pos = privateMessage.showdownPositionAndUUID(0)?.[0];
-  let battlePokemon = privateMessage.getBattlePokemon(0, battle);
+  // Pode ser um Pokémon no banco (item da mochila, Wish): usa o PokemonData diretamente.
+  let pokemonData = privateMessage.pokemonData(0, battle);
   let rawHpAndStatus = privateMessage.argumentAt(1)?.split(" ")
   let rawHpRatio = rawHpAndStatus?.[0]
-  if (!battlePokemon || !rawHpAndStatus || !rawHpRatio)
+  if (!pokemonData || !rawHpAndStatus || !rawHpRatio)
     return;
+  let data = pokemonData;
   let newHealth = rawHpRatio.split("/").map(x => Number(x));
-  let newHealthRatio = rawHpRatio.split("/").map(x => Number(x) / newHealth[1]);
   let effect = privateMessage.effect();
-  let pokemonName = battlePokemon.data.getTranslatedName();
+  let pokemonName = data.getTranslatedName();
   broadcastOptionalAbility(battle, effect, pokemonName);
 
   battle.dispatcher.dispatchWaiting(1, () => {
@@ -1378,45 +1462,45 @@ function handleHealInstruction(battle: PokemonBattle, actor: BattleActor, public
     if (!silent) {
       let msg = (() => {
         if (privateMessage.hasOptionalArgument("zeffect"))
-          return battleMsg("heal.zeffect", [battlePokemon.data]);
+          return battleMsg("heal.zeffect", [data]);
         if (privateMessage.hasOptionalArgument("wisher")) {
           let name = privateMessage.optionalArgument("wisher")!
-          let showdownId = toID(name);
-          console.log(`Wish Debug Id: ${showdownId}`)
-          //Oddly, showdown Id as far as i can tell refers to the species id in this case. Wierd.
-          let wisher = actor.pokemon.find(x => toID(x.species));
+          let wisher = actor.pokemon.find(x => x.uuid == name || toID(x.species) == toID(name));
           return battleMsg("heal.wish", [wisher?.getTranslatedName() || actor.nameOwned(name)]);
         }
-        if (privateMessage.hasOptionalArgument("from")) {
-          if (effect?.type == EffectType.ITEM) {
+        if (privateMessage.hasOptionalArgument("from") && effect) {
+          if (effect.type == EffectType.ITEM) {
             if (["leftovers", "shellbell", "blacksludge"].includes(effect.id))
-              return battleMsg("heal.leftovers", [battlePokemon.data, effect.typelessData]);
+              return battleMsg("heal.leftovers", [data, effect.typelessData]);
             else
-              return battleMsg("heal.item", [battlePokemon.data.getName(), effect.typelessData]);
+              return battleMsg("heal.item", [data, effect.typelessData]);
           }
-          if (effect!.id == "drain") {
-            let drained = privateMessage.getSourceBattlePokemon(battle)!;
-            battleMsg("heal.drain", [drained.data.getTranslatedName()]);
+          if (effect.id == "drain") {
+            let drained = privateMessage.getSourceBattlePokemon(battle);
+            return battleMsg("heal.drain", [drained?.getName() ?? pokemonName]);
           }
-          return battleMsg(`heal.${effect!.id}`, [battlePokemon.data]);
+          return battleMsg(`heal.${effect.id}`, [data]);
         }
-        return battleMsg("heal.generic", [battlePokemon.data]);
+        return battleMsg("heal.generic", [data]);
       })();
       battle.broadcastChatMessage(msg);
     }
-    battle.minorBattleActions.set(battlePokemon.data.uuid, privateMessage);
-    battlePokemon.data.currentHealth = Math.round(newHealth[0]);
-    battlePokemon.syncWithOut();
+    battle.minorBattleActions.set(data.uuid, privateMessage);
+    data.currentHealth = Math.round(newHealth[0]);
+    // Reviver (item da mochila, Revival Blessing): deixa de estar desmaiado.
+    if (data.currentHealth > 0 && data.status == StatusEffect.Faint)
+      data.status = undefined;
+    syncPokemonData(battle, data);
 
     //This part is not always present
     let rawStatus = rawHpAndStatus[1];
     if (!rawStatus)
       return;
-    if (PersistentStatuses.includes(rawStatus) && battlePokemon.data.status != rawStatus) {
-      battlePokemon.data.status = rawStatus as StatusEffect;
-      battlePokemon.syncWithOut();
+    if (PersistentStatuses.includes(rawStatus) && data.status != rawStatus) {
+      data.status = rawStatus as StatusEffect;
+      syncPokemonData(battle, data);
       if (!silent) {
-        battle.broadcastChatMessage(messages.With(`cobblemon.status.${statusNames[rawStatus]}.apply`, [battlePokemon.data.getTranslatedName()]));
+        battle.broadcastChatMessage(messages.With(`cobblemon.status.${statusNames[rawStatus]}.apply`, [data.getTranslatedName()]));
       }
     }
   })
@@ -1424,24 +1508,19 @@ function handleHealInstruction(battle: PokemonBattle, actor: BattleActor, public
 
 function handleSetHPInstruction(battle: PokemonBattle, actor: BattleActor, publicMessage: BattleMessage, privateMessage: BattleMessage) {
   battle.dispatcher.dispatchWaiting(1, () => {
-    let pos = privateMessage.showdownPositionAndUUID(0)?.[0];
     let flatHP = Number(privateMessage.argumentAt(1)?.split("/")[0]);
-    if (Number.isNaN(flatHP))
+    let data = privateMessage.pokemonData(0, battle);
+    if (Number.isNaN(flatHP) || !data)
       return;
-    let ratioHP = flatHP * 0.01;
-    let battlePokemon = privateMessage.getBattlePokemon(0, battle);
-    if (!battlePokemon)
-      return;
-    battlePokemon.data.currentHealth = Math.round(flatHP);
+    data.currentHealth = Math.round(flatHP);
+    syncPokemonData(battle, data);
 
     if (!publicMessage.hasOptionalArgument("silent")) {
       let effectId = publicMessage.effect()?.id;
-      if (!effectId)
-        return;
-      let msg = battleMsg(`sethp.${effectId}`);
-      battle.broadcastChatMessage(msg);
+      if (effectId)
+        battle.broadcastChatMessage(battleMsg(`sethp.${effectId}`));
     }
-    battle.minorBattleActions.set(battlePokemon.data.uuid, publicMessage);
+    battle.minorBattleActions.set(data.uuid, publicMessage);
   })
 }
 
@@ -1455,7 +1534,7 @@ function handleClearNegativeBoostInstruction(battle: PokemonBattle, message: Bat
   let battlePokemon = message.getBattlePokemon(0, battle);
   if (!battlePokemon)
     return;
-  let pokemonName = battlePokemon.data.getTranslatedName();
+  let pokemonName = battlePokemon.getName();
   battle.dispatcher.dispatchWaiting(1.5, () => {
     let lang: RawMessage;
     if (message.hasOptionalArgument("zeffect"))
@@ -1473,10 +1552,11 @@ function handleZPowerInstruction(battle: PokemonBattle, message: BattleMessage, 
   let battlePokemon = message.getBattlePokemon(0, battle);
   if (!battlePokemon)
     return;
-  let pokemonName = battlePokemon.data.getTranslatedName();
+  let pokemonName = battlePokemon.getName();
   battle.dispatcher.dispatchWaiting(1, () => {
     battle.broadcastChatMessage(messages.color("Yellow", battleMsg("zpower", [pokemonName])));
     battle.minorBattleActions.set(battlePokemon.data.uuid, message);
+    emitSafely(() => CobblemonEvents.emit("ZPOWER", battle, battlePokemon));
   })
 }
 
@@ -1484,7 +1564,7 @@ function handleZBrokenInstruction(battle: PokemonBattle, message: BattleMessage,
   let battlePokemon = message.getBattlePokemon(0, battle);
   if (!battlePokemon)
     return;
-  let pokemonName = battlePokemon.data.getTranslatedName();
+  let pokemonName = battlePokemon.getName();
   battle.dispatcher.dispatchWaiting(1, () => {
     battle.broadcastChatMessage(messages.color("Red", battleMsg("zbroken", [pokemonName])));
     battle.minorBattleActions.set(battlePokemon.data.uuid, message);
@@ -1495,39 +1575,176 @@ function handleTerastrallizeInstruction(battle: PokemonBattle, message: BattleMe
   let battlePokemon = message.getBattlePokemon(0, battle);
   if (!battlePokemon)
     return;
-  let pokemonName = battlePokemon.data.getTranslatedName();
+  let pokemonName = battlePokemon.getName();
   let type = message.effectAt(1);
   if (!type)
     return;
   let typeTranslated: RawMessage = { translate: `cobblemon.type.${type.id}` }
+  let typeName = message.argumentAt(1) ?? type.id;
   battle.dispatcher.dispatchWaiting(1, () => {
-    battle.broadcastChatMessage(battleMsg("terastallize", [pokemonName, typeTranslated]));
+    // TerastallizeInstruction.kt: mensagem em amarelo e CobblemonEvents.TERASTALLIZATION.
+    battle.broadcastChatMessage(messages.color("Yellow", battleMsg("terastallize", [pokemonName, typeTranslated])));
     battle.minorBattleActions.set(battlePokemon.data.uuid, message);
+    emitSafely(() => CobblemonEvents.emit("TERASTALLIZATION", battle, battlePokemon, typeName));
   })
 }
 
+/** FormeChangeInstruction.kt: `detailschange` (permanente) e `-formechange` (temporária). */
 function handleDetailsChangeInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
   let battlePokemon = message.getBattlePokemon(0, battle);
   if (!battlePokemon)
     return;
-  let pokemonName = battlePokemon.data.getTranslatedName();
-  let _formName = message.argumentAt(1)?.split(",")[0];
-  if (!_formName)
+  let pokemonName = battlePokemon.getName();
+  let details = message.argumentAt(1)?.split(",")[0]?.toLowerCase();
+  if (!details)
     return;
-  let formName = substringAfter(_formName, '-').toLowerCase();
+  let speciesName = details.split("-")[0];
+  let formName = details.includes("-") ? details.substring(details.lastIndexOf("-") + 1) : speciesName;
+  let typeKey = (message.id == "detailschange") ? "permanent" : "temporary";
+  let forme = message.argumentAt(1)!.split(",")[0].trim();
+  broadcastOptionalAbility(battle, message.effect(), pokemonName);
   battle.dispatcher.dispatchWaiting(1, () => {
-    battle.broadcastChatMessage(battleMsg(`detailschange.${formName}`, [pokemonName]));
     battle.minorBattleActions.set(battlePokemon.data.uuid, message);
+    // Frente msd-fase1: CobblemonEvents.FORME_CHANGE (a troca visual da forma é da extensão Mega Showdown).
+    emitSafely(() => CobblemonEvents.emit("FORME_CHANGE", battle, battlePokemon, forme, message.id == "detailschange"));
+    let lang: RawMessage | undefined = (() => {
+      switch (formName) {
+        case "busted":
+        case "hero":
+        case "complete":
+          return undefined;
+        case "school":
+        case "wishiwashi":
+        case "meteor":
+        case "minior":
+          return battleMsg(`formechange.${formName}`, [pokemonName]);
+        case speciesName:
+          return battleMsg("formechange.default.temporary.ended", [pokemonName]);
+        default:
+          return battleMsg(`formechange.default.${typeKey}`, [pokemonName, formName]);
+      }
+    })();
+    if (lang)
+      battle.broadcastChatMessage(lang);
   })
 }
 
+/**
+ * `-mega` (MegaInstruction), `-primal` e `-burst`. Frente msd-fase1: o Cobblemon 1.8.2 não trata `-primal` e o MSD o
+ * deixa sem mensagem (PrimalInstruction vazio); `-burst` usa `cobblemon.battle.ultra` (UltraInstruction do MSD).
+ */
 function handleMegaInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
   let battlePokemon = message.getBattlePokemon(0, battle);
   if (!battlePokemon)
     return;
-  let pokemonName = battlePokemon.data.getTranslatedName();
-  battle.dispatcher.dispatchWaiting(1, () => {
-    battle.broadcastChatMessage(messages.color("Yellow", battleMsg("mega", [pokemonName])));
+  let pokemonName = battlePokemon.getName();
+  let kind: "mega" | "primal" | "ultra" = message.id == "-primal" ? "primal" : message.id == "-burst" ? "ultra" : "mega";
+  battle.dispatcher.dispatchWaiting(kind == "primal" ? 0 : 1, () => {
+    if (kind != "primal")
+      battle.broadcastChatMessage(messages.color("Yellow", battleMsg(kind, [pokemonName])));
     battle.minorBattleActions.set(battlePokemon.data.uuid, message);
+    emitSafely(() => CobblemonEvents.emit("MEGA_EVOLUTION", battle, battlePokemon, kind));
   })
+}
+
+/** Ouvinte com erro não pode derrubar a fila da batalha. */
+function emitSafely(emit: () => void) {
+  try { emit(); }
+  catch (e) { console.error(`BattleInterpreter: evento falhou: ${e instanceof Error ? e.stack ?? e.message : e}`); }
+}
+
+function handleClearBoostInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
+  let pokemon = message.getBattlePokemon(0, battle);
+  if (!pokemon)
+    return;
+  battle.dispatcher.dispatchWaiting(1.5, () => {
+    battle.broadcastChatMessage(battleMsg("clearboost", [pokemon.getName()]));
+    battle.minorBattleActions.set(pokemon.data.uuid, message);
+  })
+}
+
+/** `message`/`-message`: texto livre do Showdown (em inglês), repassado como está. */
+function handleRawMessageInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
+  let text = message.argumentAt(0);
+  if (!text)
+    return;
+  battle.dispatcher.dispatchWaiting(1, () => battle.broadcastChatMessage(messages.toMessage(text!)));
+}
+
+/** `replace` (fim da Illusion, ReplaceInstruction): some o disfarce; a mensagem vem do `-end`. */
+function handleReplaceInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
+  let posAndUUID = message.showdownPositionAndUUID(0);
+  if (!posAndUUID)
+    return;
+  let active = message.getBattlePokemon(0, battle);
+  if (!active)
+    return;
+  battle.dispatcher.dispatch(() => endIllusion(battle, active));
+}
+
+function handleSetBoostInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
+  battle.dispatcher.dispatchWaiting(1.5, () => {
+    let pokemon = message.getBattlePokemon(0, battle);
+    let effectID = message.effect()?.id;
+    if (!pokemon || !effectID)
+      return;
+    battle.broadcastChatMessage(battleMsg(`setboost.${effectID}`, [pokemon.getName()]));
+    battle.minorBattleActions.set(pokemon.data.uuid, message);
+  })
+}
+
+/** `swap` (Ally Switch / shift de triplas): troca as posições ativas dos dois aliados. */
+function handleSwapInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
+  let posAndUUID = message.showdownPositionAndUUID(0);
+  let targetIndex = parseInt(message.argumentAt(1) ?? "");
+  if (!posAndUUID || Number.isNaN(targetIndex))
+    return;
+  battle.dispatcher.dispatchWaiting(1, () => {
+    let [position] = posAndUUID;
+    let [actor, activeA] = battle.getActorAndActiveSlotFromShowdownPosition(position);
+    let indexA = actor.slotFromLetter(position[2]);
+    let activeB = actor.activePokemon[targetIndex] ?? null;
+    actor.activePokemon[indexA] = activeB;
+    actor.activePokemon[targetIndex] = activeA;
+    if (!activeA || message.hasOptionalArgument("silent"))
+      return;
+    let lastCause = lastCauser.get(battle.battleId);
+    let lang = (lastCause?.id == "move" && lastCause.effectAt(1)?.id == "allyswitch" && activeB)
+      ? battleMsg("activate.allyswitch", [activeA.getName(), activeB.getName()])
+      : battleMsg("shift", [activeA.getName()]);
+    battle.broadcastChatMessage(lang);
+  })
+}
+
+/** Court Change: as condições de lado são trocadas no Showdown; aqui não há estado local a mudar. */
+function handleSwapSideConditionsInstruction(battle: PokemonBattle, message: BattleMessage, remainingLines: string[]) {
+  battle.dispatcher.dispatchGo(() => battle.log(`Swap side conditions: ${message.rawMessage}`));
+}
+
+/**
+ * ActivateInstruction (sketch): o golpe desenhado entra no lugar de Sketch no moveset (exchangeMove, com a
+ * proporção de PP) e é salvo — no Cobblemon só no `effectedPokemon`, então clone de batalha não muda o real.
+ */
+export function applySketch(battle: PokemonBattle, pokemon: ActivePokemon, sketched: string | undefined) {
+  if (!sketched)
+    return;
+  let data = pokemon.data;
+  let slot = data.moves.findIndex(x => toID(x) == "sketch");
+  let move = Dex.moves.get(sketched.replace(/[^A-Za-z0-9]/g, ""));
+  if (slot == -1 || !move.exists)
+    return;
+  if (data.teachMove(move.id, slot))
+    syncPokemonData(battle, data);
+}
+
+/** Grava o PokemonData no time do dono (se jogador) e na entidade em campo. */
+function syncPokemonData(battle: PokemonBattle, data: PokemonData) {
+  let active = battle.activePokemon.find(x => x?.data.uuid == data.uuid);
+  if (active) {
+    active.syncWithOut();
+    return;
+  }
+  let owner = battle.getOwner(data.uuid);
+  if (owner?.Player)
+    data.tryUpdatePokemonInTeam(owner.Player);
 }

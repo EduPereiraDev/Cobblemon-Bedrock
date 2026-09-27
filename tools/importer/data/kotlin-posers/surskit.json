@@ -1,0 +1,96 @@
+{
+	"_source": "SurskitModel.kt",
+	"rootBone": "surskit",
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isTouchingWater": false,
+			"animations": [
+				"q.bedrock('surskit', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('surskit', 'blink', 8, 30, 1)"
+			]
+		},
+		"walking": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"isTouchingWater": false,
+			"animations": [
+				"q.bedrock('surskit', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('surskit', 'blink', 8, 30, 1)"
+			]
+		},
+		"water_stand": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isTouchingWater": true,
+			"animations": [
+				"q.bedrock('surskit', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('surskit', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "surskit",
+					"position": [
+						0,
+						-8,
+						0
+					]
+				}
+			]
+		},
+		"water_walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"isTouchingWater": true,
+			"animations": [
+				"q.bedrock('surskit', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('surskit', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "surskit",
+					"position": [
+						0,
+						-8,
+						0
+					]
+				}
+			]
+		}
+	},
+	"portraitScale": 2.2,
+	"profileScale": 0.7,
+	"portraitTranslation": [
+		0,
+		-0.9,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.6,
+		0
+	]
+}

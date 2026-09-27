@@ -1,4 +1,4 @@
-import { Entity } from "@minecraft/server";
+import { Entity, RawMessage } from "@minecraft/server";
 import { PokemonData } from "../Pokemon";
 import { ActorType, BattleActor } from "./BattleActor";
 import { PokemonBattle } from "./PokemonBattle";
@@ -9,6 +9,18 @@ export class ActivePokemon {
   /** UUID's of all pokemon this pokemon has seen (used for exp gain) */
   seenPokemon: string[] = []
   battle: PokemonBattle
+  /** Illusion: Pokémon do mesmo time cujo visual/nome os outros veem (ActiveBattlePokemon.illusion do Cobblemon). */
+  illusion?: PokemonData
+  /**
+   * Entidade de exibição de Illusion/Transform (frente visual-batalha, effects/Mock.ts): o Pokémon real fica
+   * invisível e esta entidade da espécie copiada ocupa o lugar dele (o "mockEffect" do Cobblemon).
+   */
+  mock?: { kind: "illusion" | "transform"; entity: Entity; species: string; data: PokemonData }
+  /**
+   * O Pokémon já ocupa a posição (as linhas seguintes do protocolo o acham), mas ainda não está no mundo: a bola
+   * está a caminho. `entity` guarda um marcador (a entidade que sai ou o treinador) que não deve ser mexido.
+   */
+  pending = false
   /**
    * @param data Data of the pokemon
    * @param battle Battle this is being used in (used to auto reveal itself to all out pokemon)
@@ -23,14 +35,48 @@ export class ActivePokemon {
     this.revealToActivePokemon();
   }
 
+  /** Nome mostrado nas mensagens da batalha (o do disfarce durante a Illusion, BattlePokemon.getName). */
+  getName(): RawMessage {
+    return (this.illusion ?? this.data).getTranslatedName();
+  }
+
+  /** Pokémon exposto a quem vê (ActiveBattlePokemonDTO.fromPokemon: aliado vê o real, o resto vê o disfarce). */
+  displayData(isAlly: boolean): PokemonData {
+    return isAlly ? this.data : this.illusion ?? this.data;
+  }
+
+  /** Entidade que aparece no mundo (a de exibição durante Illusion/Transform). */
+  get visual(): Entity | undefined {
+    try {
+      if (this.mock?.entity.isValid) return this.mock.entity;
+    }
+    catch { }
+    try {
+      return this.entity?.isValid ? this.entity : undefined;
+    }
+    catch {
+      return undefined;
+    }
+  }
+
+  /** Espécie do modelo que aparece no mundo (sem namespace). */
+  get visualSpecies(): string | undefined {
+    return this.mock?.species;
+  }
+
   /** Ensures that the pokemon is up to date, both in the field and in the player's team. */
   syncWithOut() {
     if (this.actor.type == ActorType.PLAYER && this.actor.Player) {
-      this.data.updatePokemonInTeam(this.actor.Player);
+      // Clone de batalha: nunca grava no time real (só a entidade em campo).
+      if (!this.data.battleClone) this.data.updatePokemonInTeam(this.actor.Player);
       this.data.tryUpdatePokemonOut();
     }
     else {
       this.data.tryUpdatePokemonOut();
+    }
+    // applyToCobblemon regrava o rótulo: com a entidade de exibição, o Pokémon real continua sem nome.
+    if (this.mock) {
+      try { if (this.entity.isValid) this.entity.nameTag = ""; } catch { }
     }
   }
 
@@ -66,8 +112,8 @@ export class ActivePokemon {
   /** Returns all pokemon adjacent to the pokemon, including across from it.*/
   getAdjacent(): ActivePokemon[] {
     let digit = this.getDigit();
-    //TODO: Actually use the format to determine the sideSize
-    let sideSize = this.getSide().actors.length;
+    // Posições do lado (duplas: 2 de um ator; multi: 1 de cada um dos 2 atores).
+    let sideSize = this.getSide().getActivePokemon().length;
     return this.battle.activePokemon
       .filter(x => x != null)
       .filter(it => {
@@ -84,8 +130,7 @@ export class ActivePokemon {
     let index = this.actor.activePokemon.findIndex(x => x == this)
     if (index == -1)
       throw new Error("The activePokemon is not active and could not be assigned a letter");
-    //Adding 97 gets the corresponding alphabetical number
-    return String.fromCharCode(index + 97);
+    return this.actor.letterFromSlot(index);
   }
 
   /** Finds the showdown digit for this particular pokemon. */

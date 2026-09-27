@@ -1,0 +1,48 @@
+{
+	"_source": "FrillishModel.kt",
+	"rootBone": "frillish",
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('frillish', 'water_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('frillish', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('frillish', 'water_swim')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('frillish', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2.14,
+	"profileScale": 0.73,
+	"portraitTranslation": [
+		-0.2,
+		0.3,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.62,
+		0
+	]
+}

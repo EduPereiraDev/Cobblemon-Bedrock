@@ -1,0 +1,51 @@
+{
+	"_source": "MisdreavusModel.kt",
+	"rootBone": "misdreavus",
+	"animations": {
+		"cry": "q.bedrock_stateful('misdreavus', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('misdreavus', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('misdreavus', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('misdreavus', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('misdreavus', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 1.8,
+	"profileScale": 0.7,
+	"portraitTranslation": [
+		-0.2,
+		-0.32,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.7,
+		0
+	]
+}

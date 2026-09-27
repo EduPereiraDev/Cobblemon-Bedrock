@@ -1,0 +1,238 @@
+{
+	"_source": "TotodileModel.kt",
+	"rootBone": "totodile",
+	"animations": {
+		"cry": "q.bedrock_stateful('totodile', 'cry')"
+	},
+	"poses": {
+		"sleeping": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isTouchingWater": false,
+			"animations": [
+				"q.bedrock('totodile', 'sleep')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('totodile', 'sleep_quirk', 60, 120, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('totodile', 'faint')"
+			}
+		},
+		"water_sleeping": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isTouchingWater": true,
+			"animations": [
+				"q.bedrock('totodile', 'water_sleep')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('totodile', 'sleep_quirk', 60, 120, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('totodile', 'faint')"
+			}
+		},
+		"standing": {
+			"poseTypes": [
+				"PROFILE",
+				"PORTRAIT",
+				"STAND"
+			],
+			"isBattle": false,
+			"isTouchingWater": false,
+			"isUnderWater": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('totodile', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('totodile', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('totodile', 'bitey_quirk', 60, 120, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('totodile', 'faint')"
+			}
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK"
+			],
+			"isTouchingWater": false,
+			"isUnderWater": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('totodile', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('totodile', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('totodile', 'faint')"
+			}
+		},
+		"floating": {
+			"poseTypes": [
+				"FLOAT"
+			],
+			"isUnderWater": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('totodile', 'water_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('totodile', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('totodile', 'bitey_quirk', 60, 120, 1)"
+			]
+		},
+		"swimming": {
+			"poseTypes": [
+				"SWIM"
+			],
+			"isUnderWater": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('totodile', 'water_swim')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('totodile', 'blink', 8, 30, 1)"
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"isTouchingWater": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('totodile', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('totodile', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('totodile', 'faint')"
+			}
+		},
+		"surface_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isUnderWater": false,
+			"isTouchingWater": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('totodile', 'surfacewater_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('totodile', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('totodile', 'bitey_quirk', 60, 120, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "totodile",
+					"position": [
+						0,
+						-10,
+						0
+					]
+				}
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('totodile', 'faint')"
+			}
+		},
+		"surface_swim": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"isUnderWater": false,
+			"isTouchingWater": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('totodile', 'surfacewater_swim')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('totodile', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "totodile",
+					"position": [
+						0,
+						-10,
+						0
+					]
+				}
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('totodile', 'faint')"
+			}
+		},
+		"shoulder_left": {
+			"poseTypes": [
+				"SHOULDER_LEFT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('totodile', 'shoulder_right')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('totodile', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "totodile",
+					"position": [
+						5.5,
+						0,
+						0
+					]
+				}
+			]
+		},
+		"shoulder_right": {
+			"poseTypes": [
+				"SHOULDER_RIGHT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('totodile', 'shoulder_left')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('totodile', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "totodile",
+					"position": [
+						-5.5,
+						0,
+						0
+					]
+				}
+			]
+		}
+	},
+	"portraitScale": 1.4,
+	"profileScale": 0.65,
+	"portraitTranslation": [
+		-0.15,
+		0.3,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.71,
+		0
+	]
+}

@@ -1,0 +1,69 @@
+{
+	"_source": "YanmaModel.kt",
+	"rootBone": "yanma",
+	"animations": {
+		"cry": "q.bedrock_stateful('yanma', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('yanma', 'ground_idle')",
+				"q.cobblemon_wing_flap('triangle', 0.4, 0.1, 0, 0, 'z', 'wing_left1', 'wing_right1', 'q.anim_time')",
+				"q.cobblemon_wing_flap('triangle', 0.4, 0.1, 0, 0, 'z', 'wing_left2', 'wing_right2', '0.01 + q.anim_time')"
+			],
+			"transformedParts": [
+				{
+					"part": "yanma",
+					"position": [
+						0,
+						-4,
+						0
+					]
+				}
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('yanma', 'ground_idle')",
+				"q.cobblemon_wing_flap('triangle', 0.4, 0.1, 0, 0, 'z', 'wing_left1', 'wing_right1', 'q.anim_time')",
+				"q.cobblemon_wing_flap('triangle', 0.4, 0.1, 0, 0, 'z', 'wing_left2', 'wing_right2', '0.01 + q.anim_time')"
+			],
+			"transformedParts": [
+				{
+					"part": "yanma",
+					"position": [
+						0,
+						-4,
+						0
+					]
+				}
+			]
+		}
+	},
+	"portraitScale": 2.1,
+	"profileScale": 0.75,
+	"portraitTranslation": [
+		-0.6,
+		-1,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.5,
+		0
+	]
+}

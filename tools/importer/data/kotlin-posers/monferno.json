@@ -1,0 +1,75 @@
+{
+	"_source": "MonfernoModel.kt",
+	"rootBone": "monferno",
+	"animations": {
+		"cry": "q.bedrock_stateful('monferno', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('monferno', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('monferno', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('monferno', 'faint')"
+			}
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('monferno', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('monferno', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('monferno', 'faint')"
+			}
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('monferno', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('monferno', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('monferno', 'faint')"
+			}
+		}
+	},
+	"portraitScale": 2.2,
+	"profileScale": 0.7,
+	"portraitTranslation": [
+		-0.2,
+		0.4,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.6,
+		0
+	]
+}

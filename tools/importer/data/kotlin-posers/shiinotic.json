@@ -1,0 +1,50 @@
+{
+	"_source": "ShiinoticModel.kt",
+	"rootBone": "shiinotic",
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('shiinotic', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('shiinotic', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('shiinotic', 'ground_idle')",
+				"q.biped_walk(0.6, 0.9, 'foot_left', 'foot_right')",
+				"q.bimanual_swing(0.6, 0.9, 'arm_left', 'arm_right')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('shiinotic', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 4.5,
+	"profileScale": 0.9,
+	"portraitTranslation": [
+		0,
+		-2.3,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.4,
+		0
+	]
+}

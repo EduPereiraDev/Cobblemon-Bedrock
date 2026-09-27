@@ -1,0 +1,59 @@
+{
+	"_source": "PatratModel.kt",
+	"rootBone": "patrat",
+	"animations": {
+		"cry": "q.bedrock_stateful('patrat', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('patrat', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('patrat', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('patrat', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('patrat', 'blink', 8, 30, 1)"
+			]
+		},
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('patrat', 'sleep')"
+			]
+		}
+	},
+	"portraitScale": 2,
+	"profileScale": 0.7,
+	"portraitTranslation": [
+		-0.15,
+		0,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.7,
+		0
+	]
+}

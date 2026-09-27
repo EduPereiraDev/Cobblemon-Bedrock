@@ -1,18 +1,21 @@
-import { Dex } from "../showdown/sim";
+import { Dex } from "../showdown";
 import { substringAfter, toID } from "../utils";
 import { PokemonBattle } from "./PokemonBattle";
 
 const SEPARATOR = "|";
 const OPTIONAL_ARG_START = "[";
 const OPTIONAL_ARG_END = "]"
-const PNX_MATCHER = /p\d[a-c]/;
+const PNX_MATCHER = /^p\d[a-c]$/;
+/** "p1a: <uuid>" (ativo) ou "p1: <uuid>" (no banco, ex.: cura por item da mochila). */
+const POKEMON_ARG_MATCHER = /^(p\d)([a-c])?: *(.+)$/;
 const SHOWDOWN_REGEX = /[^a-z0-9]+/;
 
 export class BattleMessage {
   id: string = ""
   args: string[] = []
   optionalArguments: Record<string, string> = {}
-  optionalArgumentMatcher = new RegExp(`^\\${OPTIONAL_ARG_START}([^]]+)${OPTIONAL_ARG_END}`)
+  // Antes era `[^]]+`, que no JS vira "qualquer caractere" seguido de "]" e nunca casava.
+  optionalArgumentMatcher = /^\[([^\]]+)\]/
 
   constructor(
     public rawMessage: string
@@ -30,8 +33,8 @@ export class BattleMessage {
       let optionalArgument = this.optionalArgumentMatcher.exec(currentData);
       if (optionalArgument != null) {
         let result = optionalArgument[0];
-        let id = result.substring(1, result.length - 1);
-        let value = currentData.split(result)[1].trim();
+        let id = result.substring(1, result.length - 1).toLowerCase();
+        let value = currentData.substring(result.length).trim();
         this.optionalArguments[id] = value;
       }
       else {
@@ -56,7 +59,7 @@ export class BattleMessage {
    * @return The argument data if existing or null.
    */
   optionalArgument(name: string): string | undefined {
-    return this.optionalArgument[name.toLowerCase()];
+    return this.optionalArguments[name.toLowerCase()];
   }
   /**
    * Checks if an optional argument is present.
@@ -67,6 +70,25 @@ export class BattleMessage {
    */
   hasOptionalArgument(name: string): boolean {
     return (this.optionalArgument(name) != undefined);
+  }
+
+  /**
+   * PokemonData do argumento, esteja o Pokémon em campo ("p1a: uuid") ou no banco ("p1: uuid").
+   * Equivale ao `battlePokemon()` do Kotlin, que não exige o Pokémon estar ativo.
+   */
+  pokemonData(index: number, battle: PokemonBattle) {
+    let argument = this.argumentAt(index);
+    if (!argument)
+      return undefined;
+    let match = POKEMON_ARG_MATCHER.exec(argument.trim());
+    if (!match)
+      return undefined;
+    try {
+      return battle.getPokemon(match[3].trim());
+    }
+    catch {
+      return undefined;
+    }
   }
 
   pokemonByUuid(index: number, battle: PokemonBattle) {
@@ -233,6 +255,9 @@ export class Effect {
     public rawData: string
   ) { }
   get typelessData() {
+    // Sem prefixo (PURE = ""): split("") cortaria a primeira letra ("Tackle" → "ackle").
+    if (!this.type)
+      return this.rawData.trim();
     return substringAfter(this.rawData, this.type).trim();
   }
 

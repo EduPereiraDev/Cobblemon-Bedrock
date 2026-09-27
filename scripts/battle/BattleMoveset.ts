@@ -1,9 +1,9 @@
 import { RawMessage } from "@minecraft/server";
 import { PokemonData } from "../Pokemon";
 import { ActivePokemon } from "./ActivePokemon";
-import { ActiveMoveset, RequestMove } from "./Request";
-import { MoveTarget } from "../showdown/sim/dex-moves";
-import { Dex } from "../showdown/sim";
+import { ActiveMoveset, MaxMovesRequest, RequestMove } from "./Request";
+import { MoveTarget } from "../showdown";
+import { Dex } from "../showdown";
 import { toID } from "../utils";
 import { getMoveTranslation } from "../language";
 
@@ -12,9 +12,10 @@ export class BattleMoveset {
   trapped = false;
   canMegaEvo = false;
   canUltraBurst = false;
-  canZMove = undefined;
+  canZMove?: (gimmickMove | null)[] = undefined;
   canDynamax = false;
-  maxMoves = undefined;
+  /** Frente msd-fase1: formato do @pkmn/sim (`{ maxMoves, gigantamax? }`). */
+  maxMoves?: MaxMovesRequest = undefined;
   canTerastallize?: string
 
   private constructor() { }

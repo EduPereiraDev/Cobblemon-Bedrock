@@ -1,0 +1,59 @@
+{
+	"_source": "MiltankModel.kt",
+	"rootBone": "miltank",
+	"animations": {
+		"cry": "q.bedrock_stateful('miltank', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('miltank', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('neck', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('miltank', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('miltank', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('neck', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('miltank', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('miltank', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2,
+	"profileScale": 0.7,
+	"portraitTranslation": [
+		-0.21,
+		1.1,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.7,
+		0
+	]
+}

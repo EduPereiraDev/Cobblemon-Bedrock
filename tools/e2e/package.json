@@ -1,0 +1,10 @@
+{
+  "name": "cobblemon-bedrock-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Suíte E2E: bots de protocolo (bedrock-protocol) entram no BDS de teste como jogadores.",
+  "engines": { "node": ">=24" },
+  "dependencies": {
+    "bedrock-protocol": "3.60.1"
+  }
+}

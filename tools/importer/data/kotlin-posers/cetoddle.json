@@ -1,0 +1,84 @@
+{
+	"_source": "CetoddleModel.kt",
+	"rootBone": "cetoddle",
+	"animations": {
+		"cry": "q.bedrock_stateful('cetoddle', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('cetoddle', 'sleep')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('cetoddle', 'faint')"
+			}
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.bedrock('cetoddle', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('cetoddle', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('cetoddle', 'faint')"
+			}
+		},
+		"walking": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('cetoddle', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('cetoddle', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('cetoddle', 'faint')"
+			}
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.bedrock('cetoddle', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('cetoddle', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('cetoddle', 'faint')"
+			}
+		}
+	},
+	"portraitScale": 1.6,
+	"profileScale": 0.8,
+	"portraitTranslation": [
+		-0.3,
+		-0.3,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.55,
+		0
+	]
+}

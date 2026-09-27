@@ -1,0 +1,128 @@
+{
+	"_source": "ZigzagoonModel.kt",
+	"rootBone": "zigzagoon",
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('zigzagoon', 'sleep')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('zigzagoon', 'faint')"
+			}
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('zigzagoon', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('zigzagoon', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('zigzagoon', 'faint')"
+			}
+		},
+		"walking": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('zigzagoon', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('zigzagoon', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('zigzagoon', 'faint')"
+			}
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('zigzagoon', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('zigzagoon', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('zigzagoon', 'faint')"
+			}
+		},
+		"shoulder_left": {
+			"poseTypes": [
+				"SHOULDER_LEFT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('zigzagoon', 'shoulder_left')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('zigzagoon', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "zigzagoon",
+					"position": [
+						0,
+						0,
+						-0.5
+					]
+				}
+			]
+		},
+		"shoulder_right": {
+			"poseTypes": [
+				"SHOULDER_RIGHT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('zigzagoon', 'shoulder_right')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('zigzagoon', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "zigzagoon",
+					"position": [
+						0,
+						0,
+						-0.5
+					]
+				}
+			]
+		}
+	},
+	"portraitScale": 2.4,
+	"profileScale": 1,
+	"portraitTranslation": [
+		-0.4,
+		-2.2,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.2,
+		0
+	]
+}

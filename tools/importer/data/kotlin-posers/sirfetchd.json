@@ -1,0 +1,54 @@
+{
+	"_source": "SirfetchdModel.kt",
+	"rootBone": "sirfetchd",
+	"animations": {
+		"cry": "q.bedrock_stateful('sirfetchd', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('sirfetchd', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('sirfetchd', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('sirfetchd', 'quirk', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('sirfetchd', 'ground_idle')",
+				"q.biped_walk(0.6, 0.9, 'leg_left', 'leg_right')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('sirfetchd', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('sirfetchd', 'quirk', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2.2,
+	"profileScale": 0.9,
+	"portraitTranslation": [
+		-0.35,
+		-0.5,
+		0
+	],
+	"profileTranslation": [
+		-0.1,
+		0.42,
+		0
+	]
+}

@@ -1,0 +1,22 @@
+{
+  "format_version": "1.21.90",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "cobblemon:structure_marker",
+      "is_spawnable": false,
+      "is_summonable": true
+    },
+    "components": {
+      "minecraft:type_family": { "family": ["cobblemon_marker", "inanimate"] },
+      "minecraft:collision_box": { "width": 0.01, "height": 0.01 },
+      "minecraft:physics": { "has_gravity": false, "has_collision": false },
+      "minecraft:pushable": { "is_pushable": false, "is_pushable_by_piston": false },
+      "minecraft:damage_sensor": { "triggers": [{ "cause": "all", "deals_damage": "no" }] },
+      "minecraft:health": { "value": 1, "max": 1 },
+      "minecraft:knockback_resistance": { "value": 1 },
+      "minecraft:fire_immune": true,
+      "minecraft:breathable": { "breathes_air": true, "breathes_water": true, "breathes_lava": true, "suffocate_time": 0, "total_supply": 15 },
+      "minecraft:persistent": {}
+    }
+  }
+}

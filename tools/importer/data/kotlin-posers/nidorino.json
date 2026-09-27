@@ -1,0 +1,52 @@
+{
+	"_source": "NidorinoModel.kt",
+	"rootBone": "nidorino",
+	"animations": {
+		"cry": "q.bedrock_stateful('nidorino', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('nidorino', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('nidorino', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('nidorino', 'ground_idle')",
+				"q.quadruped_walk(0.7, 0.7, 'leg_front_left', 'leg_front_right', 'leg_back_left', 'leg_back_right')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('nidorino', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2.6,
+	"profileScale": 1,
+	"portraitTranslation": [
+		-0.71,
+		-2,
+		0
+	],
+	"profileTranslation": [
+		-0.1,
+		0.21,
+		0
+	]
+}

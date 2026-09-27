@@ -1,0 +1,80 @@
+{
+	"_source": "MightyenaModel.kt",
+	"rootBone": "mightyena",
+	"animations": {
+		"cry": "q.bedrock_stateful('mightyena', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('mightyena', 'sleep')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('mightyena', 'sleep_quirk', 30, 60, 1)"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('mightyena', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('mightyena', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('mightyena', 'quirk', 120, 240, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('mightyena', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('mightyena', 'blink', 8, 30, 1)"
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('mightyena', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('mightyena', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('mightyena', 'quirk', 30, 60, 1)"
+			]
+		}
+	},
+	"portraitScale": 2.2,
+	"profileScale": 0.6,
+	"portraitTranslation": [
+		-0.8,
+		0.6,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.8,
+		0
+	]
+}

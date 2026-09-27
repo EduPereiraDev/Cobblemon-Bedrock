@@ -1,0 +1,57 @@
+{
+	"_source": "ElekidModel.kt",
+	"rootBone": "elekid",
+	"animations": {
+		"cry": "q.bedrock_stateful('elekid', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('elekid', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.bedrock('elekid', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('elekid', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('elekid', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('elekid', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2.5,
+	"profileScale": 0.8,
+	"portraitTranslation": [
+		-0.15,
+		-1.4,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.6,
+		0
+	]
+}

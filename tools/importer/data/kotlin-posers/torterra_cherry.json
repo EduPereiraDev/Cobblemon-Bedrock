@@ -1,0 +1,68 @@
+{
+	"_source": "TorterraCherryModel.kt",
+	"rootBone": "torterra",
+	"animations": {
+		"cry": "q.bedrock_stateful('torterra_cherry', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('torterra_cherry', 'sleep')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('torterra_cherry', 'faint')"
+			}
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('torterra_cherry', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('torterra_cherry', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('torterra_cherry', 'faint')"
+			}
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('torterra_cherry', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('torterra_cherry', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('torterra_cherry', 'faint')"
+			}
+		}
+	},
+	"portraitScale": 2,
+	"profileScale": 0.4,
+	"portraitTranslation": [
+		-1.5,
+		-0.92,
+		0
+	],
+	"profileTranslation": [
+		0,
+		1.1,
+		0
+	]
+}

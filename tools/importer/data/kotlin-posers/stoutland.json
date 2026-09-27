@@ -1,0 +1,52 @@
+{
+	"_source": "StoutlandModel.kt",
+	"rootBone": "stoutland",
+	"animations": {
+		"cry": "q.bedrock_stateful('stoutland', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"PROFILE",
+				"PORTRAIT",
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('stoutland', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('stoutland', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.quadruped_walk(1.1, 1.4, 'leg_front_left', 'leg_front_right', 'leg_back_left1', 'leg_back_right1')",
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('stoutland', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('stoutland', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 1.8,
+	"profileScale": 0.66,
+	"portraitTranslation": [
+		-0.9,
+		0.78,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.7,
+		0
+	]
+}

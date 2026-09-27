@@ -3,7 +3,7 @@ import { Block, DimensionLocation } from "@minecraft/server";
 export const replacableBlocks = ["minecraft:air", "minecraft:water", "minecraft:lava", "minecraft:short_grass"];
 
 export function changeBlockState(block: Block, state: string, value: string | boolean | number) {
-  if (!block.isValid())
+  if (!block.isValid)
     throw new Error("Cannot change block state of invalid block.");
   block.setPermutation(block.permutation.withState(state, value));
 }
@@ -22,7 +22,7 @@ export function tryChangeBlockState(block: Block, state: string, value: string |
  */
 export function destroy(block: Block) {
   //I dont know if there's a better way to do this
-  block.dimension.runCommandAsync(`setblock ${block.location.x} ${block.location.y} ${block.location.z} air destroy`);
+  block.dimension.runCommand(`setblock ${block.location.x} ${block.location.y} ${block.location.z} air destroy`);
 }
 
 /** Takes in block states and loads it. */

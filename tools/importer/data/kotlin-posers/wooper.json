@@ -1,0 +1,140 @@
+{
+	"_source": "WooperModel.kt",
+	"rootBone": "wooper",
+	"animations": {
+		"cry": "q.bedrock_stateful('wooper', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('wooper', 'sleep')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('wooper', 'faint')"
+			}
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('wooper', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('wooper', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('wooper', 'faint')"
+			}
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('wooper', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('wooper', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('wooper', 'faint')"
+			}
+		},
+		"float": {
+			"poseTypes": [
+				"FLOAT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('wooper', 'water_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('wooper', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('wooper', 'faint')"
+			}
+		},
+		"swim": {
+			"poseTypes": [
+				"SWIM"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('wooper', 'water_swim')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('wooper', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('wooper', 'faint')"
+			}
+		},
+		"shoulder_left": {
+			"poseTypes": [
+				"SHOULDER_LEFT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('wooper', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('wooper', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "wooper",
+					"position": [
+						2.5,
+						0,
+						0
+					]
+				}
+			]
+		},
+		"shoulder_right": {
+			"poseTypes": [
+				"SHOULDER_RIGHT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('wooper', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('wooper', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "wooper",
+					"position": [
+						-2.5,
+						0,
+						0
+					]
+				}
+			]
+		}
+	},
+	"portraitScale": 2,
+	"profileScale": 0.9,
+	"portraitTranslation": [
+		-0.15,
+		-0.65,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.4,
+		0
+	]
+}

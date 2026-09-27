@@ -5,6 +5,18 @@
 {
   "format_version": "1.20.20",
   "sound_definitions": {
+    "cobblemon.battle.pvn.default": {
+      "category": "music",
+      "sounds": []
+    },
+    "cobblemon.battle.pvp.default": {
+      "category": "music",
+      "sounds": []
+    },
+    "cobblemon.battle.pvw.default": {
+      "category": "music",
+      "sounds": []
+    },
     "battle.pvn.default": {
       "category": "neutral",
       "sounds": []

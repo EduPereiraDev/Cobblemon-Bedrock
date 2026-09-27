@@ -1,0 +1,43 @@
+{
+	"_source": "ShinxModel.kt",
+	"rootBone": "shinx",
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"PROFILE",
+				"PORTRAIT",
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('shinx', 'ground_idle')"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.quadruped_walk(1.1, 1.4, 'leg_left', 'leg_right', 'back_leg_left', 'back_leg_right')",
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('shinx', 'ground_idle')"
+			]
+		}
+	},
+	"portraitScale": 1.8,
+	"profileScale": 0.66,
+	"portraitTranslation": [
+		-0.6,
+		-0.25,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.7,
+		0
+	]
+}

@@ -1,0 +1,49 @@
+{
+	"_source": "GoomyHisuiBiasModel.kt",
+	"rootBone": "goomy_hisui_bias",
+	"animations": {
+		"cry": "q.bedrock_stateful('goomy_hisui_bias', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.bedrock('goomy_hisui_bias', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('goomy_hisui_bias', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('goomy_hisui_bias', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('goomy_hisui_bias', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 1.73,
+	"profileScale": 1,
+	"portraitTranslation": [
+		-0.09,
+		-0.98,
+		0
+	],
+	"profileTranslation": [
+		-0.03,
+		0.12,
+		0
+	]
+}

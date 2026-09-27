@@ -1,0 +1,76 @@
+{
+  "format_version": "1.10.0",
+  "render_controllers": {
+    "controller.render.cobblemon.poke_bobber": {
+      "arrays": {
+        "textures": {
+          "Array.balls": [
+            "Texture.poke_ball",
+            "Texture.great_ball",
+            "Texture.ultra_ball",
+            "Texture.master_ball",
+            "Texture.safari_ball",
+            "Texture.fast_ball",
+            "Texture.level_ball",
+            "Texture.lure_ball",
+            "Texture.heavy_ball",
+            "Texture.love_ball",
+            "Texture.friend_ball",
+            "Texture.moon_ball",
+            "Texture.sport_ball",
+            "Texture.park_ball",
+            "Texture.net_ball",
+            "Texture.dive_ball",
+            "Texture.nest_ball",
+            "Texture.repeat_ball",
+            "Texture.timer_ball",
+            "Texture.luxury_ball",
+            "Texture.premier_ball",
+            "Texture.dusk_ball",
+            "Texture.heal_ball",
+            "Texture.quick_ball",
+            "Texture.dream_ball",
+            "Texture.beast_ball",
+            "Texture.cherish_ball",
+            "Texture.azure_ball",
+            "Texture.citrine_ball",
+            "Texture.roseate_ball",
+            "Texture.slate_ball",
+            "Texture.verdant_ball",
+            "Texture.ancient_poke_ball",
+            "Texture.ancient_great_ball",
+            "Texture.ancient_ultra_ball",
+            "Texture.ancient_heavy_ball",
+            "Texture.ancient_feather_ball",
+            "Texture.ancient_wing_ball",
+            "Texture.ancient_jet_ball",
+            "Texture.ancient_leaden_ball",
+            "Texture.ancient_gigaton_ball",
+            "Texture.ancient_azure_ball",
+            "Texture.ancient_citrine_ball",
+            "Texture.ancient_roseate_ball",
+            "Texture.ancient_slate_ball",
+            "Texture.ancient_verdant_ball",
+            "Texture.ancient_ivory_ball",
+            "Texture.ancient_origin_ball"
+          ]
+        },
+        "geometries": {
+          "Array.geometry": [
+            "Geometry.default",
+            "Geometry.ancient"
+          ]
+        }
+      },
+      "geometry": "Array.geometry[q.property('cobblemon:ball') >= 32]",
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Array.balls[q.property('cobblemon:ball')]"
+      ]
+    }
+  }
+}

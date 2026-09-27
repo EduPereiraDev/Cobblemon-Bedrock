@@ -1,49 +1,626 @@
 {
-  "format_version": [
-    1,
-    1,
-    0
-  ],
-  "cobblemon:black_apricorn_block": {
-    "sound": "wood"
-  },
-  "cobblemon:blue_apricorn_block": {
-    "sound": "wood"
-  },
-  "cobblemon:green_apricorn_block": {
-    "sound": "wood"
-  },
-  "cobblemon:pink_apricorn_block": {
-    "sound": "wood"
-  },
-  "cobblemon:red_apricorn_block": {
-    "sound": "wood"
-  },
-  "cobblemon:white_apricorn_block": {
-    "sound": "wood"
-  },
-  "cobblemon:yellow_apricorn_block": {
-    "sound": "wood"
-  },
-  "cobblemon:apricorn_planks": {
-    "sound": "wood"
-  },
-  "cobblemon:apricorn_log": {
-    "sound": "wood"
-  },
-  "cobblemon:stripped_apricorn_log": {
-    "sound": "wood"
-  },
-  "cobblemon:apricorn_leaves": {
-    "sound": "grass"
-  },
-  "cobblemon:apricorn_wood": {
-    "sound": "wood"
-  },
-  "cobblemon:stripped_apricorn_wood": {
-    "sound": "wood"
-  },
-  "cobblemon:apricorn_slab": {
-    "sound": "wood"
-  }
+	"cobblemon:aguav_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:apicot_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:aspear_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:babiri_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:belue_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:big_root": {
+		"sound": "cobblemon.big_root"
+	},
+	"cobblemon:black_gilded_chest": {
+		"sound": "cobblemon.gilded_chest"
+	},
+	"cobblemon:black_tumblestone_block": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:black_tumblestone_brick_slab": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:black_tumblestone_brick_stairs": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:black_tumblestone_brick_wall": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:black_tumblestone_bricks": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:black_tumblestone_cluster": {
+		"sound": "cobblemon.tumblestone"
+	},
+	"cobblemon:blue_gilded_chest": {
+		"sound": "cobblemon.gilded_chest"
+	},
+	"cobblemon:blue_mint": {
+		"sound": "cobblemon.mint"
+	},
+	"cobblemon:bluk_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:blunder_policy": {
+		"sound": "cobblemon.item_block_paper_large"
+	},
+	"cobblemon:bug_gem_block": {
+		"sound": "cobblemon.type_gem_block"
+	},
+	"cobblemon:bug_gem_cluster": {
+		"sound": "cobblemon.type_gem_cluster"
+	},
+	"cobblemon:campfire_pot_black": {
+		"sound": "cobblemon.campfire_pot"
+	},
+	"cobblemon:campfire_pot_blue": {
+		"sound": "cobblemon.campfire_pot"
+	},
+	"cobblemon:campfire_pot_green": {
+		"sound": "cobblemon.campfire_pot"
+	},
+	"cobblemon:campfire_pot_pink": {
+		"sound": "cobblemon.campfire_pot"
+	},
+	"cobblemon:campfire_pot_red": {
+		"sound": "cobblemon.campfire_pot"
+	},
+	"cobblemon:campfire_pot_white": {
+		"sound": "cobblemon.campfire_pot"
+	},
+	"cobblemon:campfire_pot_yellow": {
+		"sound": "cobblemon.campfire_pot"
+	},
+	"cobblemon:charti_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:cheri_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:chesto_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:chilan_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:chiseled_black_tumblestone_bricks": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:chiseled_polished_black_tumblestone": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:chiseled_polished_sky_tumblestone": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:chiseled_polished_tumblestone": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:chiseled_sky_tumblestone_bricks": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:chiseled_tumblestone_bricks": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:chople_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:cleanse_tag": {
+		"sound": "cobblemon.item_block_paper_small"
+	},
+	"cobblemon:coba_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:colbur_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:cornn_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:custap_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:cyan_mint": {
+		"sound": "cobblemon.mint"
+	},
+	"cobblemon:dark_gem_block": {
+		"sound": "cobblemon.type_gem_block"
+	},
+	"cobblemon:dark_gem_cluster": {
+		"sound": "cobblemon.type_gem_cluster"
+	},
+	"cobblemon:dawn_stone_block": {
+		"sound": "cobblemon.evolution_stone_block"
+	},
+	"cobblemon:display_case": {
+		"sound": "cobblemon.display_case"
+	},
+	"cobblemon:dragon_gem_block": {
+		"sound": "cobblemon.type_gem_block"
+	},
+	"cobblemon:dragon_gem_cluster": {
+		"sound": "cobblemon.type_gem_cluster"
+	},
+	"cobblemon:durin_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:dusk_stone_block": {
+		"sound": "cobblemon.evolution_stone_block"
+	},
+	"cobblemon:eggant_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:electric_gem_block": {
+		"sound": "cobblemon.type_gem_block"
+	},
+	"cobblemon:electric_gem_cluster": {
+		"sound": "cobblemon.type_gem_cluster"
+	},
+	"cobblemon:energy_root": {
+		"sound": "cobblemon.energy_root"
+	},
+	"cobblemon:enigma_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:fairy_gem_block": {
+		"sound": "cobblemon.type_gem_block"
+	},
+	"cobblemon:fairy_gem_cluster": {
+		"sound": "cobblemon.type_gem_cluster"
+	},
+	"cobblemon:fighting_gem_block": {
+		"sound": "cobblemon.type_gem_block"
+	},
+	"cobblemon:fighting_gem_cluster": {
+		"sound": "cobblemon.type_gem_cluster"
+	},
+	"cobblemon:figy_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:fire_gem_block": {
+		"sound": "cobblemon.type_gem_block"
+	},
+	"cobblemon:fire_gem_cluster": {
+		"sound": "cobblemon.type_gem_cluster"
+	},
+	"cobblemon:fire_stone_block": {
+		"sound": "cobblemon.evolution_stone_block"
+	},
+	"cobblemon:flying_gem_block": {
+		"sound": "cobblemon.type_gem_block"
+	},
+	"cobblemon:flying_gem_cluster": {
+		"sound": "cobblemon.type_gem_cluster"
+	},
+	"cobblemon:ganlon_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:ghost_gem_block": {
+		"sound": "cobblemon.type_gem_block"
+	},
+	"cobblemon:ghost_gem_cluster": {
+		"sound": "cobblemon.type_gem_cluster"
+	},
+	"cobblemon:gilded_chest": {
+		"sound": "cobblemon.gilded_chest"
+	},
+	"cobblemon:gimmighoul_chest": {
+		"sound": "cobblemon.gilded_chest"
+	},
+	"cobblemon:grass_gem_block": {
+		"sound": "cobblemon.type_gem_block"
+	},
+	"cobblemon:grass_gem_cluster": {
+		"sound": "cobblemon.type_gem_cluster"
+	},
+	"cobblemon:green_gilded_chest": {
+		"sound": "cobblemon.gilded_chest"
+	},
+	"cobblemon:green_mint": {
+		"sound": "cobblemon.mint"
+	},
+	"cobblemon:grepa_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:ground_gem_block": {
+		"sound": "cobblemon.type_gem_block"
+	},
+	"cobblemon:ground_gem_cluster": {
+		"sound": "cobblemon.type_gem_cluster"
+	},
+	"cobblemon:haban_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:hearty_grain_bale": {
+		"sound": "cobblemon.hearty_grain_bale"
+	},
+	"cobblemon:hearty_grains": {
+		"sound": "cobblemon.hearty_grains"
+	},
+	"cobblemon:hondew_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:hopo_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:iapapa_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:ice_gem_block": {
+		"sound": "cobblemon.type_gem_block"
+	},
+	"cobblemon:ice_gem_cluster": {
+		"sound": "cobblemon.type_gem_cluster"
+	},
+	"cobblemon:ice_stone_block": {
+		"sound": "cobblemon.evolution_stone_block"
+	},
+	"cobblemon:jaboca_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:kasib_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:kebia_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:kee_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:kelpsy_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:kings_rock": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:lansat_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:large_budding_black_tumblestone": {
+		"sound": "cobblemon.tumblestone"
+	},
+	"cobblemon:large_budding_sky_tumblestone": {
+		"sound": "cobblemon.tumblestone"
+	},
+	"cobblemon:large_budding_tumblestone": {
+		"sound": "cobblemon.tumblestone"
+	},
+	"cobblemon:leaf_stone_block": {
+		"sound": "cobblemon.evolution_stone_block"
+	},
+	"cobblemon:leppa_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:liechi_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:lum_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:mago_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:magost_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:maranga_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:medicinal_leek": {
+		"sound": "cobblemon.medicinal_leek"
+	},
+	"cobblemon:medium_budding_black_tumblestone": {
+		"sound": "cobblemon.tumblestone"
+	},
+	"cobblemon:medium_budding_sky_tumblestone": {
+		"sound": "cobblemon.tumblestone"
+	},
+	"cobblemon:medium_budding_tumblestone": {
+		"sound": "cobblemon.tumblestone"
+	},
+	"cobblemon:micle_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:moon_stone_block": {
+		"sound": "cobblemon.evolution_stone_block"
+	},
+	"cobblemon:nanab_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:nomel_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:normal_gem_block": {
+		"sound": "cobblemon.type_gem_block"
+	},
+	"cobblemon:normal_gem_cluster": {
+		"sound": "cobblemon.type_gem_cluster"
+	},
+	"cobblemon:occa_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:oran_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:pamtre_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:passho_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:payapa_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:pecha_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:persim_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:petaya_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:pinap_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:pink_gilded_chest": {
+		"sound": "cobblemon.gilded_chest"
+	},
+	"cobblemon:pink_mint": {
+		"sound": "cobblemon.mint"
+	},
+	"cobblemon:poison_gem_block": {
+		"sound": "cobblemon.type_gem_block"
+	},
+	"cobblemon:poison_gem_cluster": {
+		"sound": "cobblemon.type_gem_cluster"
+	},
+	"cobblemon:polished_black_tumblestone": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:polished_black_tumblestone_slab": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:polished_black_tumblestone_stairs": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:polished_black_tumblestone_wall": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:polished_sky_tumblestone": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:polished_sky_tumblestone_slab": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:polished_sky_tumblestone_stairs": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:polished_sky_tumblestone_wall": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:polished_tumblestone": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:polished_tumblestone_slab": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:polished_tumblestone_stairs": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:polished_tumblestone_wall": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:pomeg_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:psychic_gem_block": {
+		"sound": "cobblemon.type_gem_block"
+	},
+	"cobblemon:psychic_gem_cluster": {
+		"sound": "cobblemon.type_gem_cluster"
+	},
+	"cobblemon:qualot_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:rabuta_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:rawst_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:razz_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:red_mint": {
+		"sound": "cobblemon.mint"
+	},
+	"cobblemon:relic_coin_pouch": {
+		"sound": "cobblemon.relic_coin_pouch"
+	},
+	"cobblemon:relic_coin_sack": {
+		"sound": "cobblemon.relic_coin_sack"
+	},
+	"cobblemon:revival_herb": {
+		"sound": "cobblemon.revival_herb"
+	},
+	"cobblemon:rindo_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:rock_gem_block": {
+		"sound": "cobblemon.type_gem_block"
+	},
+	"cobblemon:rock_gem_cluster": {
+		"sound": "cobblemon.type_gem_cluster"
+	},
+	"cobblemon:roseli_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:rowap_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:salac_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:shiny_stone_block": {
+		"sound": "cobblemon.evolution_stone_block"
+	},
+	"cobblemon:shuca_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:sitrus_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:sky_tumblestone_block": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:sky_tumblestone_brick_slab": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:sky_tumblestone_brick_stairs": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:sky_tumblestone_brick_wall": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:sky_tumblestone_bricks": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:sky_tumblestone_cluster": {
+		"sound": "cobblemon.tumblestone"
+	},
+	"cobblemon:small_budding_black_tumblestone": {
+		"sound": "cobblemon.tumblestone"
+	},
+	"cobblemon:small_budding_sky_tumblestone": {
+		"sound": "cobblemon.tumblestone"
+	},
+	"cobblemon:small_budding_tumblestone": {
+		"sound": "cobblemon.tumblestone"
+	},
+	"cobblemon:smooth_black_tumblestone": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:smooth_black_tumblestone_slab": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:smooth_black_tumblestone_stairs": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:smooth_sky_tumblestone": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:smooth_sky_tumblestone_slab": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:smooth_sky_tumblestone_stairs": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:smooth_tumblestone": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:smooth_tumblestone_slab": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:smooth_tumblestone_stairs": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:spell_tag": {
+		"sound": "cobblemon.item_block_paper_small"
+	},
+	"cobblemon:spelon_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:starf_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:steel_gem_block": {
+		"sound": "cobblemon.type_gem_block"
+	},
+	"cobblemon:steel_gem_cluster": {
+		"sound": "cobblemon.type_gem_cluster"
+	},
+	"cobblemon:sun_stone_block": {
+		"sound": "cobblemon.evolution_stone_block"
+	},
+	"cobblemon:tamato_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:tanga_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:tatami_block": {
+		"sound": "cobblemon.tatami_block"
+	},
+	"cobblemon:tatami_mat": {
+		"sound": "cobblemon.tatami_mat"
+	},
+	"cobblemon:thunder_stone_block": {
+		"sound": "cobblemon.evolution_stone_block"
+	},
+	"cobblemon:touga_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:tumblestone_block": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:tumblestone_brick_slab": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:tumblestone_brick_stairs": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:tumblestone_brick_wall": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:tumblestone_bricks": {
+		"sound": "cobblemon.tumblestone_block"
+	},
+	"cobblemon:tumblestone_cluster": {
+		"sound": "cobblemon.tumblestone"
+	},
+	"cobblemon:vivichoke_seeds": {
+		"sound": "cobblemon.vivichoke"
+	},
+	"cobblemon:wacan_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:water_gem_block": {
+		"sound": "cobblemon.type_gem_block"
+	},
+	"cobblemon:water_gem_cluster": {
+		"sound": "cobblemon.type_gem_cluster"
+	},
+	"cobblemon:water_stone_block": {
+		"sound": "cobblemon.evolution_stone_block"
+	},
+	"cobblemon:watmel_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:weakness_policy": {
+		"sound": "cobblemon.item_block_paper_large"
+	},
+	"cobblemon:wepear_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:white_gilded_chest": {
+		"sound": "cobblemon.gilded_chest"
+	},
+	"cobblemon:white_mint": {
+		"sound": "cobblemon.mint"
+	},
+	"cobblemon:wiki_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:yache_berry": {
+		"sound": "cobblemon.berry_bush"
+	},
+	"cobblemon:yellow_gilded_chest": {
+		"sound": "cobblemon.gilded_chest"
+	}
 }

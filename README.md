@@ -1,26 +1,80 @@
 # Cobblemon Bedrock
-Minecraft Bedrock Addon that aims to port Cobblemon to Minecraft Bedrock Edition
 
-The original project can be found [here](https://gitlab.com/cable-mc/cobblemon).
+> **Unofficial** fan port of the Java mod [Cobblemon](https://cobblemon.com) to **Minecraft Bedrock Edition** (add-on),
+> so console (Xbox, PlayStation, Switch), mobile and Windows players can play it. Free, non-commercial, no monetization.
+> Not affiliated with or endorsed by the Cobblemon team, Mojang, Nintendo or The Pokémon Company.
+>
+> Port **não oficial** do mod Java Cobblemon para o **Minecraft Bedrock**, para jogar com amigos no console, celular e
+> PC. Gratuito, sem fins comerciais e sem monetização.
 
-# Build Steps
-1. Ensure NodeJS is installed on your system.
-2. Run `npm install` in the root folder of the project.
-3. Modify cbconfig.json to point to where minecraft's com.mojang file is located. (This should not need to be changed on windows)
-If you want to manually install the addon using the .mcaddon format, you can specify any valid folder and use `gulp release` instead.
-5. Run `gulp` to build automatically to minecraft.
+**Status:** beta. Everything from Cobblemon 1.8 was ported and passes automated tests (unit, content validation and
+end-to-end tests with protocol bots on a dedicated server), but it has **not been play-tested on a real client yet**:
+expect visual issues. Please report them in [Issues](../../issues).
 
-Note: If you want to quickly build only the scripts, you can run `gulp quick_scripts` to quickly build the scripts and apply to minecraft. From there, you can just use /reload to reload scripts in minecraft. `gulp watch_scripts` can do this automatically when you modify the script.
+**Status:** beta. Tudo do Cobblemon 1.8 foi portado e passa nos testes automáticos, mas ainda **não foi testado com o
+jogo aberto**: podem aparecer problemas visuais. Reporte em [Issues](../../issues).
 
-# Release
-Run `gulp release` to create a .mcaddon file in the ./dist directory.
+## O que tem / What's included
 
-# Contributing
-Contributions are welcome. 
-The main thing to note is that this repo works in tandom with [CobbleBuild](https://github.com/Incoherent-Code/CobbleBuild) to import assets from the orignal source code. Textures, sounds, spawn rules, and even the pokemon themselves are usually imported with cobblebuild. Definition files generated this way will have a disclaimer at the top and should not be overwritten manually. There are exceptions, like when a texture had to be modified to work with the bedrock converted model. These exceptions should be kept out of folders that cobblebuild overrides. Ex: healing_machine_flipbook.png is in the root textures folder instead of textures/block. 
+- 894 Pokémon jogáveis (modelos, animações, texturas, shiny, formas e variantes, sons e retratos)
+- Batalhas com o motor do Pokémon Showdown (selvagens, treinadores NPC, PvP, duplas/triplas, Multi 2×2, nível fixo),
+  captura, PC, Pokédex, evolução, troca, pasto, criação de berries/apricorns, medicina, pesca, montaria
+- Itens, blocos, máquinas, receitas e loot do Cobblemon; 85 estruturas (ruínas, altares, torres do Gimmighoul,
+  habitats, Pokécenters)
+- Só APIs **estáveis** do Bedrock: **não precisa ligar nenhum experimento** e funciona em Realms e consoles
 
-# Debugging
-Debugging is done through the [Minecraft Bedrock Debugger](https://marketplace.visualstudio.com/items?itemName=mojang-studios.minecraft-debugger). This is exclusive to vscode, so do keep that in mind.
+Detalhes da paridade em [docs/PARIDADE-MECANICAS.md](docs/PARIDADE-MECANICAS.md).
 
-# Disclaimer
-All Assets, including models, textures, and sounds, are licensed under CCPL. A copy of this license can be found in the /resource_packs/CobblemonBedrock/models/cobblemon folder. These assets were created by the cobblemon team, and may be modified from the original to work inside Minecraft: Bedrock Edition. Pokemon is a trademark of Nintendo and The Pokemon Company. This project is not affiliated with Nintendo or The Pokemon Company
+## Como instalar / How to install
+
+Baixe o `Cobblemon.mcaddon` da última versão em [Releases](../../releases). Requer Minecraft Bedrock **26.x**
+(atualizado).
+
+| Onde | Como |
+|---|---|
+| **Windows / Android / iPhone** | Abra o `Cobblemon.mcaddon` (no celular: "abrir com Minecraft"). Crie um mundo e, em *Pacotes de comportamento* e *Pacotes de recursos*, ative **Cobblemon Bedrock**. |
+| **Consoles (Xbox, PlayStation, Switch)** | Console não instala arquivos de fora. Entre num mundo que já tenha o mod: o pacote baixa sozinho. Opções: (1) um amigo no PC/celular abre o mundo para vocês; (2) **Realm**: crie o mundo com o mod no PC/celular e envie para o Realm; (3) servidor dedicado (Xbox adiciona servidor; PlayStation/Switch precisam de apps como BedrockTogether). |
+| **Servidor dedicado (BDS)** | Copie as pastas do `.mcaddon` (é um zip com dois `.mcpack`) para `behavior_packs/` e `resource_packs/` do servidor e liste-as em `world_behavior_packs.json` / `world_resource_packs.json`. Use `texturepack-required=true`. |
+
+Quem entra num mundo com o mod baixa o pacote (~113 MB) na primeira vez.
+
+## Desenvolvimento / Building from source
+
+Requisitos: Node 22+, npm, Docker (opcional, servidor de teste) e o código-fonte do Cobblemon em `upstream/cobblemon`:
+
+```bash
+git clone --depth 1 https://gitlab.com/cable-mc/cobblemon.git upstream/cobblemon
+npm install
+npm run import        # converte assets e dados do Cobblemon para generated/
+npm run build:release # gera dist/Cobblemon.mcaddon
+```
+
+| Comando | O que faz |
+|---|---|
+| `npm run import` | converte assets e dados do Cobblemon para `generated/` (não versionado) |
+| `npm run validate` | valida referências cruzadas do conteúdo gerado |
+| `npm run check` | type-check dos scripts |
+| `npm test` | testes em Node |
+| `npm run build` | monta os packs em `dist/` |
+| `npm run build:release` | gera `dist/Cobblemon.mcaddon`, o pacote **público** |
+| `npm run test:e2e` | testes ponta a ponta com bots num servidor Bedrock em Docker |
+| `node tools/server.mjs deploy\|logs\|cmd` | servidor Bedrock local (Docker) com os packs |
+
+Arquitetura e decisões: [docs/ARQUITETURA.md](docs/ARQUITETURA.md). Como jogar: [docs/COMO-JOGAR.md](docs/COMO-JOGAR.md).
+Comandos do jogo: [docs/COMANDOS.md](docs/COMANDOS.md).
+
+Extensões de terceiros com licença só para uso privado (ex.: Mega Showdown) não fazem parte deste repositório nem do
+pacote público; o build público falha se encontrar qualquer resto delas.
+
+## Licença e créditos / License and credits
+
+- **Código** deste repositório: [Mozilla Public License 2.0](LICENSE.txt), a mesma do Cobblemon e do port em que este
+  projeto se baseou ([Incoherent-Code/Cobblemon-Bedrock](https://github.com/Incoherent-Code/Cobblemon-Bedrock)).
+- **Assets** (modelos, texturas, animações, sons, textos): do **time do Cobblemon e seus criadores**, usados conforme a
+  [Fair Use Policy do Cobblemon](https://cobblemon.com/en/fairuse): uso não comercial, com atribuição e sem sugerir
+  afiliação. A publicação deste port foi autorizada pela equipe do Cobblemon, desde que siga essa política. Nada deste
+  projeto pode ser vendido, monetizado ou usado no Marketplace.
+- Veja [NOTICE.md](NOTICE.md) para a lista completa de créditos e marcas.
+
+Pokémon is a trademark of Nintendo, Creatures Inc. and GAME FREAK inc. Minecraft is a trademark of Mojang Synergies AB.
+This project is not affiliated with any of them.

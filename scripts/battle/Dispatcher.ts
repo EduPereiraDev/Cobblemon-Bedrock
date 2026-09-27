@@ -25,7 +25,7 @@ export class BattleDispatcher {
   dispatches: BattleDispatch[] = [];
   afterDispatches: (() => void)[] = [];
   lastDispatchResult: DispatchResult = GoDispatch;
-  constructor(public onError: (Error) => void) { }
+  constructor(public onError: (error: Error) => void) { }
   tick() {
     try {
       while (this.lastDispatchResult.canProceed()) {
@@ -35,9 +35,11 @@ export class BattleDispatcher {
         this.lastDispatchResult = dispatch();
       }
 
-      if (this.dispatches.length === 0) {
-        this.afterDispatches.forEach(x => x());
+      // Só quando não há nada na fila e a última espera (mensagem/animação) já terminou.
+      if (this.dispatches.length === 0 && this.afterDispatches.length > 0 && this.lastDispatchResult.canProceed()) {
+        let run = this.afterDispatches;
         this.afterDispatches = [];
+        run.forEach(x => x());
       }
     }
     catch (e) {

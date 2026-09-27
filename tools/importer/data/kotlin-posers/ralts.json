@@ -1,0 +1,122 @@
+{
+	"_source": "RaltsModel.kt",
+	"rootBone": "ralts",
+	"animations": {
+		"cry": "q.bedrock_stateful('ralts', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('ralts', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('ralts', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('ralts', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('ralts', 'quirk_idle', 60, 120, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('ralts', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('ralts', 'blink', 8, 30, 1)"
+			]
+		},
+		"battleidle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('ralts', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('ralts', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('ralts', 'quirk_battle_idle', 60, 120, 1)"
+			]
+		},
+		"shoulder_left": {
+			"poseTypes": [
+				"SHOULDER_LEFT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('ralts', 'shoulder_left')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('ralts', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "ralts",
+					"position": [
+						0,
+						0,
+						0
+					]
+				}
+			]
+		},
+		"shoulder_right": {
+			"poseTypes": [
+				"SHOULDER_RIGHT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('ralts', 'shoulder_right')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('ralts', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "ralts",
+					"position": [
+						0,
+						0,
+						0
+					]
+				}
+			]
+		}
+	},
+	"portraitScale": 2.6,
+	"profileScale": 0.8,
+	"portraitTranslation": [
+		-0.1,
+		-1.1,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.6,
+		0
+	]
+}

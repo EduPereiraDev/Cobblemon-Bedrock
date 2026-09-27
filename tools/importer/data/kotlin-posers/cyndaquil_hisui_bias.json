@@ -1,0 +1,69 @@
+{
+	"_source": "CyndaquilHisuiBiasModel.kt",
+	"rootBone": "cyndaquil_hisui_bias",
+	"animations": {
+		"cry": "q.bedrock_stateful('cyndaquil_hisui_bias', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('cyndaquil_hisui_bias', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('cyndaquil_hisui_bias', 'ground_idle')"
+			]
+		},
+		"walking": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('cyndaquil_hisui_bias', 'ground_walk')"
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, 0, 45, -45)",
+				"q.bedrock('cyndaquil_hisui_bias', 'battle_idle')"
+			],
+			"namedAnimations": {
+				"cry": "q.bedrock_stateful('cyndaquil_hisui_bias', 'battle_cry')"
+			}
+		}
+	},
+	"portraitScale": 1.4,
+	"profileScale": 0.65,
+	"portraitTranslation": [
+		-0.26,
+		0,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.8,
+		0
+	]
+}

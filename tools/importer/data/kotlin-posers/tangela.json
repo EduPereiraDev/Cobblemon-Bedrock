@@ -1,0 +1,41 @@
+{
+	"_source": "TangelaModel.kt",
+	"rootBone": "tangela",
+	"animations": {
+		"cry": "q.bedrock_stateful('tangela', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": []
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.biped_walk(0.4, 1, 'leftfoot', 'rightfoot')"
+			]
+		}
+	},
+	"portraitScale": 2.2,
+	"profileScale": 1.2,
+	"portraitTranslation": [
+		-0.1,
+		-1.6,
+		0
+	],
+	"profileTranslation": [
+		0,
+		-0.09,
+		0
+	]
+}

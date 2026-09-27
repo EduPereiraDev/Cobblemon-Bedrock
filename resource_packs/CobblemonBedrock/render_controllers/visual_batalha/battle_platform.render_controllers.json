@@ -1,0 +1,14 @@
+{
+  "format_version": "1.10.0",
+  "render_controllers": {
+    "controller.render.cobblemon.battle_platform": {
+      "arrays": {
+        "textures": { "Array.skins": ["Texture.xs", "Texture.s", "Texture.m", "Texture.l", "Texture.xl"] },
+        "geometries": { "Array.geos": ["Geometry.xs", "Geometry.s", "Geometry.m", "Geometry.l", "Geometry.xl"] }
+      },
+      "geometry": "Array.geos[q.property('cobblemon:size')]",
+      "materials": [{ "*": "Material.default" }],
+      "textures": ["Array.skins[q.property('cobblemon:size')]"]
+    }
+  }
+}

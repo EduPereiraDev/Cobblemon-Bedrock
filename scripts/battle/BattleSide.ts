@@ -1,6 +1,7 @@
 import { Player, RawMessage } from "@minecraft/server";
 import { BattleActor } from "./BattleActor";
 import { PokemonBattle } from "./PokemonBattle";
+import { playCry } from "./Animations";
 
 export class BattleSide {
   constructor(public actors: BattleActor[]) { }
@@ -20,11 +21,12 @@ export class BattleSide {
   stillSendingOut() {
     return this.actors.some(x => x.stillSendingOutCount > 0);
   }
-  /** TODO: Impliment cries properly */
+  /** Grito dos Pokémon em campo (animação `cry` do poser + som da espécie). */
   playCries() {
     this.getActivePokemon().forEach(x => {
-      //Currently, cobblebuild does not include the cry animation.
-      x?.entity.playAnimation("cry")
+      // Com Illusion/Transform grita o que aparece (a entidade de exibição).
+      if (x && !x.pending)
+        playCry(x.visual, x.mock?.data ?? x.illusion ?? x.data);
     })
   }
 }

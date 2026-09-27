@@ -3,7 +3,7 @@ import { EvoRequirement } from "../speciesData";
 
 export abstract class EvolutionRequirement implements EvoRequirement {
   /** The variant of this EvolutionRequirement as serialized to json. */
-  variant: string;
+  variant!: string;
   /** Check if the pokmeon meets the evolution requirement. */
   abstract check(pokemon: PokemonData): boolean;
   /** Takes in the input recieved from the pokemon data and returns an instance of this class.

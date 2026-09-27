@@ -1,0 +1,60 @@
+{
+	"_source": "DachsbunModel.kt",
+	"rootBone": "dachsbun",
+	"animations": {
+		"cry": "q.bedrock_stateful('dachsbun', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.bedrock('dachsbun', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('dachsbun', 'blink', 8, 30, 1)"
+			]
+		},
+		"walking": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('dachsbun', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('dachsbun', 'blink', 8, 30, 1)"
+			]
+		},
+		"sleeping": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('dachsbun', 'sleep')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('dachsbun', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 1.5,
+	"profileScale": 0.6,
+	"portraitTranslation": [
+		-0.8,
+		0.25,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.8,
+		0
+	]
+}

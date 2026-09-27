@@ -1,0 +1,143 @@
+{
+	"_source": "FlittleModel.kt",
+	"rootBone": "flittle",
+	"animations": {
+		"cry": "q.bedrock_stateful('flittle', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('flittle', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"PROFILE",
+				"PORTRAIT",
+				"STAND"
+			],
+			"animations": [
+				"q.look('body', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('flittle', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('flittle', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('flittle', 'faint')"
+			}
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK"
+			],
+			"animations": [
+				"q.look('body', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('flittle', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('flittle', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('flittle', 'faint')"
+			}
+		},
+		"hovering": {
+			"poseTypes": [
+				"FLOAT",
+				"HOVER"
+			],
+			"animations": [
+				"q.look('body', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('flittle', 'air_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('flittle', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('flittle', 'faint')"
+			}
+		},
+		"flying": {
+			"poseTypes": [
+				"FLY",
+				"SWIM"
+			],
+			"animations": [
+				"q.look('body', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('flittle', 'air_fly')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('flittle', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('flittle', 'faint')"
+			}
+		},
+		"shoulder_left": {
+			"poseTypes": [
+				"SHOULDER_LEFT"
+			],
+			"animations": [
+				"q.look('body', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('flittle', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('flittle', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "flittle",
+					"position": [
+						11,
+						6,
+						0
+					]
+				}
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('flittle', 'faint')"
+			}
+		},
+		"shoulder_right": {
+			"poseTypes": [
+				"SHOULDER_RIGHT"
+			],
+			"animations": [
+				"q.look('body', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('flittle', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('flittle', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "flittle",
+					"position": [
+						-11,
+						6,
+						0
+					]
+				}
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('flittle', 'faint')"
+			}
+		}
+	},
+	"portraitScale": 2,
+	"profileScale": 0.85,
+	"portraitTranslation": [
+		0,
+		0,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.65,
+		0
+	]
+}

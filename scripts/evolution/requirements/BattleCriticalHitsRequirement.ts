@@ -10,7 +10,7 @@ export default class BattleCriticalHitsRequirement extends EvolutionRequirement 
   check(pokemon: PokemonData): boolean {
     return pokemon.evolutionProgress
       .filter(x => x.variant == this.variant)
-      .some(progress => progress.progress >= this.amount);
+      .some(progress => (progress.progress as number) >= this.amount);
   }
   static getFromSerialized(requirement: EvoRequirement): BattleCriticalHitsRequirement {
     return new BattleCriticalHitsRequirement(requirement.amount);

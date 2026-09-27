@@ -1,0 +1,12 @@
+{
+	"minecraft:block": {
+		"permutations": [
+			{
+				"condition": "q.block_state('cobblemon:on') && q.block_state('cobblemon:part') == 'top'",
+				"components": {
+					"minecraft:light_emission": 13
+				}
+			}
+		]
+	}
+}

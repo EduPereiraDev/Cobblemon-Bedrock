@@ -1,0 +1,9 @@
+{
+	"minecraft:block": {
+		"components": {
+			"minecraft:entity_fall_on": {
+				"min_fall_distance": 1
+			}
+		}
+	}
+}

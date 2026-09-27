@@ -1,0 +1,51 @@
+{
+	"_source": "CrabrawlerModel.kt",
+	"rootBone": "crabrawler",
+	"poses": {
+		"portrait": {
+			"poseTypes": [
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('crabrawler', 'portrait')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('crabrawler', 'ground_idle')"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('crabrawler', 'ground_idle')",
+				"q.bedrock('crabrawler', 'ground_walk')"
+			]
+		}
+	},
+	"portraitScale": 2.2,
+	"profileScale": 0.65,
+	"portraitTranslation": [
+		-0.25,
+		-0.5,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.7,
+		0
+	]
+}

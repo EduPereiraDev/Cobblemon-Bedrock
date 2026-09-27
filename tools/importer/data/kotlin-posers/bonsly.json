@@ -1,0 +1,82 @@
+{
+	"_source": "BonslyModel.kt",
+	"rootBone": "bonsly",
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('torso', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('bonsly', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('bonsly', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('torso', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('bonsly', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('bonsly', 'blink', 8, 30, 1)"
+			]
+		},
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.bedrock('bonsly', 'sleep_pot')"
+			]
+		},
+		"battlesleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.bedrock('bonsly', 'sleep')"
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('torso', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('bonsly', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('bonsly', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2.2,
+	"profileScale": 0.72,
+	"portraitTranslation": [
+		-0.2,
+		-0.8,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.65,
+		0
+	]
+}

@@ -1,0 +1,138 @@
+{
+	"_source": "DracovishModel.kt",
+	"rootBone": "dracovish",
+	"animations": {
+		"cry": "q.bedrock_stateful('dracovish', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isTouchingWater": false,
+			"animations": [
+				"q.bedrock('dracovish', 'sleep')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('dracovish', 'blink', 8, 30, 1)"
+			]
+		},
+		"watersleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isTouchingWater": true,
+			"animations": [
+				"q.bedrock('dracovish', 'watersleep')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('dracovish', 'blink', 8, 30, 1)"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head_ai', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('dracovish', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('dracovish', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head_ai', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('dracovish', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('dracovish', 'blink', 8, 30, 1)"
+			]
+		},
+		"float": {
+			"poseTypes": [
+				"FLOAT"
+			],
+			"animations": [
+				"q.look('head_ai', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('dracovish', 'water_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('dracovish', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"cry": "q.bedrock_stateful('dracovish', 'water_cry')"
+			}
+		},
+		"swim": {
+			"poseTypes": [
+				"SWIM"
+			],
+			"animations": [
+				"q.look('head_ai', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('dracovish', 'water_swim')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('dracovish', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"cry": "q.bedrock_stateful('dracovish', 'water_cry')"
+			}
+		},
+		"battleidle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head_ai', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('dracovish', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('dracovish', 'blink', 8, 30, 1)"
+			]
+		},
+		"waterbattleidle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"isTouchingWater": true,
+			"animations": [
+				"q.look('head_ai', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('dracovish', 'water_battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('dracovish', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"cry": "q.bedrock_stateful('dracovish', 'water_cry')"
+			}
+		}
+	},
+	"portraitScale": 0.55,
+	"profileScale": 0.3,
+	"portraitTranslation": [
+		-0.25,
+		1.9,
+		0
+	],
+	"profileTranslation": [
+		0,
+		1.35,
+		0
+	]
+}

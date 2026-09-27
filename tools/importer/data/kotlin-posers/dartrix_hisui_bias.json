@@ -1,0 +1,100 @@
+{
+	"_source": "DartrixHisuiBiasModel.kt",
+	"rootBone": "dartrix_hisui_bias",
+	"animations": {
+		"cry": "q.bedrock_stateful('dartrix_hisui_bias', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.bedrock('dartrix_hisui_bias', 'ground_idle')"
+			],
+			"transformedParts": [
+				{
+					"part": "wings_open",
+					"isVisible": false
+				},
+				{
+					"part": "wings_closed",
+					"isVisible": true
+				}
+			]
+		},
+		"hover": {
+			"poseTypes": [
+				"HOVER"
+			],
+			"animations": [
+				"q.bedrock('dartrix_hisui_bias', 'ground_idle')",
+				"q.cobblemon_wing_flap('sine', 0.6, 0.9, 0, -0.17453, 'z', 'wing_left_open', 'wing_right_open', 'q.anim_time')"
+			],
+			"transformedParts": [
+				{
+					"part": "wings_open",
+					"isVisible": true
+				},
+				{
+					"part": "wings_closed",
+					"isVisible": false
+				}
+			]
+		},
+		"fly": {
+			"poseTypes": [
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('dartrix_hisui_bias', 'ground_idle')",
+				"q.cobblemon_wing_flap('sine', 0.9, 0.9, 0, -0.24435, 'z', 'wing_left_open', 'wing_right_open', 'q.anim_time')"
+			],
+			"transformedParts": [
+				{
+					"part": "wings_open",
+					"isVisible": true
+				},
+				{
+					"part": "wings_closed",
+					"isVisible": false
+				}
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM"
+			],
+			"animations": [
+				"q.bedrock('dartrix_hisui_bias', 'ground_idle')",
+				"q.biped_walk(0.75, 0.7, 'leg_left', 'leg_right')"
+			],
+			"transformedParts": [
+				{
+					"part": "wings_open",
+					"isVisible": false
+				},
+				{
+					"part": "wings_closed",
+					"isVisible": true
+				}
+			]
+		}
+	},
+	"portraitScale": 1.26,
+	"profileScale": 0.55000013,
+	"portraitTranslation": [
+		-0.23,
+		1.14,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.8800000000000001,
+		0
+	]
+}

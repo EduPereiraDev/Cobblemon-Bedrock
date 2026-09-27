@@ -1,0 +1,61 @@
+{
+	"_source": "PonytaModel.kt",
+	"rootBone": "ponyta",
+	"animations": {
+		"cry": "q.bedrock_stateful('ponyta', 'cry')",
+		"faint": "q.bedrock_stateful('ponyta', 'faint')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('ponyta', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('ponyta', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('ponyta', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('ponyta', 'quirk1', 60, 360, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('ponyta', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('ponyta', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 3,
+	"profileScale": 0.9,
+	"portraitTranslation": [
+		-0.6,
+		-0.2,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.43,
+		0
+	]
+}

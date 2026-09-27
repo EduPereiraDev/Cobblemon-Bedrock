@@ -95,7 +95,15 @@
       "minecraft:damage_sensor": {
         "triggers": [
           {
-            "cause": "fall",
+            "cause": "self_destruct",
+            "deals_damage": true
+          },
+          {
+            "cause": "void",
+            "deals_damage": true
+          },
+          {
+            "cause": "all",
             "deals_damage": false
           }
         ]

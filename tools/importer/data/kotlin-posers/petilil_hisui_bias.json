@@ -1,0 +1,276 @@
+{
+	"_source": "PetililHisuiBiasModel.kt",
+	"rootBone": "petilil_hisui_bias",
+	"animations": {
+		"cry": "q.bedrock_stateful('petilil', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('petilil', 'sleep')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('petilil', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "leaf_back_rotation",
+					"rotation": [
+						6.5,
+						0,
+						0
+					]
+				},
+				{
+					"part": "leaf_left_rotation",
+					"rotation": [
+						-19.5,
+						0,
+						0
+					]
+				},
+				{
+					"part": "leaf_right_rotation",
+					"rotation": [
+						-19.5,
+						0,
+						0
+					]
+				}
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 0.9, 0.9, 70, -45, 45, -45)",
+				"q.bedrock('petilil', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('petilil', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('petilil', 'idle_quirk', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "leaf_back_rotation",
+					"rotation": [
+						6.5,
+						0,
+						0
+					]
+				},
+				{
+					"part": "leaf_left_rotation",
+					"rotation": [
+						-19.5,
+						0,
+						0
+					]
+				},
+				{
+					"part": "leaf_right_rotation",
+					"rotation": [
+						-19.5,
+						0,
+						0
+					]
+				}
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 0.9, 0.9, 70, -45, 45, -45)",
+				"q.bedrock('petilil', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('petilil', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('petilil', 'idle_quirk', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "leaf_back_rotation",
+					"rotation": [
+						6.5,
+						0,
+						0
+					]
+				},
+				{
+					"part": "leaf_left_rotation",
+					"rotation": [
+						-19.5,
+						0,
+						0
+					]
+				},
+				{
+					"part": "leaf_right_rotation",
+					"rotation": [
+						-19.5,
+						0,
+						0
+					]
+				}
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"animations": [
+				"q.look('head', 0.9, 0.9, 70, -45, 45, -45)",
+				"q.bedrock('petilil', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('petilil', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('petilil', 'idle_quirk', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "leaf_back_rotation",
+					"rotation": [
+						6.5,
+						0,
+						0
+					]
+				},
+				{
+					"part": "leaf_left_rotation",
+					"rotation": [
+						-19.5,
+						0,
+						0
+					]
+				},
+				{
+					"part": "leaf_right_rotation",
+					"rotation": [
+						-19.5,
+						0,
+						0
+					]
+				}
+			]
+		},
+		"shoulder_left": {
+			"poseTypes": [
+				"SHOULDER_LEFT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('petilil', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('petilil', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "petilil_hisui_bias",
+					"position": [
+						3,
+						0,
+						0
+					]
+				},
+				{
+					"part": "leaf_back_rotation",
+					"rotation": [
+						6.5,
+						0,
+						0
+					]
+				},
+				{
+					"part": "leaf_left_rotation",
+					"rotation": [
+						-19.5,
+						0,
+						0
+					]
+				},
+				{
+					"part": "leaf_right_rotation",
+					"rotation": [
+						-19.5,
+						0,
+						0
+					]
+				}
+			]
+		},
+		"shoulder_right": {
+			"poseTypes": [
+				"SHOULDER_RIGHT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('petilil', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('petilil', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "petilil_hisui_bias",
+					"position": [
+						-3,
+						0,
+						0
+					]
+				},
+				{
+					"part": "leaf_back_rotation",
+					"rotation": [
+						6.5,
+						0,
+						0
+					]
+				},
+				{
+					"part": "leaf_left_rotation",
+					"rotation": [
+						-19.5,
+						0,
+						0
+					]
+				},
+				{
+					"part": "leaf_right_rotation",
+					"rotation": [
+						-19.5,
+						0,
+						0
+					]
+				}
+			]
+		}
+	},
+	"portraitScale": 1.52,
+	"profileScale": 0.8,
+	"portraitTranslation": [
+		0.1,
+		-0.25,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.5,
+		0
+	]
+}

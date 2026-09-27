@@ -1,0 +1,83 @@
+{
+  "format_version": "1.21.40",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "cobblemon:saccharine_chest_boat",
+      "runtime_identifier": "minecraft:chest_boat",
+      "is_spawnable": false,
+      "is_summonable": true
+    },
+    "components": {
+      "minecraft:is_stackable": {},
+      "minecraft:type_family": {
+        "family": [
+          "boat",
+          "inanimate",
+          "cobblemon_boat"
+        ]
+      },
+      "minecraft:collision_box": {
+        "width": 1.4,
+        "height": 0.455
+      },
+      "minecraft:hurt_on_condition": {
+        "damage_conditions": [
+          {
+            "filters": {
+              "test": "in_lava",
+              "subject": "self",
+              "operator": "==",
+              "value": true
+            },
+            "cause": "lava",
+            "damage_per_tick": 4
+          }
+        ]
+      },
+      "minecraft:leashable": {
+        "soft_distance": 4,
+        "hard_distance": 6,
+        "max_distance": 10
+      },
+      "minecraft:buoyant": {
+        "base_buoyancy": 1,
+        "apply_gravity": true,
+        "simulate_waves": true,
+        "big_wave_probability": 0.03,
+        "big_wave_speed": 10,
+        "drag_down_on_buoyancy_removed": 0,
+        "liquid_blocks": [
+          "minecraft:water",
+          "minecraft:flowing_water"
+        ]
+      },
+      "minecraft:physics": {},
+      "minecraft:pushable": {
+        "is_pushable": true,
+        "is_pushable_by_piston": true
+      },
+      "minecraft:rideable": {
+        "seat_count": 1,
+        "interact_text": "action.interact.ride.boat",
+        "pull_in_entities": true,
+        "seats": [
+          {
+            "position": [
+              0.2,
+              -0.2,
+              0
+            ],
+            "min_rider_count": 0,
+            "max_rider_count": 1,
+            "rotate_rider_by": -90,
+            "lock_rider_rotation": 90
+          }
+        ]
+      },
+      "minecraft:inventory": {
+        "container_type": "chest_boat",
+        "inventory_size": 27
+      }
+    }
+  }
+}

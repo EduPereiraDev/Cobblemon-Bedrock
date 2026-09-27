@@ -7,10 +7,10 @@
   },
   "header": {
     "name": "Cobblemon Bedrock Behavior Pack",
-    "description": "§6Unnoficial Cobblemon Port to Minecraft Bedrock Edition. (Prerelease Build) Handle with care, love, grandma.",
+    "description": "\u00a76Unnoficial Cobblemon Port to Minecraft Bedrock Edition. (Prerelease Build) Handle with care, love, grandma.",
     "min_engine_version": [
       1,
-      20,
+      26,
       50
     ],
     "uuid": "1b7a2e08-8dc6-44ce-9f3d-bb6b448d48b6",
@@ -45,15 +45,19 @@
   "dependencies": [
     {
       "module_name": "@minecraft/server",
-      "version": "1.16.0-beta"
+      "version": "2.10.0"
     },
     {
       "module_name": "@minecraft/server-ui",
-      "version": "1.1.0"
+      "version": "2.2.0"
     },
     {
-      "module_name": "@minecraft/common",
-      "version": "1.1.0"
+      "uuid": "7a3683d1-6c1b-4a57-a593-4daca83dcf10",
+      "version": [
+        0,
+        0,
+        1
+      ]
     }
   ]
 }

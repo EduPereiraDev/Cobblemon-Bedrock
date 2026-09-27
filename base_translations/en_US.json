@@ -5,5 +5,11 @@
   "cobblemon.battle.in_battle": "%1s is already in a battle!",
   "cobblemon.battle.pokemon_already_fainted": "%1s is too weak to battle! Please choose a healthy pokemon.",
   "cobblemon.battle.already_out": "%1s is already in battle!",
-  "cobblemon.ui.info.unsaved_changes": "You must click the submit button to save changes."
+  "cobblemon.ui.info.unsaved_changes": "You must click the submit button to save changes.",
+  "cobblemon.battle.tie": "The battle ended in a tie!",
+  "cobblemon.fishing.bait_menu.title": "Poké Rod Bait",
+  "cobblemon.fishing.bait_menu.body": "Choose a bait to attach to the rod. (Sneak and use the rod to open this menu.)",
+  "cobblemon.fishing.bait_menu.none": "You have no bait in your inventory.",
+  "cobblemon.fishing.bait_menu.remove": "Remove bait",
+  "entity.cobblemon:poke_bobber.name": "Poké Bobber"
 }

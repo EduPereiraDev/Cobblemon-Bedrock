@@ -1,0 +1,102 @@
+{
+	"_source": "CaterpieModel.kt",
+	"rootBone": "caterpie",
+	"animations": {
+		"cry": "q.bedrock_stateful('caterpie', 'cry')",
+		"faint": "q.bedrock_stateful('caterpie', 'faint')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('caterpie', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('caterpie', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('caterpie', 'blink', 8, 30, 1)"
+			]
+		},
+		"walking": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('caterpie', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('caterpie', 'blink', 8, 30, 1)"
+			]
+		},
+		"shoulder_left": {
+			"poseTypes": [
+				"SHOULDER_LEFT"
+			],
+			"animations": [
+				"q.bedrock('caterpie', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('caterpie', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "caterpie",
+					"position": [
+						3,
+						0,
+						0
+					]
+				}
+			]
+		},
+		"shoulder_right": {
+			"poseTypes": [
+				"SHOULDER_RIGHT"
+			],
+			"animations": [
+				"q.bedrock('caterpie', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('caterpie', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "caterpie",
+					"position": [
+						-3,
+						0,
+						0
+					]
+				}
+			]
+		}
+	},
+	"portraitScale": 2.1,
+	"profileScale": 0.8,
+	"portraitTranslation": [
+		-0.55,
+		-1.55,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.55,
+		0
+	]
+}

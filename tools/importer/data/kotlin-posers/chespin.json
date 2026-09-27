@@ -1,0 +1,59 @@
+{
+	"_source": "ChespinModel.kt",
+	"rootBone": "chespin",
+	"animations": {
+		"cry": "q.bedrock_stateful('chespin', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('chespin', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('chespin', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('chespin', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('chespin', 'blink', 8, 30, 1)"
+			]
+		},
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('chespin', 'sleep')"
+			]
+		}
+	},
+	"portraitScale": 2.03,
+	"profileScale": 0.77,
+	"portraitTranslation": [
+		-0.12,
+		-0.44,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.6,
+		0
+	]
+}

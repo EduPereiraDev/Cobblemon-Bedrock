@@ -1,0 +1,162 @@
+{
+	"_source": "LotadModel.kt",
+	"rootBone": "lotad",
+	"animations": {
+		"cry": "q.bedrock_stateful('lotad', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"PROFILE",
+				"PORTRAIT",
+				"STAND"
+			],
+			"isTouchingWater": false,
+			"animations": [
+				"q.bedrock('lotad', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('lotad', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('lotad', 'faint')"
+			}
+		},
+		"waterstanding": {
+			"poseTypes": [
+				"STAND"
+			],
+			"isTouchingWater": true,
+			"animations": [
+				"q.bedrock('lotad', 'water_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('lotad', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "lotad",
+					"position": [
+						0,
+						-2,
+						0
+					]
+				}
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('lotad', 'faint')"
+			}
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK"
+			],
+			"isTouchingWater": false,
+			"animations": [
+				"q.bedrock('lotad', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('lotad', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('lotad', 'faint')"
+			}
+		},
+		"waterwalk": {
+			"poseTypes": [
+				"WALK"
+			],
+			"isTouchingWater": true,
+			"animations": [
+				"q.bedrock('lotad', 'water_swim')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('lotad', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "lotad",
+					"position": [
+						0,
+						-2,
+						0
+					]
+				}
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('lotad', 'faint')"
+			}
+		},
+		"floating": {
+			"poseTypes": [
+				"FLOAT"
+			],
+			"animations": [
+				"q.bedrock('lotad', 'water_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('lotad', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "lotad",
+					"position": [
+						0,
+						-2,
+						0
+					]
+				}
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('lotad', 'faint')"
+			}
+		},
+		"swim": {
+			"poseTypes": [
+				"SWIM"
+			],
+			"animations": [
+				"q.bedrock('lotad', 'water_swim')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('lotad', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "lotad",
+					"position": [
+						0,
+						-2,
+						0
+					]
+				}
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('lotad', 'faint')"
+			}
+		},
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('lotad', 'sleep')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('lotad', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2.5,
+	"profileScale": 1,
+	"portraitTranslation": [
+		-0.15,
+		-2,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.25,
+		0
+	]
+}

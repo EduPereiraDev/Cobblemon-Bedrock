@@ -1,0 +1,49 @@
+{
+	"_source": "HuntailModel.kt",
+	"rootBone": "huntail",
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"WALK"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('huntail', 'ground_idle')",
+				"q.cobblemon_wave_chain('sine', 0.8, 8, 0, 0, 5, 16, 'y', 'q.modified_distance_moved', 'tail:5', 'tail2:5', 'tail3:5', 'tail4:5', 'tail5:5', 'tail6:5')"
+			]
+		},
+		"floating": {
+			"poseTypes": [
+				"PROFILE",
+				"PORTRAIT",
+				"FLOAT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('huntail', 'water_idle')"
+			]
+		},
+		"swimming": {
+			"poseTypes": [
+				"SWIM"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('huntail', 'water_swim')"
+			]
+		}
+	},
+	"portraitScale": 2.6,
+	"profileScale": 0.9,
+	"portraitTranslation": [
+		-1.3,
+		-2.5,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0,
+		0
+	]
+}

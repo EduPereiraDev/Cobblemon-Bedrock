@@ -1,0 +1,66 @@
+{
+	"_source": "ClamperlModel.kt",
+	"rootBone": "clamperl",
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"PROFILE",
+				"STAND"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('clamperl', 'ground_idle')"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('clamperl', 'ground_idle')",
+				"q.bedrock('clamperl', 'ground_walk')"
+			]
+		},
+		"floating": {
+			"poseTypes": [
+				"FLOAT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('clamperl', 'water_idle')"
+			]
+		},
+		"swimming": {
+			"poseTypes": [
+				"SWIM"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('clamperl', 'water_swim')",
+				"q.bedrock('clamperl', 'water_idle')"
+			]
+		},
+		"portrait": {
+			"poseTypes": [
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('clamperl', 'portrait')"
+			]
+		}
+	},
+	"portraitScale": 3,
+	"profileScale": 0.8,
+	"portraitTranslation": [
+		0,
+		-2.15,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.5,
+		0
+	]
+}

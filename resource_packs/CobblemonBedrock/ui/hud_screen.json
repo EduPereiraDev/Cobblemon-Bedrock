@@ -1,0 +1,52 @@
+// Frente ui-base: HUD do Cobblemon (party, batalha e toasts) desenhado por `cobblemon_hud.json`.
+// Só `modifications`/propriedades novas: nada da vanilla é redeclarado (mesmo caminho do arquivo vanilla, porque
+// modifications são resolvidas por caminho). O título vanilla some quando o texto é um payload do port (`cbH`).
+{
+  "namespace": "hud",
+  "root_panel": {
+    "modifications": [
+      {
+        "array_name": "controls",
+        "operation": "insert_front",
+        "value": [
+          { "cobblemon_hud@cobblemon_hud.root": {} }
+        ]
+      },
+      // Frente telas: overlay do scanner da Pokédex (actionbar com prefixo "cbS"), numa 2ª fábrica do actionbar.
+      {
+        "array_name": "controls",
+        "operation": "insert_back",
+        "value": [
+          {
+            "cobblemon_scanner_area": {
+              "type": "panel",
+              "factory": {
+                "name": "hud_actionbar_text_factory",
+                "control_ids": {
+                  "hud_actionbar_text": "hud_actionbar_text@cobblemon_scanner.scan_overlay"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  // Frente telas: o actionbar vanilla não mostra o payload do scanner.
+  "hud_actionbar_text": {
+    "visible": "(($actionbar_text - 'cbS') = $actionbar_text)"
+  },
+  "hud_title_text": {
+    "bindings": [
+      {
+        "binding_name": "#hud_title_text_string",
+        "binding_type": "global"
+      },
+      {
+        "binding_type": "view",
+        "source_property_name": "((#hud_title_text_string - 'cbH') = #hud_title_text_string)",
+        "target_property_name": "#visible"
+      }
+    ]
+  }
+}

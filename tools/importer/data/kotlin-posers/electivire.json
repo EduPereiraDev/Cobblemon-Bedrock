@@ -1,0 +1,53 @@
+{
+	"_source": "ElectivireModel.kt",
+	"rootBone": "electivire",
+	"animations": {
+		"cry": "q.bedrock_stateful('electivire', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('electivire', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('electivire', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('electivire', 'ground_idle')",
+				"q.biped_walk(0.6, 0.9, 'leg_left', 'leg_right')",
+				"q.bimanual_swing(0.6, 0.9, 'arm_left', 'arm_right')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('electivire', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2.2,
+	"profileScale": 0.65,
+	"portraitTranslation": [
+		-0.65,
+		1.3,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.75,
+		0
+	]
+}

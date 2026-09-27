@@ -1,0 +1,75 @@
+{
+	"_source": "BoldoreModel.kt",
+	"rootBone": "boldore",
+	"animations": {
+		"cry": "q.bedrock_stateful('boldore', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('boldore', 'sleep')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('boldore', 'faint')"
+			}
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.bedrock('boldore', 'ground_idle')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('boldore', 'faint')"
+			}
+		},
+		"walking": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('boldore', 'ground_walk')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('boldore', 'faint')"
+			}
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.bedrock('boldore', 'battle_idle')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('boldore', 'faint')"
+			}
+		}
+	},
+	"portraitScale": 2.1,
+	"profileScale": 0.8,
+	"portraitTranslation": [
+		-0.2,
+		-1.1,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.45,
+		0
+	]
+}

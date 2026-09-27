@@ -1,0 +1,75 @@
+{
+	"_source": "AipomModel.kt",
+	"rootBone": "aipom",
+	"animations": {
+		"cry": "q.bedrock_stateful('aipom', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('aipom', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('aipom', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('aipom', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('aipom', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('aipom', 'blink', 8, 30, 1)"
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('aipom', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('aipom', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2.1,
+	"profileScale": 0.65,
+	"portraitTranslation": [
+		-0.25,
+		0.1,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.76,
+		0
+	]
+}

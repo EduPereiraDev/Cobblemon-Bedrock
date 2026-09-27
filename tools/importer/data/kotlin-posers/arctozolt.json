@@ -1,0 +1,163 @@
+{
+	"_source": "ArctozoltModel.kt",
+	"rootBone": "arctozolt",
+	"animations": {
+		"cry": "q.bedrock_stateful('arctozolt', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isTouchingWater": false,
+			"animations": [
+				"q.bedrock('arctozolt', 'sleep')"
+			]
+		},
+		"surface_sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isUnderWater": false,
+			"isTouchingWater": true,
+			"animations": [
+				"q.bedrock('arctozolt', 'surfacewater_sleep')"
+			]
+		},
+		"water_sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isTouchingWater": true,
+			"isUnderWater": true,
+			"animations": [
+				"q.bedrock('arctozolt', 'surfacewater_sleep')"
+			],
+			"transformedParts": [
+				{
+					"part": "arctozolt",
+					"position": [
+						0,
+						-53,
+						0
+					]
+				}
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"isTouchingWater": false,
+			"animations": [
+				"q.look('head_ai', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('arctozolt', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('arctozolt', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('arctozolt', 'quirk', 30, 60, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"FLY"
+			],
+			"isTouchingWater": false,
+			"animations": [
+				"q.look('head_ai', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('arctozolt', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('arctozolt', 'blink', 8, 30, 1)"
+			]
+		},
+		"float": {
+			"poseTypes": [
+				"FLOAT"
+			],
+			"isUnderWater": true,
+			"animations": [
+				"q.look('head_ai', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('arctozolt', 'water_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('arctozolt', 'blink', 8, 30, 1)"
+			]
+		},
+		"swim": {
+			"poseTypes": [
+				"SWIM"
+			],
+			"isUnderWater": true,
+			"animations": [
+				"q.look('head_ai', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('arctozolt', 'water_swim')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('arctozolt', 'blink', 8, 30, 1)"
+			]
+		},
+		"surfacefloat": {
+			"poseTypes": [
+				"STAND"
+			],
+			"isUnderWater": false,
+			"isTouchingWater": true,
+			"animations": [
+				"q.look('head_ai', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('arctozolt', 'surfacewater_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('arctozolt', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('arctozolt', 'quirk', 30, 60, 1)"
+			]
+		},
+		"surfaceswim": {
+			"poseTypes": [
+				"WALK"
+			],
+			"isUnderWater": false,
+			"isTouchingWater": true,
+			"animations": [
+				"q.look('head_ai', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('arctozolt', 'surfacewater_swim')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('arctozolt', 'blink', 8, 30, 1)"
+			]
+		},
+		"battleidle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head_ai', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('arctozolt', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('arctozolt', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('arctozolt', 'quirk', 30, 60, 1)"
+			]
+		}
+	},
+	"portraitScale": 0.85,
+	"profileScale": 0.33,
+	"portraitTranslation": [
+		-0.45,
+		2.15,
+		0
+	],
+	"profileTranslation": [
+		0.02,
+		1.14,
+		0
+	]
+}

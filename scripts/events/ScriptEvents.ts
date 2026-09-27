@@ -1,15 +1,24 @@
-import { Entity, GameMode, ItemStack, Player, ScriptEventCommandMessageAfterEvent, system, world } from "@minecraft/server"
+import { tryAprijuiceOnEntity } from "../pokemon/Aprijuice";
+import { Entity, ItemStack, Player, ScriptEventCommandMessageAfterEvent, ScriptEventSource, system, world } from "@minecraft/server"
 import { showPokemonGUI } from "../GUI";
 import { PokemonData, setupCobblemon } from "../Pokemon";
 import { battleMap, PokemonBattle, cleanUpStaleBattleData, BattleFormat, BattleSide, BattleActor, startWildBattle } from "../battle";
-import { toID } from "../showdown/sim/dex-data";
+import { toID } from "../showdown";
 import { registerDebugSettings } from "../debug/debugMain"
 import { getSpeciesData } from "../speciesData";
 import { storePokemonInFirstSpace } from "../pokemonStorage";
-import handleChallenge from "../ChallengePlayer";
+import handleChallenge, { hasDirectChallengeAction } from "../ChallengePlayer";
+import { openPlayerInteractionMenu } from "../trade/PlayerInteraction";
 import exchangeHeldItem from "./ExchangeHeldItem";
 import handleInteractEvolution from "./InteractEvolution";
 import handleGainLevelEvent from "./RareCandy";
+import { useItemOnPokemonEntity } from "../items/usage";
+import { tryPokemonInteraction } from "../entity";
+import { K, isInBattle, tr } from "../GUI/common";
+import { message } from "../language";
+import { tryDyePokemon, trySlowpokeShear, tryStashItem } from "../pokemon/FeatureInteractions";
+import { runJogabilidadeChecks } from "../pokemon/DebugChecks";
+import { debugProbesEnabled, updateConfig } from "../Config";
 
 export function scriptEventHandler(event: ScriptEventCommandMessageAfterEvent) {
   if (!event.id.startsWith("cobblemon:"))
@@ -28,32 +37,14 @@ export function scriptEventHandler(event: ScriptEventCommandMessageAfterEvent) {
 }
 
 const scriptIDDictionary: { [key: string]: Function } = {
+  // Frente batalha-minimizavel: tratado em scripts/battle/BattleUiMode.ts (alias do /cobblemon:battleui; aqui só não avisa "inválido").
+  "cobblemon:battle_ui_mode": function () { },
+  // Tratado em scripts/world/index.ts (setRideCameraMode); aqui só não avisa "inválido".
+  "cobblemon:ride_camera": function () { },
   "cobblemon:interacted": function (event: ScriptEventCommandMessageAfterEvent) {
     let player = event.sourceEntity!.dimension.getPlayers({ location: event.sourceEntity!.location, tags: ["interacter"], closest: 1 })[0]!
     player.removeTag("interacter");
-    cleanUpStaleBattleData(player);
-    cleanUpStaleBattleData(event.sourceEntity!);
-    if (event.sourceEntity!.getDynamicProperty("owner_name") === player.name) {
-      if (player.isSneaking) {
-        exchangeHeldItem(player, event.sourceEntity!);
-      }
-      else {
-        showPokemonGUI(event.sourceEntity!, player)
-      }
-    }
-    //If starting a battle
-    else if (event.sourceEntity!.getProperty("cobblemon:wild") === true) {
-      if (event.sourceEntity!.getDynamicProperty("in_battle") && event.sourceEntity!.getDynamicProperty("in_battle") === player.getDynamicProperty("in_battle")) {
-        let battle = battleMap.get(player.getDynamicProperty("in_battle") as string);
-        if (battle) {
-          let actor = battle.getActorFromID(player.id);
-          actor?.promptPlayerForRequest();
-        }
-      }
-      else if (!event.sourceEntity!.getDynamicProperty("in_battle") && !player.getDynamicProperty("in_battle") && player.getDynamicProperty("initialized")) {
-        startWildBattle(player, event.sourceEntity!);
-      }
-    }
+    handlePokemonInteract(player, event.sourceEntity!);
   },
   "cobblemon:setup": function (event: ScriptEventCommandMessageAfterEvent) {
     if (event.sourceEntity!.getProperty("cobblemon:initialized") === true)
@@ -69,8 +60,10 @@ const scriptIDDictionary: { [key: string]: Function } = {
     pokemonData.tryUpdatePokemonInTeam();
   },
   "cobblemon:pokeball_thrown": function (event: ScriptEventCommandMessageAfterEvent) {
-    let player = event.sourceEntity!.dimension.getPlayers({ location: event.sourceEntity!.location, closest: 1 })[0]!
-    event.sourceEntity!.setDynamicProperty("player_id", player.id);
+    // O dono já é registrado pelo projétil (catching/index.ts); só usa o jogador mais perto como último recurso.
+    if (event.sourceEntity!.getDynamicProperty("player_id") !== undefined) return;
+    let player = event.sourceEntity!.dimension.getPlayers({ location: event.sourceEntity!.location, closest: 1 })[0];
+    if (player) event.sourceEntity!.setDynamicProperty("player_id", player.id);
   },
   "cobblemon:debug_setup": function () {
     registerDebugSettings();
@@ -80,23 +73,21 @@ const scriptIDDictionary: { [key: string]: Function } = {
     let player = event.sourceEntity as Player;
     let messageArray = event.message.split(" ");
     if (!event.message || messageArray.length < 1 || messageArray.length > 3) {
-      player.sendMessage("§c Syntax: command <species> <level?> <variant?>");
+      player.sendMessage("§c Syntax: command <species> <level?> <shiny?>");
       return;
     }
     let species = toID(messageArray[0]);
     let speciesData = getSpeciesData(species); //Make sure that data is accessible
     if (!speciesData) {
       player.sendMessage("§c Not Valid Cobblemon");
+      return;
     }
     let level: number | undefined = undefined;
     if (messageArray.length >= 2 && !isNaN(parseInt(messageArray[1]))) {
       level = parseInt(messageArray[1]);
     }
-    let variant = 0;
-    if (messageArray.length >= 3 && !isNaN(parseInt(messageArray[1]))) {
-      variant = parseInt(messageArray[2]);
-    }
-    let pokemon = PokemonData.generateNewWildPokemon(species, variant, level);
+    let shiny = messageArray.length >= 3 ? messageArray[2] === "shiny" || messageArray[2] === "true" : undefined;
+    let pokemon = PokemonData.generateNewWildPokemon(species, { level, shiny });
     storePokemonInFirstSpace(pokemon, player);
   },
   "cobblemon:recieve_challenge": function (event: ScriptEventCommandMessageAfterEvent) {
@@ -106,8 +97,102 @@ const scriptIDDictionary: { [key: string]: Function } = {
     if (challenger === undefined || !(challenger instanceof Player))
       return;
     challenger.removeTag("challenger");
-    handleChallenge(challenger, player);
+    // Batalha em andamento entre os dois ou desafio pendente: resolve direto. Senão, o menu de interação
+    // (Batalha simples/dupla/tripla + Troca, scripts/trade/PlayerInteraction.ts) escolhe o formato.
+    if (hasDirectChallengeAction(challenger, player)) handleChallenge(challenger, player);
+    else void openPlayerInteractionMenu(challenger, player);
   },
   "cobblemon:interact_evolution": handleInteractEvolution,
-  "cobblemon:gain_level": handleGainLevelEvent
+  /**
+   * Depuração pelo console do servidor: `scriptevent cobblemon:debug_battle pikachu eevee 20`.
+   * Cria dois Pokémon selvagens no spawn do mundo e faz a IA batalhar entre eles. Só pelo console do servidor.
+   */
+  "cobblemon:debug_battle": function (event: ScriptEventCommandMessageAfterEvent) {
+    if (event.sourceType !== ScriptEventSource.Server) return;
+    const [first = "pikachu", second = "eevee", levelText = "20"] = event.message.trim().split(/\s+/);
+    const dimension = world.getDimension("overworld");
+    const spawn = world.getDefaultSpawnLocation();
+    // Sem jogadores, o chunk do spawn pode ainda não estar carregado: tenta de novo por até 30 s.
+    const attempts = Number((event as { attempts?: number }).attempts ?? 0);
+    if (!dimension.isChunkLoaded({ x: spawn.x, y: 64, z: spawn.z })) {
+      if (attempts < 30) system.runTimeout(() => scriptIDDictionary["cobblemon:debug_battle"]({ ...event, id: event.id, message: event.message, sourceType: event.sourceType, attempts: attempts + 1 }), 20);
+      else console.warn("debug_battle: chunk do spawn não carregou");
+      return;
+    }
+    const top = dimension.getTopmostBlock({ x: spawn.x, z: spawn.z });
+    const location = { x: spawn.x + 0.5, y: (top?.y ?? 64) + 1, z: spawn.z + 0.5 };
+    const level = parseInt(levelText) || 20;
+    const actors = [first, second].map((species, i) => {
+      const data = PokemonData.generateNewWildPokemon(species, { level });
+      const entity = dimension.spawnEntity(data.getEntityId(), { ...location, x: location.x + i * 2 });
+      data.applyToCobblemon(entity);
+      entity.setProperty("cobblemon:wild", true);
+      return new BattleActor(entity, [data]);
+    });
+    const battle = new PokemonBattle(BattleFormat.GEN_9_SINGLES, new BattleSide([actors[0]]), new BattleSide([actors[1]]));
+    battle.mute = false;
+    console.info(`debug_battle started: ${first} vs ${second} (L${level}) id=${battle.battleId}`);
+  },
+  /** Liga/desliga as sondas de depuração (md_*, ms_*, debug_visual, ianpc_*). Só pelo console do servidor. */
+  "cobblemon:debug_probes": function (event: ScriptEventCommandMessageAfterEvent) {
+    if (event.sourceType !== ScriptEventSource.Server) return;
+    const on = /^(on|true|1|ligar)$/i.test(event.message.trim());
+    updateConfig({ enableDebugProbes: on });
+    console.info(`Sondas de depuração: ${debugProbesEnabled() ? "ligadas" : "desligadas"}`);
+  },
+  "cobblemon:gain_level": handleGainLevelEvent,
+  /** Conferência da frente jogabilidade pelo console: `scriptevent cobblemon:debug_jogabilidade [all|alpha|honey|...]`. */
+  "cobblemon:debug_jogabilidade": function (event: ScriptEventCommandMessageAfterEvent) {
+    runJogabilidadeChecks(event.message ?? "");
+  },
+}
+
+/**
+ * Usa o item da mão num Pokémon do próprio jogador (remédios, doces, vitaminas, mints, TMs, itens de
+ * evolução...). A lógica fica em scripts/items (frente "itens"). Retorna true se o item foi tratado.
+ */
+function useItemOnPokemon(player: Player, pokemon: Entity, item: ItemStack): boolean {
+  return useItemOnPokemonEntity(player, pokemon, item);
+}
+
+/** Jogador interagiu (botão de usar) com um Pokémon: item, menu do próprio Pokémon, troca de item ou batalha selvagem. */
+export function handlePokemonInteract(player: Player, pokemon: Entity, heldItem?: ItemStack) {
+  // Ordem do PokemonEntity.mobInteract: tesoura (cauda do Slowpoke) e stash (Gimmighoul) antes do resto.
+  if (trySlowpokeShear(player, pokemon, heldItem)) return;
+  if (tryPokemonInteraction(player, pokemon, heldItem)) return;
+  if (!isInBattle(player) && tryStashItem(player, pokemon, heldItem)) return;
+  if (!isInBattle(player) && pokemon.getProperty("cobblemon:in_battle") !== true && tryDyePokemon(player, pokemon, heldItem)) return;
+  cleanUpStaleBattleData(player);
+  cleanUpStaleBattleData(pokemon);
+  if (pokemon.getDynamicProperty("owner_name") === player.name) {
+    // Aprijuice temperada (ride boosts): AprijuiceItem é um PokemonSelectingItem (frente dados-ui).
+    if (heldItem && !player.isSneaking && !isInBattle(player) && tryAprijuiceOnEntity(player, pokemon, PokemonData.tryGetFromEntity(pokemon), heldItem))
+      return;
+    if (heldItem && !player.isSneaking && useItemOnPokemon(player, pokemon, heldItem))
+      return;
+    // Em batalha (jogador ou Pokémon), nada de trocar o item segurado nem abrir o menu do Pokémon.
+    if (isInBattle(player) || pokemon.getProperty("cobblemon:in_battle") === true) {
+      player.sendMessage(message.error(tr(K.inBattle)));
+      return;
+    }
+    if (player.isSneaking) {
+      exchangeHeldItem(player, pokemon);
+    }
+    else {
+      showPokemonGUI(pokemon, player)
+    }
+  }
+  //If starting a battle
+  else if (pokemon.getProperty("cobblemon:wild") === true) {
+    if (pokemon.getDynamicProperty("in_battle") && pokemon.getDynamicProperty("in_battle") === player.getDynamicProperty("in_battle")) {
+      let battle = battleMap.get(player.getDynamicProperty("in_battle") as string);
+      if (battle) {
+        let actor = battle.getActorFromID(player.id);
+        actor?.promptPlayerForRequest();
+      }
+    }
+    else if (!pokemon.getDynamicProperty("in_battle") && !player.getDynamicProperty("in_battle") && player.getDynamicProperty("initialized")) {
+      startWildBattle(player, pokemon);
+    }
+  }
 }

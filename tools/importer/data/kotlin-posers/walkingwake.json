@@ -1,0 +1,122 @@
+{
+	"_source": "WalkingwakeModel.kt",
+	"rootBone": "walkingwake",
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('walkingwake', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isTouchingWater": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('walkingwake', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('walkingwake', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('walkingwake', 'faint')"
+			}
+		},
+		"waterstanding": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isTouchingWater": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('walkingwake', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('walkingwake', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "walkingwake",
+					"position": [
+						0,
+						-6,
+						0
+					]
+				}
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('walkingwake', 'faint')"
+			}
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"isTouchingWater": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('walkingwake', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('walkingwake', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('walkingwake', 'faint')"
+			}
+		},
+		"waterwalk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"isTouchingWater": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('walkingwake', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('walkingwake', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "walkingwake",
+					"position": [
+						0,
+						-6,
+						0
+					]
+				}
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('walkingwake', 'faint')"
+			}
+		}
+	},
+	"portraitScale": 2.2,
+	"profileScale": 0.35,
+	"portraitTranslation": [
+		-2.5,
+		2.4,
+		0
+	],
+	"profileTranslation": [
+		0,
+		1.2,
+		-6
+	]
+}

@@ -1,0 +1,75 @@
+{
+	"_source": "SwoobatModel.kt",
+	"rootBone": "swoobat",
+	"animations": {
+		"cry": "q.bedrock_stateful('swoobat', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('swoobat', 'ground_idle')"
+			]
+		},
+		"hovering": {
+			"poseTypes": [
+				"HOVER"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('swoobat', 'air_idle')",
+				"q.cobblemon_wing_flap('sine', 0.6, 0.9, 0, -0.17453, 'y', 'left_wing', 'right_wing', 'q.anim_time')"
+			],
+			"transformedParts": [
+				{
+					"part": "swoobat",
+					"position": [
+						0,
+						-4,
+						0
+					]
+				}
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('swoobat', 'air_fly')",
+				"q.cobblemon_wing_flap('sine', 0.9, 0.9, 0, -0.24435, 'y', 'left_wing', 'right_wing', 'q.anim_time')"
+			],
+			"transformedParts": [
+				{
+					"part": "swoobat",
+					"position": [
+						0,
+						-4,
+						0
+					]
+				}
+			]
+		}
+	},
+	"portraitScale": 1.88,
+	"profileScale": 0.63,
+	"portraitTranslation": [
+		-0.6,
+		0.68,
+		0
+	],
+	"profileTranslation": [
+		-0.05,
+		0.75,
+		0
+	]
+}

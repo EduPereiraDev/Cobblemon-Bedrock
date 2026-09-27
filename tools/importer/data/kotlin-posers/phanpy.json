@@ -1,0 +1,72 @@
+{
+	"_source": "PhanpyModel.kt",
+	"rootBone": "phanpy",
+	"animations": {
+		"faint": "q.bedrock_stateful('phanpy', 'faint')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('phanpy', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"PROFILE",
+				"PORTRAIT",
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 0, 70, -45, 45, -45)",
+				"q.bedrock('phanpy', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('phanpy', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 0, 70, -45, 45, -45)",
+				"q.bedrock('phanpy', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('phanpy', 'blink', 8, 30, 1)"
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 0, 70, -45, 45, -45)",
+				"q.bedrock('phanpy', 'battle_idle')"
+			]
+		}
+	},
+	"portraitScale": 1.8,
+	"profileScale": 0.85,
+	"portraitTranslation": [
+		-0.4,
+		-0.8,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.4,
+		0
+	]
+}

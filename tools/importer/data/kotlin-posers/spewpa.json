@@ -1,0 +1,68 @@
+{
+	"_source": "SpewpaModel.kt",
+	"rootBone": "spewpa",
+	"animations": {
+		"cry": "q.bedrock_stateful('spewpa', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('spewpa', 'sleep')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('spewpa', 'faint')"
+			}
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('spewpa', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('spewpa', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('spewpa', 'quirk_fluff', 60, 360, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('spewpa', 'faint')"
+			}
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('spewpa', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('spewpa', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('spewpa', 'faint')"
+			}
+		}
+	},
+	"portraitScale": 2.8,
+	"profileScale": 1.2,
+	"portraitTranslation": [
+		0,
+		-1.8,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0,
+		0
+	]
+}

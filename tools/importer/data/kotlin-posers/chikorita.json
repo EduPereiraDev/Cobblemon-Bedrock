@@ -1,0 +1,72 @@
+{
+	"_source": "ChikoritaModel.kt",
+	"rootBone": "chikorita",
+	"animations": {
+		"cry": "q.bedrock_stateful('chikorita', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('chikorita', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.bedrock('chikorita', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('chikorita', 'blink', 8, 30, 1)"
+			]
+		},
+		"walking": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('chikorita', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('chikorita', 'blink', 8, 30, 1)"
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.bedrock('chikorita', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('chikorita', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 1.7,
+	"profileScale": 0.71,
+	"portraitTranslation": [
+		-0.1,
+		-0.32,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.67,
+		0
+	]
+}

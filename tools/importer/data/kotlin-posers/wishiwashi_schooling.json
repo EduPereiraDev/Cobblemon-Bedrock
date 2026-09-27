@@ -1,0 +1,83 @@
+{
+	"_source": "WishiwashiSchoolingModel.kt",
+	"rootBone": "wishiwashi_school",
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"isTouchingWater": true,
+			"animations": [
+				"q.bedrock('wishiwashi_school', 'water_sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"WALK",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.bedrock('wishiwashi_school', 'water_idle')"
+			],
+			"transformedParts": [
+				{
+					"part": "wishiwashi_school",
+					"position": [
+						0,
+						-8,
+						0
+					]
+				}
+			]
+		},
+		"walking": {
+			"poseTypes": [
+				"WALK",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('wishiwashi_school', 'water_swim')"
+			],
+			"transformedParts": [
+				{
+					"part": "wishiwashi_school",
+					"position": [
+						0,
+						-8,
+						0
+					]
+				}
+			]
+		},
+		"floating": {
+			"poseTypes": [
+				"FLOAT"
+			],
+			"animations": [
+				"q.bedrock('wishiwashi_school', 'water_idle')"
+			]
+		},
+		"swimming": {
+			"poseTypes": [
+				"SWIM"
+			],
+			"animations": [
+				"q.bedrock('wishiwashi_school', 'water_swim')"
+			]
+		}
+	},
+	"portraitScale": 0.5,
+	"profileScale": 0.2,
+	"portraitTranslation": [
+		-0.4,
+		0.8,
+		0
+	],
+	"profileTranslation": [
+		0,
+		1,
+		0
+	]
+}

@@ -1,0 +1,109 @@
+{
+	"_source": "RoggenrolaModel.kt",
+	"rootBone": "roggenrola",
+	"animations": {
+		"cry": "q.bedrock_stateful('roggenrola', 'cry')",
+		"faint": "q.bedrock_stateful('roggenrola', 'faint')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('roggenrola', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.bedrock('roggenrola', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('roggenrola', 'quirk_twitch', 60, 120, 1)"
+			]
+		},
+		"walking": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('roggenrola', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('roggenrola', 'quirk_twitch', 60, 120, 1)"
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.bedrock('roggenrola', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('roggenrola', 'quirk_twitch', 60, 120, 1)"
+			]
+		},
+		"shoulder_left": {
+			"poseTypes": [
+				"SHOULDER_LEFT"
+			],
+			"animations": [
+				"q.bedrock('roggenrola', 'shoulder_left')"
+			],
+			"transformedParts": [
+				{
+					"part": "roggenrola",
+					"position": [
+						1,
+						0,
+						0
+					]
+				}
+			]
+		},
+		"shoulder_right": {
+			"poseTypes": [
+				"SHOULDER_RIGHT"
+			],
+			"animations": [
+				"q.bedrock('roggenrola', 'shoulder_right')"
+			],
+			"transformedParts": [
+				{
+					"part": "roggenrola",
+					"position": [
+						-1,
+						0,
+						0
+					]
+				}
+			]
+		}
+	},
+	"portraitScale": 2.5,
+	"profileScale": 0.8,
+	"portraitTranslation": [
+		-0.15,
+		-1.75,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.5,
+		0
+	]
+}

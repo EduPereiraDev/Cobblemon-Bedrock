@@ -1,0 +1,65 @@
+{
+	"_source": "WoobatModel.kt",
+	"rootBone": "woobat",
+	"animations": {
+		"cry": "q.bedrock_stateful('woobat', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.bedrock('woobat', 'air_idle')",
+				"q.cobblemon_wing_flap('sine', 0.6, 0.9, 0, -0.17453, 'y', 'left_wing', 'right_wing', 'q.anim_time')"
+			],
+			"transformedParts": [
+				{
+					"part": "woobat",
+					"position": [
+						0,
+						-4,
+						0
+					]
+				}
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('woobat', 'air_fly')",
+				"q.cobblemon_wing_flap('sine', 0.9, 0.9, 0, -0.24435, 'y', 'left_wing', 'right_wing', 'q.anim_time')"
+			],
+			"transformedParts": [
+				{
+					"part": "woobat",
+					"position": [
+						0,
+						-4,
+						0
+					]
+				}
+			]
+		}
+	},
+	"portraitScale": 1.8,
+	"profileScale": 0.75,
+	"portraitTranslation": [
+		-0.23,
+		-0.73,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.57,
+		0
+	]
+}

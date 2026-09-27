@@ -5,3 +5,30 @@
 /scripts/main.js.map
 /extractedResources
 /cbconfig.json
+
+# fontes de referência baixadas localmente (não versionadas)
+upstream/
+.bds/
+generated/
+generated.tmp-*/
+generated.old-*/
+dist-*/
+.bds-*/
+.test-out/
+
+# Extensão Mega Showdown: uso privado. A licença do MSD (v2.1) proíbe publicar derivados, então nada disto vai para o
+# repositório público. Sem estes arquivos, o import, o build, o tsc e os testes rodam só com o base (stubs em
+# scripts/extensions/privateStub.ts e tools/importer/optionalExtensions.ts). Ver tools/build.mjs (público x privado).
+scripts/extensions/megaShowdown/
+tools/importer/megaShowdown.ts
+tools/importer/msd*.ts
+tools/importer/validateMsd.ts
+tools/pesquisa/mega-showdown-*
+tools/pesquisa/msd-*
+tests/msd*.test.ts
+tests/e2e/msd/
+tests/e2e/experimental/msd-*
+docs/pesquisa/9-extensao-mega-showdown.md
+docs/pendencias/msd*.md
+behavior_packs/CobblemonMegaShowdown/
+resource_packs/CobblemonMegaShowdown/

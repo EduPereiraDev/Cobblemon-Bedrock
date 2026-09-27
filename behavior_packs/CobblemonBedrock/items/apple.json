@@ -1,14 +1,14 @@
 {
-  "format_version": "1.21.0",
+  "format_version": "1.21.90",
   "minecraft:item": {
     "description": {
       "identifier": "minecraft:apple",
-      "category": "nature"
+      "menu_category": {
+        "category": "nature"
+      }
     },
     "components": {
-      "minecraft:icon": {
-        "texture": "apple"
-      },
+      "minecraft:icon": "apple",
       "minecraft:display_name": {
         "value": "item.apple.name"
       },
@@ -26,9 +26,7 @@
         "nutrition": 4,
         "saturation_modifier": 0.3
       },
-      "minecraft:custom_components": [
-        "cobblemon:give_leftovers_component"
-      ]
+      "cobblemon:give_leftovers_component": {}
     }
   }
 }

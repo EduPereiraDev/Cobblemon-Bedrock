@@ -29,6 +29,22 @@
         "width": 0.01,
         "height": 0.01
       },
+      "minecraft:damage_sensor": {
+        "triggers": [
+          {
+            "cause": "self_destruct",
+            "deals_damage": true
+          },
+          {
+            "cause": "void",
+            "deals_damage": true
+          },
+          {
+            "cause": "all",
+            "deals_damage": false
+          }
+        ]
+      },
       "minecraft:type_family": {
         "family": [
           "cobblemon",

@@ -1,0 +1,41 @@
+{
+  "format_version": "1.21.90",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "cobblemon:battle_platform",
+      "is_spawnable": false,
+      "is_summonable": true,
+      "properties": {
+        "cobblemon:size": { "type": "int", "range": [0, 4], "default": 0, "client_sync": true }
+      }
+    },
+    "component_groups": {
+      "cobblemon:size_0": { "minecraft:collision_box": { "width": 1.25, "height": 0.25 } },
+      "cobblemon:size_1": { "minecraft:collision_box": { "width": 1.75, "height": 0.25 } },
+      "cobblemon:size_2": { "minecraft:collision_box": { "width": 2.75, "height": 0.25 } },
+      "cobblemon:size_3": { "minecraft:collision_box": { "width": 3.25, "height": 0.25 } },
+      "cobblemon:size_4": { "minecraft:collision_box": { "width": 4.5, "height": 0.25 } },
+      "cobblemon:despawn": { "minecraft:instant_despawn": {} }
+    },
+    "events": {
+      "cobblemon:size_0": { "set_property": { "cobblemon:size": 0 }, "add": { "component_groups": ["cobblemon:size_0"] }, "remove": { "component_groups": ["cobblemon:size_1", "cobblemon:size_2", "cobblemon:size_3", "cobblemon:size_4"] } },
+      "cobblemon:size_1": { "set_property": { "cobblemon:size": 1 }, "add": { "component_groups": ["cobblemon:size_1"] }, "remove": { "component_groups": ["cobblemon:size_0", "cobblemon:size_2", "cobblemon:size_3", "cobblemon:size_4"] } },
+      "cobblemon:size_2": { "set_property": { "cobblemon:size": 2 }, "add": { "component_groups": ["cobblemon:size_2"] }, "remove": { "component_groups": ["cobblemon:size_0", "cobblemon:size_1", "cobblemon:size_3", "cobblemon:size_4"] } },
+      "cobblemon:size_3": { "set_property": { "cobblemon:size": 3 }, "add": { "component_groups": ["cobblemon:size_3"] }, "remove": { "component_groups": ["cobblemon:size_0", "cobblemon:size_1", "cobblemon:size_2", "cobblemon:size_4"] } },
+      "cobblemon:size_4": { "set_property": { "cobblemon:size": 4 }, "add": { "component_groups": ["cobblemon:size_4"] }, "remove": { "component_groups": ["cobblemon:size_0", "cobblemon:size_1", "cobblemon:size_2", "cobblemon:size_3"] } },
+      "cobblemon:instant_kill": { "add": { "component_groups": ["cobblemon:despawn"] } }
+    },
+    "components": {
+      "minecraft:type_family": { "family": ["cobblemon_platform", "inanimate"] },
+      "minecraft:collision_box": { "width": 1.25, "height": 0.25 },
+      "minecraft:is_collidable": {},
+      "minecraft:physics": { "has_gravity": false, "has_collision": false },
+      "minecraft:pushable": { "is_pushable": false, "is_pushable_by_piston": false },
+      "minecraft:damage_sensor": { "triggers": [{ "cause": "all", "deals_damage": "no" }] },
+      "minecraft:health": { "value": 1, "max": 1 },
+      "minecraft:knockback_resistance": { "value": 1 },
+      "minecraft:fire_immune": true,
+      "minecraft:breathable": { "breathes_air": true, "breathes_water": true, "suffocate_time": 0, "total_supply": 15 }
+    }
+  }
+}

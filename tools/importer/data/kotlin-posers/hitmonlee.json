@@ -1,0 +1,72 @@
+{
+	"_source": "HitmonleeModel.kt",
+	"rootBone": "hitmonlee",
+	"animations": {
+		"faint": "q.bedrock_stateful('hitmonlee', 'faint')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('hitmonlee', 'sleep')"
+			]
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.bedrock('hitmonlee', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('hitmonlee', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.bedrock('hitmonlee', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('hitmonlee', 'blink', 8, 30, 1)"
+			]
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.bedrock('hitmonlee', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('hitmonlee', 'blink', 8, 30, 1)"
+			]
+		}
+	},
+	"portraitScale": 2.2,
+	"profileScale": 0.9,
+	"portraitTranslation": [
+		-0.2,
+		0.3,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.47,
+		0
+	]
+}

@@ -1,0 +1,84 @@
+{
+	"_source": "LinooneModel.kt",
+	"rootBone": "linoone",
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('linoone', 'sleep')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('linoone', 'faint')"
+			}
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('linoone', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('linoone', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('linoone', 'faint')"
+			}
+		},
+		"walking": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('linoone', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('linoone', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('linoone', 'faint')"
+			}
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('linoone', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('linoone', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('linoone', 'faint')"
+			}
+		}
+	},
+	"portraitScale": 2.5,
+	"profileScale": 0.9,
+	"portraitTranslation": [
+		-0.5,
+		-2.1,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.38,
+		0
+	]
+}

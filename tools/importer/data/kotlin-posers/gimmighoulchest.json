@@ -1,0 +1,88 @@
+{
+	"_source": "GimmighoulChestModel.kt",
+	"rootBone": "gimmighoul_chest",
+	"animations": {
+		"cry": "q.bedrock_stateful('gimmighoul_chest', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"condition": "!q.property('cobblemon:wild')",
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('gimmighoul_chest', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('gimmighoul_chest', 'blink', 8, 30, 1)",
+				"q.bedrock_quirk('gimmighoul_chest', 'idle_quirk', 30, 120, 1)"
+			]
+		},
+		"closed": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": false,
+			"condition": "q.property('cobblemon:wild')",
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('gimmighoul_chest', 'mimic')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('gimmighoul_chest', 'blink', 8, 30, 1)"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('gimmighoul_chest', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('gimmighoul_chest', 'blink', 8, 30, 1)"
+			]
+		},
+		"battle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('gimmighoul_chest', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('gimmighoul_chest', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"cry": "q.bedrock_stateful('gimmighoul_chest', 'battle_cry')"
+			}
+		}
+	},
+	"portraitScale": 2.54,
+	"profileScale": 0.65,
+	"portraitTranslation": [
+		-0.01,
+		-1.6,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.76,
+		0
+	]
+}

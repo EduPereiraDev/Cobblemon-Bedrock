@@ -1,0 +1,141 @@
+{
+	"_source": "AvaluggModel.kt",
+	"rootBone": "avalugg",
+	"animations": {
+		"cry": "q.bedrock_stateful('avalugg', 'cry')"
+	},
+	"poses": {
+		"sleep": {
+			"poseTypes": [
+				"SLEEP"
+			],
+			"animations": [
+				"q.bedrock('avalugg', 'sleep')"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('avalugg', 'faint')"
+			}
+		},
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"isBattle": false,
+			"isTouchingWater": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('avalugg', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('avalugg', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('avalugg', 'faint')"
+			}
+		},
+		"walking": {
+			"poseTypes": [
+				"WALK",
+				"FLY"
+			],
+			"isTouchingWater": false,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('avalugg', 'ground_walk')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('avalugg', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('avalugg', 'faint')"
+			}
+		},
+		"surface_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isTouchingWater": true,
+			"animations": [
+				"q.bedrock('avalugg', 'water_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('avalugg', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "avalugg",
+					"position": [
+						0,
+						-3.5,
+						0
+					]
+				}
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('avalugg', 'faint')"
+			}
+		},
+		"surface_swim": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"isTouchingWater": true,
+			"animations": [
+				"q.bedrock('avalugg', 'water_swim')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('avalugg', 'blink', 8, 30, 1)"
+			],
+			"transformedParts": [
+				{
+					"part": "avalugg",
+					"position": [
+						0,
+						-3.5,
+						0
+					]
+				}
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('avalugg', 'faint')"
+			}
+		},
+		"battle_idle": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER"
+			],
+			"isBattle": true,
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('avalugg', 'battle_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('avalugg', 'blink', 8, 30, 1)"
+			],
+			"namedAnimations": {
+				"faint": "q.bedrock_stateful('avalugg', 'faint')"
+			}
+		}
+	},
+	"portraitScale": 1,
+	"profileScale": 0.27,
+	"portraitTranslation": [
+		-1.35,
+		1.5,
+		0
+	],
+	"profileTranslation": [
+		-0.05,
+		1.2,
+		0
+	]
+}

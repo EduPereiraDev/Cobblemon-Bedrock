@@ -1,0 +1,43 @@
+{
+	"_source": "CrabominableModel.kt",
+	"rootBone": "crabominable",
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"FLOAT",
+				"HOVER",
+				"PROFILE",
+				"PORTRAIT"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('crabominable', 'ground_idle')"
+			]
+		},
+		"walk": {
+			"poseTypes": [
+				"WALK",
+				"SWIM",
+				"FLY"
+			],
+			"animations": [
+				"q.look('head', 1, 1, 70, -45, 45, -45)",
+				"q.bedrock('crabominable', 'ground_idle')",
+				"q.bedrock('crabominable', 'ground_walk')"
+			]
+		}
+	},
+	"portraitScale": 1,
+	"profileScale": 0.3,
+	"portraitTranslation": [
+		-0.55,
+		1.65,
+		0
+	],
+	"profileTranslation": [
+		0,
+		1.2,
+		0
+	]
+}

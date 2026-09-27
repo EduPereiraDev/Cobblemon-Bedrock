@@ -1,1 +1,1089 @@
-{}
+{
+	"block_sounds": {
+		"cobblemon.berry_bush": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.berry_bush.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.berry_bush.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.berry_bush.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "hit.grass",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.big_root": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.big_root.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.energy_root.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.energy_root.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "hit.grass",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.campfire_pot": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.campfire_pot.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.campfire_pot.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.campfire_pot.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "cobblemon.block.campfire_pot.hit",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.display_case": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.display_case.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.display_case.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.display_case.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "cobblemon.block.display_case.hit",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.energy_root": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.big_root.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.energy_root.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.energy_root.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "hit.grass",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.evolution_stone_block": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.evolution_stone_block.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.evolution_stone_block.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.evolution_stone_block.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "cobblemon.block.evolution_stone_block.hit",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.gilded_chest": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.gilded_chest.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.gilded_chest.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.gilded_chest.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "cobblemon.block.gilded_chest.hit",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.hearty_grains": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.hearty_grains.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.hearty_grains.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.hearty_grains.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "cobblemon.block.hearty_grain_bale.hit",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.hearty_grain_bale": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.hearty_grain_bale.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.hearty_grain_bale.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.hearty_grain_bale.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "cobblemon.block.hearty_grain_bale.hit",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.item_block_paper_large": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.item_block.paper_large.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.item_block.paper_large.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.item_block.paper_large.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "hit.cloth",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.item_block_paper_small": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.item_block.paper_small.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.item_block.paper_small.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.item_block.paper_small.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "hit.cloth",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.medicinal_leek": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.medicinal_leek.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.medicinal_leek.plant",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.medicinal_leek.plant",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "hit.grass",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.mint": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.mint.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.mint.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.mint.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "hit.grass",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.relic_coin_pouch": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.relic_coin_pouch.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.relic_coin_pouch.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.relic_coin_pouch.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "cobblemon.block.relic_coin_sack.hit",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.relic_coin_sack": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.relic_coin_sack.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.relic_coin_sack.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.relic_coin_sack.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "cobblemon.block.relic_coin_sack.hit",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.revival_herb": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.revival_herb.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.revival_herb.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.revival_herb.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "hit.grass",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.tatami_block": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.tatami.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.tatami.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.tatami.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "cobblemon.block.tatami.hit",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.tatami_mat": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.tatami_mat.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.tatami_mat.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.tatami_mat.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "cobblemon.block.tatami.hit",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.tumblestone_block": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.tumblestone.block_break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.tumblestone.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.tumblestone.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "cobblemon.block.tumblestone.hit",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.tumblestone": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.tumblestone.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.tumblestone.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.tumblestone.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "cobblemon.block.tumblestone.hit",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.type_gem_block": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.type_gem_block.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.type_gem_block.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.type_gem_block.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "cobblemon.block.type_gem_block.hit",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.type_gem_cluster": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.type_gem_cluster.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.type_gem_block.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.type_gem_block.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "cobblemon.block.type_gem_block.hit",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		},
+		"cobblemon.vivichoke": {
+			"volume": 1,
+			"pitch": 1,
+			"events": {
+				"default": "",
+				"break": {
+					"sound": "cobblemon.block.vivichoke.break",
+					"pitch": 0.9
+				},
+				"place": {
+					"sound": "cobblemon.block.vivichoke.place",
+					"pitch": 0.9
+				},
+				"item.use.on": {
+					"sound": "cobblemon.block.vivichoke.place",
+					"pitch": 0.9
+				},
+				"hit": {
+					"sound": "hit.grass",
+					"volume": 0.35,
+					"pitch": 0.55
+				}
+			}
+		}
+	},
+	"interactive_sounds": {
+		"block_sounds": {
+			"cobblemon.berry_bush": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "step.grass",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "step.grass",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "step.grass",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "step.grass",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.big_root": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "step.grass",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "step.grass",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "fall.grass",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "fall.grass",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.campfire_pot": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "cobblemon.block.campfire_pot.step",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "cobblemon.block.campfire_pot.step",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "cobblemon.block.campfire_pot.step",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "cobblemon.block.campfire_pot.step",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.display_case": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "cobblemon.block.display_case.step",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "cobblemon.block.display_case.step",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "cobblemon.block.display_case.step",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "cobblemon.block.display_case.step",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.energy_root": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "step.grass",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "step.grass",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "fall.grass",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "fall.grass",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.evolution_stone_block": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "cobblemon.block.evolution_stone_block.step",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "cobblemon.block.evolution_stone_block.step",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "cobblemon.block.evolution_stone_block.step",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "cobblemon.block.evolution_stone_block.step",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.gilded_chest": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "cobblemon.block.gilded_chest.step",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "cobblemon.block.gilded_chest.step",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "cobblemon.block.gilded_chest.step",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "cobblemon.block.gilded_chest.step",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.hearty_grains": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "cobblemon.block.hearty_grain_bale.step",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "cobblemon.block.hearty_grain_bale.step",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "cobblemon.block.hearty_grain_bale.step",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "cobblemon.block.hearty_grain_bale.step",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.hearty_grain_bale": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "cobblemon.block.hearty_grain_bale.step",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "cobblemon.block.hearty_grain_bale.step",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "cobblemon.block.hearty_grain_bale.step",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "cobblemon.block.hearty_grain_bale.step",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.item_block_paper_large": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "step.cloth",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "step.cloth",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "fall.cloth",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "fall.cloth",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.item_block_paper_small": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "step.cloth",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "step.cloth",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "fall.cloth",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "fall.cloth",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.medicinal_leek": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "step.grass",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "step.grass",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "fall.grass",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "fall.grass",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.mint": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "step.grass",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "step.grass",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "fall.grass",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "fall.grass",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.relic_coin_pouch": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "cobblemon.block.relic_coin_sack.step",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "cobblemon.block.relic_coin_sack.step",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "cobblemon.block.relic_coin_sack.step",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "cobblemon.block.relic_coin_sack.step",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.relic_coin_sack": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "cobblemon.block.relic_coin_sack.step",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "cobblemon.block.relic_coin_sack.step",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "cobblemon.block.relic_coin_sack.step",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "cobblemon.block.relic_coin_sack.step",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.revival_herb": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "step.grass",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "step.grass",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "fall.grass",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "fall.grass",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.tatami_block": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "cobblemon.block.tatami.step",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "cobblemon.block.tatami.step",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "cobblemon.block.tatami.step",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "cobblemon.block.tatami.step",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.tatami_mat": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "cobblemon.block.tatami.step",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "cobblemon.block.tatami.step",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "cobblemon.block.tatami.step",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "cobblemon.block.tatami.step",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.tumblestone_block": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "cobblemon.block.tumblestone.step",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "cobblemon.block.tumblestone.step",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "cobblemon.block.tumblestone.step",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "cobblemon.block.tumblestone.step",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.tumblestone": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "cobblemon.block.tumblestone.step",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "cobblemon.block.tumblestone.step",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "cobblemon.block.tumblestone.step",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "cobblemon.block.tumblestone.step",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.type_gem_block": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "cobblemon.block.type_gem_block.step",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "cobblemon.block.type_gem_block.step",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "cobblemon.block.type_gem_block.step",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "cobblemon.block.type_gem_block.step",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.type_gem_cluster": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "cobblemon.block.type_gem_block.step",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "cobblemon.block.type_gem_block.step",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "cobblemon.block.type_gem_block.step",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "cobblemon.block.type_gem_block.step",
+						"volume": 0.5
+					}
+				}
+			},
+			"cobblemon.vivichoke": {
+				"volume": 0.3,
+				"pitch": 1,
+				"events": {
+					"default": "",
+					"step": {
+						"sound": "step.grass",
+						"volume": 0.5
+					},
+					"jump": {
+						"sound": "step.grass",
+						"volume": 0.4
+					},
+					"land": {
+						"sound": "fall.grass",
+						"volume": 0.5
+					},
+					"fall": {
+						"sound": "fall.grass",
+						"volume": 0.5
+					}
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,43 @@
+{
+	"_source": "KomalaModel.kt",
+	"rootBone": "komala",
+	"animations": {
+		"cry": "q.bedrock_stateful('komala', 'cry')"
+	},
+	"poses": {
+		"standing": {
+			"poseTypes": [
+				"STAND",
+				"WALK",
+				"SLEEP",
+				"HOVER",
+				"FLY",
+				"FLOAT",
+				"SWIM",
+				"SHOULDER_LEFT",
+				"SHOULDER_RIGHT",
+				"PROFILE",
+				"PORTRAIT",
+				"NONE"
+			],
+			"animations": [
+				"q.bedrock('komala', 'ground_idle')"
+			],
+			"quirks": [
+				"q.bedrock_quirk('komala', 'quirk_doze_off', 60, 120, 1)"
+			]
+		}
+	},
+	"portraitScale": 1.8,
+	"profileScale": 0.8,
+	"portraitTranslation": [
+		0,
+		-0.4,
+		0
+	],
+	"profileTranslation": [
+		0,
+		0.5,
+		0
+	]
+}
