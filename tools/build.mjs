@@ -111,8 +111,13 @@ function stampPackVersion() {
 	const files = [join(bpOut, "manifest.json"), join(rpOut, "manifest.json")];
 	const manifests = files.map((f) => readJson(f));
 	const own = new Set(manifests.map((m) => m.header.uuid));
+	const label = `v${version.join(".")}`;
 	for (const [i, m] of manifests.entries()) {
 		m.header.version = version;
+		// Versão no nome: na tela de criar mundo o Bedrock lista os packs pelo nome, e duas versões instaladas ficavam iguais.
+		const kind = i === 0 ? "Comportamento / Behavior" : "Recursos / Resources";
+		m.header.name = `${label} Cobblemon Bedrock (${kind})`;
+		m.header.description = `§6${label}§r — Port não oficial do Cobblemon para o Minecraft Bedrock. Unofficial Cobblemon port. github.com/EduPereiraDev/Cobblemon-Bedrock`;
 		for (const mod of m.modules ?? []) mod.version = version;
 		for (const dep of m.dependencies ?? []) if (dep.uuid && own.has(dep.uuid)) dep.version = version;
 		writeFileSync(files[i], JSON.stringify(m, null, "\t"));
