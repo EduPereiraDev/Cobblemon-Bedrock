@@ -16,7 +16,10 @@
  *    do mundo voltam a ser ar (queda do servidor com a tela aberta);
  *  - `entityLoad` de uma entidade com a tag fora de sessão (chunk recarregado) → removida (scripts/main.ts).
  */
-import { Block, Dimension, EasingType, Entity, Player, Vector3, system, world } from "@minecraft/server";
+import { Block, Dimension, EasingType, Entity, EntityScaleComponent, Player, Vector3, system, world } from "@minecraft/server";
+import { VARIANTS } from "../../../generated/scripts/variants";
+import { PROFILE_FRAMING } from "../../../generated/scripts/studioFraming"; // frente fix3
+import { getEntityInfo } from "../../entity/EntityData";
 
 /** Tag das entidades de exibição (sem ":" para funcionar em seletores de comando). */
 export const STUDIO_TAG = "cobblemon_ui_display";
@@ -36,20 +39,58 @@ export interface StudioSubject {
 }
 
 /**
- * Enquadramento: `fraction` = altura do modelo em fração da altura da tela; `ny` = centro do modelo acima do centro
- * da tela (fração da meia-altura); `yaw` = giro do modelo (0 = de frente para a câmera).
+ * Enquadramento (frente fix3): o do ModelWidget do Java (StarterSelectionScreen/Summary → drawProfilePokemon com o
+ * profileScale/profileTranslation de cada poser, generated/scripts/studioFraming.ts). `window` = janela vazada do form
+ * em px da UI (largura, altura e topo acima do centro da tela); `baseScale`/`offsetY` = os do ModelWidget; `yaw` = giro
+ * do modelo (0 = de frente para a câmera).
  */
 export interface StudioFraming {
-  fraction: number;
-  ny: number;
+  window: { width: number; height: number; top: number };
+  baseScale: number;
+  offsetY: number;
   yaw: number;
 }
 
-/** Resumo: janela de 66 px (centro 15,5 px acima do centro do canvas de 161). Inicial: janela de 100 px, 31,5 acima. */
+/**
+ * Resumo: janela 66 × 66 (x+6, y+32 no canvas de 161 → topo 48,5 px acima do centro), ModelWidget(baseScale 2,
+ * offsetY -10). Inicial: janela 118 × 100 (x+6, y+17 no canvas de 197 → topo 81,5 px acima), baseScale 2,7, offsetY -12.
+ */
 export const FRAMING = {
-  summary: { fraction: 0.22, ny: 0.12, yaw: -25 },
-  starter: { fraction: 0.34, ny: 0.25, yaw: -15 },
+  summary: { window: { width: 66, height: 66, top: 48.5 }, baseScale: 2, offsetY: -10, yaw: -25 },
+  starter: { window: { width: 118, height: 100, top: 81.5 }, baseScale: 2.7, offsetY: -12, yaw: -15 },
 } as const satisfies Record<string, StudioFraming>;
+
+/**
+ * Altura da tela em px da UI. O servidor não sabe a escala da interface do jogador; a câmera fica no tamanho do Java
+ * para STUDIO_UI_HEIGHT e o modelo nunca passa da janela até STUDIO_UI_HEIGHT_MAX. No 2º teste em cliente (UI ~360 px),
+ * a versão anterior (enquadrada para ~252 px, 34% da altura da TELA) deixou o Charmander 1,2× maior que a janela.
+ */
+export const STUDIO_UI_HEIGHT = 400;
+export const STUDIO_UI_HEIGHT_MAX = 480;
+/** Folga (px da UI) entre o modelo e a moldura, na maior altura de UI. */
+const WINDOW_MARGIN = 3;
+/** Inclinação do ModelWidget (rotação X de 13°): a câmera olha o modelo um pouco de cima. */
+const STUDIO_PITCH = 13;
+
+/** Medidas do modelo exibido. */
+export interface StudioMetrics {
+  /** Altura (blocos, no mundo) e largura aproximadas. */
+  height: number;
+  width?: number;
+  /** Escala da entidade no mundo (minecraft:scale × cobblemon:scale_modifier). */
+  scale?: number;
+  /** [profileScale, tx, ty] do poser (Java). */
+  profile?: readonly [number, number, number];
+}
+
+/** [profileScale, tx, ty] do poser da variante (sem dado: [1, 0, 0]). */
+export function profileFramingOf(species: string, variant = 0): readonly [number, number, number] {
+  const id = speciesId(species);
+  const combos = VARIANTS[id]?.combos;
+  const poser = (combos?.[variant] ?? combos?.[0])?.poser ?? id;
+  const name = poser.includes(":") ? poser.slice(poser.indexOf(":") + 1) : poser;
+  return PROFILE_FRAMING[name] ?? PROFILE_FRAMING[id] ?? [1, 0, 0];
+}
 
 interface Session {
   playerId: string;
@@ -58,6 +99,8 @@ interface Session {
   floor?: Vector3;
   entityId?: string;
   subjectKey?: string;
+  /** Frente fix3: o que está sendo exibido (poser do Java para o enquadramento). */
+  subject?: StudioSubject;
   framing: StudioFraming;
   addedNightVision: boolean;
   started: number;
@@ -89,12 +132,18 @@ export function findStage(origin: Vector3, maxY: number, blockAt: (loc: Vector3)
     const y = Math.min(Math.floor(origin.y) + rise, maxY - 10);
     if (y - origin.y < 16) continue;
     let clear = true;
-    for (let dy = 0; dy < 6 && clear; dy++)
-      for (const dz of [0, 3, 6, 9]) if (!isAir(blockAt({ x, y: y + dy, z: z + dz }))) { clear = false; break; }
+    // Frente fix3: a câmera fica até STUDIO_MAX_DISTANCE ao sul (e até ~9 acima, pela inclinação de 13°): Pokémon
+    // grandes no tamanho do Java pedem 20–35 blocos (Onix no inicial ~22, no resumo ~34).
+    for (let dy = 0; dy < 11 && clear; dy++)
+      for (const dz of STAGE_CHECK_DZ) if (!isAir(blockAt({ x, y: y + dy, z: z + dz }))) { clear = false; break; }
     if (clear && isAir(blockAt({ x, y: y - 1, z }))) return { x, y, z };
   }
   return undefined;
 }
+
+/** Maior distância da câmera ao modelo (blocos) e as posições conferidas ao sul do palco. */
+export const STUDIO_MAX_DISTANCE = 40;
+const STAGE_CHECK_DZ = [0, 3, 6, 9, 12, 16, 20, 24, 28, 32, 36, 40];
 
 /** Distância horizontal mínima entre estúdios abertos: um não aparece na câmera do outro nem divide o chão. */
 export const STAGE_SPACING = 24;
@@ -120,17 +169,46 @@ function otherStages(playerId: string, dimensionId: string): Vector3[] {
   return [...sessions.values()].filter(s => s.playerId !== playerId && s.dimension.id === dimensionId).map(s => s.stage);
 }
 
-/** Posição da câmera e ponto de mira para o modelo de altura `height` com o enquadramento dado. */
-export function cameraFor(stage: Vector3, height: number, framing: StudioFraming, fov = STUDIO_FOV): { location: Vector3; facing: Vector3; distance: number } {
+/**
+ * Posição da câmera e ponto de mira (frente fix3). No Java: `px da GUI por bloco do modelo = baseScale × 20 × profileScale`
+ * e os pés em `topo da janela + offsetY + baseScale × 20 × (ty + 1,5 × profileScale)`. Aqui a mesma conta em px da UI
+ * na altura de referência (STUDIO_UI_HEIGHT), corrigida pela escala da entidade no mundo, e depois limitada para o
+ * modelo (altura/largura medidas) caber na janela até STUDIO_UI_HEIGHT_MAX. `metrics` como número = só a altura.
+ */
+export function cameraFor(stage: Vector3, metrics: StudioMetrics | number, framing: StudioFraming, fov = STUDIO_FOV): { location: Vector3; facing: Vector3; distance: number } {
+  const m: StudioMetrics = typeof metrics === "number" ? { height: metrics } : metrics;
+  const [ps, tx, ty] = m.profile ?? [1, 0, 0];
+  const scale = m.scale && m.scale > 0 ? m.scale : 1;
+  const k = framing.baseScale * 20;
+  const win = framing.window;
+  // px da UI por bloco do mundo e os pés (px acima do centro da tela), na altura de referência.
+  let perBlock = (k * Math.max(0.05, ps)) / scale;
+  let feetUp = win.top - (framing.offsetY + k * (ty + 1.5 * ps));
+  const xOff = k * tx;
+  // Limites da janela na maior altura de UI (tudo escala em volta do centro da tela).
+  const grow = STUDIO_UI_HEIGHT_MAX / STUDIO_UI_HEIGHT;
+  const top = (win.top - WINDOW_MARGIN) / grow;
+  const bottom = (win.top - win.height + WINDOW_MARGIN) / grow;
+  const halfWidth = (win.width / 2 - WINDOW_MARGIN) / grow;
+  const h = Math.max(0.2, m.height);
+  const pitch = (STUDIO_PITCH * Math.PI) / 180;
+  // Visto de cima (pitch), a aresta de baixo da frente desce e a de cima de trás sobe; +6% pela perspectiva.
+  const half = (m.width && m.width > 0 ? m.width : h * 0.8) / 2;
+  const below = 1.06 * half * Math.sin(pitch);
+  const above = 1.06 * (h * Math.cos(pitch) + half * Math.sin(pitch));
+  if (feetUp - below * perBlock < bottom) feetUp = bottom + below * perBlock;
+  if (feetUp + above * perBlock > top) perBlock = Math.max(1, (top - feetUp) / above);
+  if (1.06 * half * perBlock + Math.abs(xOff) > halfWidth) perBlock = Math.max(1, (halfWidth - Math.abs(xOff)) / (1.06 * half));
+  if (feetUp - below * perBlock < bottom) feetUp = bottom + below * perBlock;
   const tan = Math.tan((fov * Math.PI) / 360);
-  const h = Math.max(0.3, height);
-  const distance = Math.min(9, Math.max(1.2, h / (2 * framing.fraction * tan)));
-  const center = { x: stage.x, y: stage.y + h / 2, z: stage.z };
-  // Modelo acima do centro da tela: a câmera mira abaixo do centro do modelo.
-  const drop = framing.ny * distance * tan;
+  // Um bloco a `distance` ocupa STUDIO_UI_HEIGHT / (2·distance·tan) px da UI.
+  const distance = Math.min(STUDIO_MAX_DISTANCE, Math.max(1.2, STUDIO_UI_HEIGHT / (2 * tan * perBlock)));
+  const unit = (2 * distance * tan) / STUDIO_UI_HEIGHT; // blocos por px da UI na distância do modelo
+  // Ponto que cai no centro da tela: os pés ficam `feetUp` px acima dele (câmera inclinada `pitch` para baixo).
+  const target = { x: stage.x - xOff * unit, y: stage.y - (feetUp * unit) / Math.cos(pitch), z: stage.z };
   return {
-    location: { x: center.x, y: center.y, z: center.z + distance },
-    facing: { x: center.x, y: center.y - drop, z: center.z },
+    location: { x: target.x, y: target.y + distance * Math.sin(pitch), z: target.z + distance * Math.cos(pitch) },
+    facing: target,
     distance,
   };
 }
@@ -186,13 +264,29 @@ function spawnSubject(session: Session, subject: StudioSubject): Entity | undefi
   try { entity.setProperty("cobblemon:initialized", true); } catch { }
   session.entityId = entity.id;
   session.subjectKey = subjectKey(subject);
+  session.subject = subject;
   return entity;
 }
 
+/** Medidas do modelo exibido: altura pela cabeça (+20%), largura pela caixa de colisão, escala e o poser do Java. */
+function metricsOf(entity: Entity | undefined, subject: StudioSubject | undefined): StudioMetrics {
+  const metrics: StudioMetrics = { height: 1 };
+  try {
+    if (entity?.isValid) {
+      metrics.height = Math.max(0.3, (entity.getHeadLocation().y - entity.location.y) * 1.2);
+      const base = (entity.getComponent("minecraft:scale") as EntityScaleComponent | undefined)?.value ?? 1;
+      const modifier = entity.getProperty("cobblemon:scale_modifier");
+      metrics.scale = base * (typeof modifier === "number" && modifier > 0 ? modifier : 1);
+      const size = getEntityInfo(entity.typeId)?.sizes[0];
+      if (size) metrics.width = size.width * size.scale * 1.3;
+    }
+  } catch { }
+  if (subject) metrics.profile = profileFramingOf(subject.species, subject.variant ?? 0);
+  return metrics;
+}
+
 function aimCamera(player: Player, session: Session, entity: Entity | undefined, ease: boolean) {
-  let height = 1;
-  try { if (entity?.isValid) height = Math.max(0.3, (entity.getHeadLocation().y - entity.location.y) * 1.2); } catch { }
-  const { location, facing } = cameraFor(session.stage, height, session.framing);
+  const { location, facing } = cameraFor(session.stage, metricsOf(entity, session.subject), session.framing);
   try {
     player.camera.setCamera("minecraft:free", {
       location,

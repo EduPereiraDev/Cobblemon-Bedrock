@@ -5,7 +5,8 @@
 //  2. todo Molang (animações, controllers, render controllers, client entities) passa no parser estrito do Bedrock
 //     (molangSyntax.ts) → "[Molang][error] unrecognized token / binary Add at end / multiple operations / stack depth";
 //  3. locators com o mesmo nome e definição diferente entre as geometrias de uma client entity → "Locator: Error: model
-//     already has a locator X that doesn't exactly match";
+//     already has a locator X that doesn't exactly match" (inclui o armor_offset.default_neck que o cliente cria nas
+//     geometrias com head + body — frente fix3, headLocator.ts);
 //  4. identificador de geometria fora de [A-Za-z0-9_.-] → "Required child identifier not found" / "geometry not found?";
 //     referência de render controller a geometry.X que a client entity não declara → "friendly name ... not found";
 //  5. "animations": [] num estado de controller → "Required child not found"; chave de osso inválida / canal que não é
@@ -13,6 +14,7 @@
 import { checkBedrockMolang } from "./molangSyntax.ts";
 import { BONE_NAME } from "./animationBake.ts";
 import { GEOMETRY_ID } from "./locators.ts";
+import { headSignature } from "./headLocator.ts"; // frente fix3
 
 export interface ClientModelsStats {
 	molang: number;
@@ -24,6 +26,8 @@ export interface ClientModelsStats {
 }
 
 const CHANNELS = new Set(["position", "rotation", "scale", "relative_to"]);
+/** Materiais de entidade sem recorte nem mistura (frente fix3). */
+const OPAQUE_ENTITY_MATERIALS = new Set(["entity", "entity_static", "entity_nocull", "entity_custom"]);
 const hasString = (v: any): boolean => typeof v === "string" || (Array.isArray(v) && v.some(hasString));
 
 /**
@@ -66,6 +70,11 @@ export function validateClientModels(docs: Map<string, any>, err: (m: string) =>
 						if (prev === undefined) locs.set(n, def);
 					}
 				}
+				// Frente fix3: o locator que o próprio cliente cria (head + body → armor_offset.default_neck no pivô do body;
+				// headLocator.ts). Declarado no .geo, ele colide com o automático em toda geometria (2º teste em cliente).
+				if (locs.has("armor_offset.default_neck")) err(`${file}: ${id} declara armor_offset.default_neck, que o cliente cria sozinho (colide: "model already has a locator")`);
+				const neck = headSignature(g);
+				if (neck !== undefined) locs.set("armor_offset.default_neck", JSON.stringify(["body (automático)", JSON.parse(neck)]));
 				geometryLocators.set(id, locs);
 			}
 		}
@@ -158,6 +167,19 @@ export function validateClientModels(docs: Map<string, any>, err: (m: string) =>
 			}
 		}
 		const declared = new Set(Object.keys(ce.geometry ?? {}).map((k) => k.toLowerCase()));
+		// Frente fix3: camada extra (2º render controller em diante, mesma geometria) com material opaco pinta a camada
+		// inteira por cima (ou briga pela profundidade com a base): precisa de material de recorte/mistura.
+		(ce.render_controllers ?? []).forEach((rc: any, index: number) => {
+			if (index === 0 || !String(ce.identifier ?? "").startsWith("cobblemon:")) return;
+			const id = typeof rc === "string" ? rc : Object.keys(rc ?? {})[0];
+			for (const entry of renderControllers.get(id)?.materials ?? []) {
+				for (const ref of Object.values<string>(entry ?? {})) {
+					const key = String(ref).replace(/^material\./i, "");
+					const mat = ce.materials?.[key];
+					if (typeof mat === "string" && OPAQUE_ENTITY_MATERIALS.has(mat)) err(`${where}: camada ${id} usa o material opaco '${mat}' (${key}) sobre a mesma geometria (z-fighting/camada cobrindo a base)`);
+				}
+			}
+		});
 		for (const rc of ce.render_controllers ?? []) {
 			const id = typeof rc === "string" ? rc : Object.keys(rc ?? {})[0];
 			const def = renderControllers.get(id);

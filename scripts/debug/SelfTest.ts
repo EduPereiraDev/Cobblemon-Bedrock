@@ -1099,7 +1099,7 @@ async function movementPhase(s: Session, coverage: Coverage) {
       try { s.player.teleport(add(s.origin, STAND), { dimension: s.dimension, facingLocation: add(s.origin, CAMERA_TARGET) }); } catch { }
       try { s.player.camera.setCamera("minecraft:free", { location: add(s.origin, CAMERA), facingLocation: add(s.origin, CAMERA_TARGET) }); } catch { }
     }
-    console.info(`[selftest] movimento: cercado ${counts.walked}/${counts.ground} andaram, piscina ${counts.swam}/${counts.water} nadaram, ar ${counts.flew}/${counts.air} voaram; montarias ${rep.extra.ridden}/${rides.length}, ${rep.extra.ejected} derrubada(s) pelo motor${rideLog.length ? ` (${rideLog.slice(0, 12).join(", ")}${rideLog.length > 12 ? ", ..." : ""})` : ""}${ejected.length ? `; o motor tirou o jogador da montaria: ${ejected.join(", ")}` : ""}${still.length ? `; sem o movimento esperado: ${still.slice(0, 20).join(", ")}${still.length > 20 ? ", ..." : ""}` : ""}`);
+    console.info(`[selftest] movimento: cercado ${counts.walked}/${counts.ground} andaram, piscina ${counts.swam}/${counts.water} nadaram, ar ${counts.flew}/${counts.air} voaram; montarias ${rep.extra.ridden}/${rides.length}, ${rep.extra.ejected} derrubada(s) pelo motor${rideLog.length ? ` (${rideLog.slice(0, 12).join(", ")}${rideLog.length > 12 ? ", ..." : ""})` : ""}${ejected.length ? `; o motor tirou o jogador da montaria: ${ejected.join(", ")}` : ""}${still.length ? `; sem o movimento esperado: ${still.slice(0, 20).join(", ")}${still.length > 20 ? ", ..." : ""}` : ""}${s.signal.stopped ? `; fase interrompida (${s.signal.why}) depois de ${done} de ${rep.total} itens: as caixas só contam os Pokémon soltos antes da parada` : ""}`);
   }
 }
 

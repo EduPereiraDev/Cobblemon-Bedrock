@@ -72,7 +72,7 @@ export interface SpawnContext {
    */
   hasSpace?: (width: number, height: number) => boolean;
   /** hasSpace em fatias (passe fatiado do spawner): cede o tick entre leituras de bloco; mesma memória de hasSpace. */
-  hasSpaceJob?: (width: number, height: number) => Generator<string, boolean, void>;
+  hasSpaceJob?: (width: number, height: number, firstMs?: number) => Generator<string, boolean, void>;
   /**
    * Relógio do mundo lido uma vez no passe (frente cliente-log: timeRange/moonPhase em centenas de condições por
    * posição eram uma chamada nativa cada). Ausente: consulta `worldClock` a cada condição.

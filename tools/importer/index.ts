@@ -11,6 +11,9 @@ import { ModelIndex } from "./models.ts";
 import { PoserFactory } from "./posers.ts";
 import type { PoserOutput } from "./posers.ts";
 import { emitBiomeTagsModule, emitSpawnsModule, emitSpeciesModule, emitVariantsModule } from "./scriptsOut.ts";
+import { emitStudioFramingModule } from "./studioFraming.ts"; // frente fix3
+import { fixArmorNeckCollisions } from "./headLocator.ts"; // frente fix3
+import { fixBlockZFighting } from "./zfight.ts"; // frente fix3
 import type { VariantsEntry } from "./scriptsOut.ts";
 import { SoundIndex } from "./sounds.ts";
 import { SpawnBuilder } from "./spawns.ts";
@@ -293,6 +296,7 @@ emitSpeciesModule(included);
 emitEntityDataModule();
 emitDadosIaModule(speciesData); // frente dados-ia: aspects no cliente, species features, IA por script
 emitVariantsModule(variantsOut, poserAnimations);
+report.counts["posers com enquadramento do Java (estúdio 3D)"] = emitStudioFramingModule(variantsOut); // frente fix3
 // Frente retratos: rasteriza os retratos em workers, em paralelo com o resto do import (esperado no fim).
 const portraitsDone = startPortraits({ variants: variantsOut, models, anims });
 const biomes = new BiomeResolver();
@@ -374,6 +378,21 @@ emitHabitatsModule(habitatPools, habitatAnchorRanges);
 emitMundoDetalhesModule({ speciesData, included: new Set(included.keys()), wearables: wearablesOut, compostBlockItems: COMPOST_BLOCK_ITEMS, fortune: contentOnlyPokemon ? {} : fortuneData(), discTextures, fetus: fetusOut });
 emitAdvancements(); // frente ui-base: generated/scripts/advancements.ts (lê os itens gerados acima)
 
+// Frente fix3: cabeças diferentes entre as formas (armor_offset.default_neck automático do cliente).
+{
+	const neck = fixArmorNeckCollisions(OUT_RP);
+	report.counts["armor_offset.default_neck: geometrias com o osso head renomeado"] = neck.geometries;
+	report.counts["armor_offset.default_neck: entidades afetadas"] = neck.entities;
+	report.counts["armor_offset.default_neck: animações com o canal de head copiado"] = neck.animations;
+}
+// Frente fix3: z-fighting nos blocos (cubos coplanares; planos de espessura zero com material alpha_test).
+{
+	const z = fixBlockZFighting();
+	report.counts["z-fighting: cubos de bloco com inflate para separar faces coplanares"] = z.separated;
+	report.counts["z-fighting: blocos com planos em alpha_test_single_sided"] = z.blocks;
+	report.counts["z-fighting: material instances trocadas"] = z.instances;
+	for (const s of z.sameSide) warn("bloco com faces coplanares sobrepostas do mesmo lado (z-fighting)", `${s.block} ${s.geometry}: ${s.pairs} par(es)`);
+}
 report.counts["geometrias"] = models.emittedCount;
 report.counts["grupos de animação"] = anims.emittedCount;
 report.counts["texturas"] = copiedTextures.size;

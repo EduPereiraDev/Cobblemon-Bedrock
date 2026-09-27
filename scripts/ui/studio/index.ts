@@ -2,10 +2,10 @@
  * Frente "telas": câmera nas telas — estúdio 3D (modelo ao vivo atrás do form) e zoom/overlay do scanner da Pokédex.
  */
 export {
-  FRAMING, STUDIO_FOV, STUDIO_TAG, cameraFor, closeStudio, findStage, hasStudio, isOrphanStudioEntity, openStudio,
+  FRAMING, STUDIO_FOV, STUDIO_TAG, STUDIO_UI_HEIGHT, STUDIO_UI_HEIGHT_MAX, cameraFor, closeStudio, findStage, hasStudio, isOrphanStudioEntity, openStudio, profileFramingOf,
   setStudioSubject, startStudio, studioAvailable, studioEntityOf, sweepStudioLeftovers,
 } from "./Studio";
-export type { StudioFraming, StudioSubject } from "./Studio";
+export type { StudioFraming, StudioMetrics, StudioSubject } from "./Studio";
 export {
   SCAN_OVERLAY_PREFIX, ZOOM_FOVS, isPersistentScanner, isScannerOn, scanOverlayMessage, setScannerInfo, startScanner,
   startScannerZoom, stopScanner, zoomStepAfterSlotChange,

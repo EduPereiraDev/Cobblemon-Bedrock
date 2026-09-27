@@ -190,7 +190,7 @@ const MATH: Record<string, (...a: number[]) => number> = {
 // ---------------------------------------------------------------------------------------------
 // Léxico
 
-type Token =
+export type Token =
   | { type: "num"; value: number }
   | { type: "str"; value: string }
   | { type: "id"; value: string }
@@ -270,6 +270,11 @@ const ROOTS: Record<string, string> = {
   c: "context", context: "context", math: "math",
 };
 
+/** Precedência dos operadores binários (maior = liga mais forte). */
+const BINARY_PRECEDENCE: Record<string, number> = {
+  "??": 1, "||": 2, "&&": 3, "==": 4, "!=": 4, "<": 5, "<=": 5, ">": 5, ">=": 5, "+": 6, "-": 6, "*": 7, "/": 7,
+};
+
 const cache = new Map<string, Node[]>();
 
 /** Converte o texto (ou lista de textos, como no JSON do Cobblemon) em instruções. Resultado em cache. */
@@ -277,10 +282,15 @@ export function parseMoLang(source: string | string[]): Node[] {
   const text = Array.isArray(source) ? source.map(s => s.trim()).filter(Boolean).map(s => (s.endsWith(";") ? s : `${s};`)).join("\n") : source;
   const cached = cache.get(text);
   if (cached) return cached;
-  const parsed = new Parser(tokenize(text), text).program();
+  const parsed = parseTokens(tokenize(text), text);
   if (cache.size > 500) cache.clear();
   cache.set(text, parsed);
   return parsed;
+}
+
+/** Análise de tokens já prontos (exportada para os testes medirem a profundidade de pilha do parser). */
+export function parseTokens(tokens: Token[], source = ""): Node[] {
+  return new Parser(tokens, source).program();
 }
 
 class Parser {
@@ -357,7 +367,7 @@ class Parser {
   }
 
   private ternary(): Node {
-    const cond = this.coalesce();
+    const cond = this.binary(0);
     if (this.eatOp("?")) {
       // Ramos aceitam atribuição (`c ? v.a = 1 : v.a = 2`).
       const then = this.assignment();
@@ -367,25 +377,24 @@ class Parser {
     return cond;
   }
 
-  private binaryLevel(ops: string[], next: () => Node): Node {
-    let left = next();
+  /**
+   * Operadores binários por precedence climbing (frente fix3): o mesmo resultado dos 7 níveis antigos (`??` < `||` <
+   * `&&` < igualdade < comparação < `+ -` < `* /`, todos associativos à esquerda), mas com 1 chamada por nível de
+   * aninhamento em vez de ~20. A pilha de script do Bedrock é minúscula (~330 chamadas simples no BDS; menos no
+   * servidor integrado do cliente Windows) e um estouro derruba o mundo sem `catch` possível: o som da montaria
+   * aquática (`math.max(1.0, 0.2 + math.pow(math.min(q.ride_velocity() / 1.5, 1.0), 2))`) estourava no cliente.
+   */
+  private binary(minPrec: number): Node {
+    let left = this.unary();
     while (true) {
       const t = this.peek();
-      if (t.type === "op" && ops.includes(t.value)) {
-        this.next();
-        left = { k: "binary", op: t.value, left, right: next() };
-      }
-      else return left;
+      const op = t.type === "op" ? t.value : "";
+      const prec = BINARY_PRECEDENCE[op];
+      if (prec === undefined || prec < minPrec) return left;
+      this.next();
+      left = { k: "binary", op, left, right: this.binary(prec + 1) };
     }
   }
-
-  private coalesce(): Node { return this.binaryLevel(["??"], () => this.or()); }
-  private or(): Node { return this.binaryLevel(["||"], () => this.and()); }
-  private and(): Node { return this.binaryLevel(["&&"], () => this.equality()); }
-  private equality(): Node { return this.binaryLevel(["==", "!="], () => this.relational()); }
-  private relational(): Node { return this.binaryLevel(["<", "<=", ">", ">="], () => this.additive()); }
-  private additive(): Node { return this.binaryLevel(["+", "-"], () => this.multiplicative()); }
-  private multiplicative(): Node { return this.binaryLevel(["*", "/"], () => this.unary()); }
 
   private unary(): Node {
     if (this.eatOp("!")) return { k: "unary", op: "!", arg: this.unary() };
@@ -544,7 +553,9 @@ class Evaluator {
       }
       case "call": {
         const obj = this.eval(node.obj);
-        const args = node.args.map(a => this.eval(a));
+        // Laço simples (sem map + closure): 2 chamadas a menos por nível na pilha curta do Bedrock.
+        const args: MoValue[] = [];
+        for (const a of node.args) args.push(this.eval(a));
         if (obj instanceof MoStruct) {
           const fn = obj.functions.get(node.name);
           if (fn) return fn(args, this.env) ?? 0;

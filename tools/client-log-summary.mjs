@@ -2,26 +2,31 @@
 // Resume um content log do cliente Bedrock (ContentLog*.txt) agrupando por categoria e mensagem.
 // O BDS não carrega o resource pack nem valida tudo; o log do cliente pega o resto.
 //
-// Uso: node tools/client-log-summary.mjs <arquivo> [--all] [--level error,warning] [--category Animation,Molang]
-//        [--examples N] [--json] [--no-ui]
-//  --all        inclui níveis verbose/inform (por padrão só error e warning)
+// Uso: node tools/client-log-summary.mjs <arquivo> [--all | --session N] [--all-levels] [--level error,warning]
+//        [--category Animation,Molang] [--examples N] [--json] [--no-ui]
+//  Sessões (frente fix3): o mesmo arquivo pode ter vários mundos/versões do pack. Cada sessão começa num bloco de
+//  "Plugin Discovered [<pack>] PackId [<uuid>_<versão>]"; por padrão só a ÚLTIMA é resumida (o cabeçalho lista todas
+//  com a versão de cada pack).
+//  --all        todas as sessões juntas
+//  --session N  só a sessão N (1 = a primeira)
+//  --all-levels inclui níveis verbose/inform (por padrão só error e warning; antes era `--all`)
 //  --no-ui      esconde a categoria [UI] (frente de JSON UI separada)
 //  --examples N quantos arquivos/objetos de exemplo mostrar por grupo (padrão 6)
 //  --json       saída em JSON (para comparar execuções)
 import { readFileSync } from "node:fs";
 
 const args = process.argv.slice(2);
-const valued = new Set(["--level", "--category", "--examples"]);
+const valued = new Set(["--level", "--category", "--examples", "--session"]);
 const file = args.find((a, i) => !a.startsWith("--") && !valued.has(args[i - 1]));
 function opt(name, fallback) {
 	const i = args.indexOf(name);
 	return i >= 0 && args[i + 1] !== undefined ? args[i + 1] : fallback;
 }
 if (!file) {
-	console.error("uso: node tools/client-log-summary.mjs <ContentLog.txt> [--all] [--level error,warning] [--category X,Y] [--examples N] [--json] [--no-ui]");
+	console.error("uso: node tools/client-log-summary.mjs <ContentLog.txt> [--all | --session N] [--all-levels] [--level error,warning] [--category X,Y] [--examples N] [--json] [--no-ui]");
 	process.exit(2);
 }
-const levels = args.includes("--all") ? null : new Set(opt("--level", "error,warning").split(","));
+const levels = args.includes("--all-levels") ? null : new Set(opt("--level", "error,warning").split(","));
 const categories = opt("--category", "") ? new Set(opt("--category", "").split(",")) : null;
 const maxExamples = Number(opt("--examples", "6"));
 const hideUi = args.includes("--no-ui");
@@ -58,17 +63,33 @@ function template(parts) {
 }
 
 const text = readFileSync(file, "utf8").replace(/\r/g, "");
-const entries = [];
+const allEntries = [];
 let cur = null;
+// Frente fix3: sessões. Um bloco de linhas "Plugin Discovered" seguidas abre uma sessão nova.
+const PLUGIN = /Plugin Discovered \[([^\]]+)\] PackId \[([0-9a-f-]{36})_([^\]]+)\]/i;
+const sessions = [];
+let lastWasPlugin = false;
+let lineNo = 0;
 for (const line of text.split("\n")) {
-	const m = /^(?:\d\d:\d\d:\d\d)?\[([A-Za-z]+)\]\[([a-z]+)\]-(.*)$/.exec(line);
+	lineNo++;
+	const m = /^(\d\d:\d\d:\d\d)?\[([A-Za-z]+)\]\[([a-z]+)\]-(.*)$/.exec(line);
 	if (m) {
-		cur = { category: m[1], level: m[2], raw: stripPackPath(m[3]), extra: [] };
-		entries.push(cur);
+		const plugin = PLUGIN.exec(m[4]);
+		if (plugin) {
+			if (!lastWasPlugin) sessions.push({ index: sessions.length + 1, line: lineNo, time: m[1] ?? "", packs: [] });
+			const packs = sessions[sessions.length - 1].packs;
+			if (!packs.some((p) => p.name === plugin[1] && p.version === plugin[3])) packs.push({ name: plugin[1], uuid: plugin[2], version: plugin[3] });
+		}
+		lastWasPlugin = !!plugin;
+		cur = { category: m[2], level: m[3], raw: stripPackPath(m[4]), extra: [], session: sessions.length };
+		allEntries.push(cur);
 	} else if (cur && line.trim() && !/^-+$/.test(line.trim())) {
 		cur.extra.push(line.trim());
 	}
 }
+const wanted = args.includes("--all") ? null : opt("--session", "") ? Number(opt("--session", "")) : sessions.length;
+const entries = wanted === null ? allEntries : allEntries.filter((e) => e.session === wanted);
+const sessionLabel = (s) => `sessão ${s.index} (linha ${s.line}${s.time ? `, ${s.time}` : ""}): ${s.packs.map((p) => `${p.name} v${p.version}`).join("; ")}`;
 
 const groups = new Map();
 const totals = new Map();
@@ -92,11 +113,15 @@ const sorted = [...groups.values()].sort((a, b) => b.count - a.count);
 if (args.includes("--json")) {
 	console.log(JSON.stringify({
 		file,
+		sessions: sessions.map((s) => ({ ...s, summarized: wanted === null || wanted === s.index })),
 		totals: Object.fromEntries(totals),
 		groups: sorted.map((g) => ({ key: g.key, count: g.count, distinct: g.subjects.size, sample: g.sample, subjects: [...g.subjects.keys()], values: [...g.values.keys()] })),
 	}, null, 2));
 } else {
 	console.log(`# ${file}`);
+	console.log(`\n## Sessões (${sessions.length})${wanted === null ? " — todas resumidas (--all)" : ` — resumida: ${wanted}`}`);
+	if (allEntries.some((e) => e.session === 0)) console.log(`  sessão 0: ${allEntries.filter((e) => e.session === 0).length} linha(s) antes do primeiro Plugin Discovered`);
+	for (const s of sessions) console.log(`${wanted === null || wanted === s.index ? "→" : " "} ${sessionLabel(s)} — ${allEntries.filter((e) => e.session === s.index).length} entradas`);
 	console.log("\n## Totais por categoria/nível");
 	for (const [k, v] of [...totals].sort((a, b) => b[1] - a[1])) console.log(`${String(v).padStart(7)}  ${k}`);
 	console.log(`\n## Grupos (${sorted.length})`);
@@ -151,5 +176,20 @@ if (!args.includes("--json")) {
 		const hit = entries.filter(match);
 		const subjects = new Set(hit.map((e) => e.raw.split(" | ").slice(0, -1).join(" | ") || e.raw));
 		console.log(`${String(hit.length).padStart(7)}  ${label} (${subjects.size} assuntos)`);
+	}
+}
+
+// Frente fix3 (docs/pendencias/cliente-teste2.md): o que o 2º teste em cliente achou. Deve ficar em 0.
+const CLIENTE_TESTE2 = [
+	["script: estouro de pilha (Watchdog StackOverflow, o mundo cai)", (e) => e.category === "Scripting" && /StackOverflow|Stack overflow/i.test(e.raw)],
+	["locator armor_offset.default_neck (head + body com pivô diferente entre formas)", (e) => e.category === "Geometry" && /armor_offset\.default_neck/.test(e.raw)],
+	["spawner: fatia lenta no tick", (e) => e.category === "Scripting" && /\[spawn\] passe lento/.test(e.raw)],
+	["render_method de bloco recusado", (e) => /render_method/.test(e.raw) && /(error|warning)/.test(e.level)],
+];
+if (!args.includes("--json")) {
+	console.log("\n## Frente fix3 (2º teste em cliente)");
+	for (const [label, match] of CLIENTE_TESTE2) {
+		const hit = entries.filter(match);
+		console.log(`${String(hit.length).padStart(7)}  ${label}`);
 	}
 }

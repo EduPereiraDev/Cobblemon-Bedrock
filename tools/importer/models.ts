@@ -5,8 +5,9 @@ import { basename, relative } from "node:path";
 import { BEDROCK_POKEMON, HAND_RP, OUT_RP, count, readJson, splitId, tryReadJson, walk, warn, writeJson } from "./util.ts";
 import { patchHeldItemBones } from "./mundoDetalhes.ts"; // frente mundo-detalhes: ossos do item segurado
 import { recordEyeLocators } from "./visualFinal.ts"; // frente visual-final: locators de olho (alpha_eyes)
-import { GEOMETRY_ID, dedupeLocators, locatorsOf, pinArmorNeckLocator } from "./locators.ts"; // frente cliente-modelos
+import { GEOMETRY_ID, dedupeLocators, locatorsOf } from "./locators.ts"; // frente cliente-modelos
 import type { LocatorRegistry } from "./locators.ts";
+import { separateCoplanarCubes } from "./zfight.ts"; // frente fix3: faces coplanares no mesmo osso (z-fighting)
 
 export interface ModelInfo {
 	/** Chave do Cobblemon, ex.: "pikachu_male.geo". */
@@ -92,10 +93,14 @@ export class ModelIndex {
 		wrapRootPart(geo);
 		patchHeldItemBones(geo, info.geometryId);
 		if (registry) {
-			if (multi && pinArmorNeckLocator(geo)) count("geometrias com armor_offset.default_neck fixo (várias formas)");
+			// Frente fix3: o armor_offset.default_neck não é mais declarado aqui (o cliente cria o dele e o declarado
+			// colidia em toda geometria); as cabeças diferentes entre formas são tratadas em headLocator.ts.
+			void multi;
 			const renamed = dedupeLocators(geo, registry, info.geometryId);
 			if (renamed.size) count("locators renomeados (colidiam com outra geometria da entidade)", renamed.size);
 		}
+		const separated = separateCoplanarCubes(geo);
+		if (separated) count("cubos com inflate para separar faces coplanares (z-fighting)", separated);
 		this.finalLocators.set(info.key, locatorsOf(geo));
 		recordEyeLocators(geo, info.geometryId);
 		writeJson(info.outPath, { format_version: json.format_version ?? "1.12.0", "minecraft:geometry": [geo] });

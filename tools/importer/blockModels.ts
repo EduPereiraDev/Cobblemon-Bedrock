@@ -14,6 +14,7 @@ import type { FaceName, JElement, ResolvedModel, V3 } from "./javaModels.ts";
 import { alphaKind, decodePng } from "./png.ts";
 import type { AlphaKind } from "./png.ts";
 import { ASSETS, OUT_RP, copyFile, count, safeName, splitId, warn, writeJson } from "./util.ts";
+import { BLOCK_GEO_BOUNDS, BLOCK_GEO_MARGIN } from "./clientRules.ts"; // frente fix3
 
 /** Texturas vanilla do Java usadas pelos modelos do Cobblemon → caminho no RP vanilla do Bedrock. */
 const VANILLA_TEXTURES: Record<string, string> = {
@@ -238,8 +239,11 @@ export class GeometryEmitter {
 				to[i] = rot.origin[i] + (to[i] - rot.origin[i]) * s;
 			}
 		}
-		// Limites da geometria de bloco do Bedrock (30×30×30 px: x/z em -15..15, y em 0..30).
-		const clampAxis = (v: number, i: number) => (i === 1 ? Math.min(30, Math.max(0, v)) : Math.min(23, Math.max(-7, v)));
+		// Limites da geometria de bloco do Bedrock (x/z em -15..15; y em -14..30, clientRules.BLOCK_GEO_BOUNDS). Frente
+		// fix3: o y ia só até 0, e as plantas feitas para a terra arada (15/16: base em y = -1 no Java — berries, mentas,
+		// vivichoke, mulch em -0,95) ficavam com o solo, a muda e o mulch achatados no mesmo plano y = 0 → z-fighting
+		// (texturas piscando) e 1 px acima da terra arada.
+		const clampAxis = (v: number, i: number) => (i === 1 ? Math.min(30, Math.max(BLOCK_GEO_BOUNDS.min[1] + BLOCK_GEO_MARGIN, v)) : Math.min(23, Math.max(-7, v)));
 		const clipped = from.some((v, i) => clampAxis(v, i) !== v) || to.some((v, i) => clampAxis(v, i) !== v);
 		if (clipped) {
 			from = from.map(clampAxis) as V3;

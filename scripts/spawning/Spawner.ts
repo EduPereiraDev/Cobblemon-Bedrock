@@ -38,7 +38,7 @@ import {
 import { baseWeight, entryAllowed, FishingInfo, nearbyRange, PositionType, SpawnContext, worldClock } from "./SpawnConditions";
 import {
   alphaTargetLevel, bucketNormalizingInfluence, entriesForBiome, hasSpaceBox, playerLevelRangeInfluence, rollLevel, selectSpawnActions,
-  selectSpawnActionsJob, warmSpawnIndex,
+  selectSpawnActionsJob, warmSpawnIndex, SLICE_BUDGET_MS,
   SelectOptions, SpawnAction, SpawnInfluence,
 } from "./SpawnSelector";
 
@@ -257,10 +257,13 @@ function zoneCenter(zone: Zone): Vector3 {
 function zoneIsFull(zone: Zone, perChunk: number): boolean {
   const cx = zone.baseX + zone.diameter / 2, cz = zone.baseZ + zone.diameter / 2;
   const range = zone.dimension.heightRange;
+  // count / 9 >= perChunk ⇔ count >= ceil(9 × perChunk): basta pedir até esse tanto (frente fix3, `closest`).
+  const needed = Math.max(1, Math.ceil(9 * perChunk - 1e-9));
   const count = zone.dimension.getEntities({
     families: ["pokemon"],
     location: { x: cx - 24, y: range.min, z: cz - 24 },
     volume: { x: 48, y: range.max - range.min, z: 48 },
+    closest: needed,
   }).length;
   return count / 9 >= perChunk;
 }
@@ -316,9 +319,11 @@ export function makeHasSpace(cache: ZoneBlockCache, x: number, blockY: number, z
  * BDS emulado a caixa de um Pokémon grande lia ~100 blocos, 40–80 ms, num tick só). Memória e resultado compartilhados
  * com a versão síncrona (mesmas leituras, na mesma ordem).
  */
-export function makeHasSpaceJob(cache: ZoneBlockCache, x: number, blockY: number, z: number, type: PositionType | string, fluid: "water" | "lava" | undefined, columnHeight: number | undefined, bounds?: ZoneBounds): (width: number, height: number, budgetMs?: number) => Generator<string, boolean, void> {
+export function makeHasSpaceJob(cache: ZoneBlockCache, x: number, blockY: number, z: number, type: PositionType | string, fluid: "water" | "lava" | undefined, columnHeight: number | undefined, bounds?: ZoneBounds): (width: number, height: number, budgetMs?: number, firstMs?: number) => Generator<string, boolean, void> {
   const memo = new Map<string, boolean>();
-  return function* (width, height, budgetMs = 3) {
+  // Frente fix3: `firstMs` = o que ainda cabe na fatia em andamento (o relógio da fatia vem de fora); depois de ceder,
+  // cada fatia tem `budgetMs` inteiro.
+  return function* (width, height, budgetMs = 3, firstMs = budgetMs) {
     const key = `${width}x${height}`;
     const known = memo.get(key);
     if (known !== undefined) return known;
@@ -330,7 +335,7 @@ export function makeHasSpaceJob(cache: ZoneBlockCache, x: number, blockY: number
       const cell = cache.get(bx, by, bz);
       return cell === undefined ? undefined : !isSafeSpace(type, fluid, cell);
     };
-    let start = budgetMs === Infinity ? 0 : Date.now();
+    let start = budgetMs === Infinity ? 0 : Date.now() - Math.max(0, budgetMs - firstMs);
     let ok = true;
     // A coluna da própria posição primeiro: já está no cache e rejeita sem ler os vizinhos.
     for (let by = box.minY; ok && by <= box.maxY; by++) {
@@ -369,7 +374,7 @@ function spaceChecks(cache: ZoneBlockCache, x: number, blockY: number, z: number
       while (!step.done) step = run.next();
       return step.value;
     },
-    hasSpaceJob: (width, height) => job(width, height),
+    hasSpaceJob: (width, height, firstMs) => job(width, height, SLICE_BUDGET_MS, firstMs),
   };
 }
 
@@ -823,9 +828,11 @@ export function setNaturalSpawning(enabled: boolean) {
 }
 
 /** Selvagens perto do jogador (salvaguarda do port). */
-function wildNear(player: Player, radius: number): number {
+function wildNear(player: Player, radius: number, limit = SPAWN_TUNING.maxWildPerPlayer): number {
+  // Frente fix3: `closest` limita quantas entidades viram objeto de script (perto do spawn do mundo eram centenas por
+  // passe no cliente); o limite só precisa saber se chegou ao teto.
   return player.dimension.getEntities({
-    families: ["pokemon"], location: player.location, maxDistance: radius,
+    families: ["pokemon"], location: player.location, maxDistance: radius, closest: Math.max(1, limit),
     propertyOptions: [{ propertyId: "cobblemon:wild", value: { equals: true } }],
   }).length;
 }

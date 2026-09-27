@@ -9,6 +9,7 @@ import { pathToFileURL } from "node:url";
 import { BEDROCK_MATH, BEDROCK_QUERIES, scanMolang } from "./molang.ts";
 import { checkParticle, checkSoundDefinitions } from "./clientRules.ts";
 import { validateClientModels } from "./validateClientModels.ts"; // frente cliente-modelos
+import { blockZFights, coplanarConflicts, geometryFaces } from "./zfight.ts"; // frente fix3
 import { HAND_BP, HAND_RP, OUT, OUT_BP, OUT_FINAL, OUT_RP, OUT_SCRIPTS, parseLenient, rel, walk } from "./util.ts";
 import { comboKey, loadResolvers, resolveCombo } from "./variants.ts";
 import { validateContent } from "./validateContent.ts";
@@ -366,6 +367,43 @@ for (const [k, n] of molangIssues) err(`Molang desconhecido: ${k}${n > 1 ? ` ×$
 
 // 8c. Frente cliente-modelos: o que o cliente recusa em modelos, animações, controllers e client entities.
 const clientModels = validateClientModels(docs, err, rel);
+
+// 8d. Frente fix3: z-fighting em blocos (faces coplanares sobrepostas). Faces opostas com material que desenha as duas
+// (alpha_test) são erro (piscam dos dois lados); faces do mesmo lado entre cubos só entram no resumo (vêm dos modelos do
+// Java — ex. escadas, baús — e piscam só de perto). Pokémon: cubos do mesmo osso ainda coplanares (zfight.ts).
+{
+	const blockGeos = new Map<string, any>();
+	const blockFiles: string[] = [];
+	for (const [f, j] of docs) {
+		if (f.includes("/models/")) for (const g of j?.["minecraft:geometry"] ?? []) if (g?.description?.identifier) blockGeos.set(g.description.identifier, g);
+		if (j?.["minecraft:block"]) blockFiles.push(f);
+	}
+	let opposite = 0, sameSide = 0, sameSideBlocks = 0;
+	for (const f of blockFiles) {
+		// O BDS avisa "All MaterialInstances must use the same render_method for a given block" (medido no BDS fix3).
+		const b = docs.get(f)?.["minecraft:block"];
+		const methods = new Set<string>();
+		for (const c of [b?.components, ...(b?.permutations ?? []).map((p: any) => p?.components)]) {
+			for (const m of Object.values<any>(c?.["minecraft:material_instances"] ?? {})) if (m && typeof m === "object") methods.add(m.render_method ?? "opaque");
+		}
+		if (methods.size > 1) err(`${rel(f)}: material instances com render_method diferentes (${[...methods].join(", ")}); o motor exige um só por bloco`);
+		for (const r of blockZFights(docs.get(f), (id) => blockGeos.get(id))) {
+			const opp = r.pairs.filter((z) => z.opposite);
+			const same = r.pairs.filter((z) => !z.opposite);
+			if (opp.length) {
+				opposite += opp.length;
+				err(`${rel(f)}: ${r.geometry} tem ${opp.length} par(es) de faces opostas no mesmo plano com material de dois lados (z-fighting; use alpha_test_single_sided): ${opp.slice(0, 2).map((z) => `${z.a.bone}#${z.a.cube}.${z.a.dir}~${z.b.bone}#${z.b.cube}.${z.b.dir}`).join(", ")}`);
+			}
+			if (same.length) { sameSide += same.length; sameSideBlocks++; }
+		}
+	}
+	let pokemonPairs = 0;
+	for (const [f, j] of docs) {
+		if (!f.includes("/models/entity/pokemon/")) continue;
+		for (const g of j?.["minecraft:geometry"] ?? []) pokemonPairs += coplanarConflicts(geometryFaces(g), { doubleSided: false, minArea: 0.05 }).filter((z) => z.a.bone === z.b.bone).length;
+	}
+	console.log(`Z-fighting: blocos com faces opostas coplanares ${opposite}; faces do mesmo lado em ${sameSideBlocks} bloco(s) (${sameSide} pares, dos modelos do Java); Pokémon: ${pokemonPairs} par(es) no mesmo osso`);
+}
 
 // 9. Itens, blocos, receitas, loot e worldgen.
 const contentSummary = await validateContent(err, warnMsg);

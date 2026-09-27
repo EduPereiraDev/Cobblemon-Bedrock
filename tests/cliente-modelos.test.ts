@@ -5,7 +5,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { checkBedrockMolang, evalMolang, javaMolangToBedrock, parseJavaMolang, MOLANG_MAX_DEPTH } from "../tools/importer/molangSyntax.ts";
 import { bedrockLinearAt, fixBones, fixCatmullrom, javaChannelAt } from "../tools/importer/animationBake.ts";
-import { GEOMETRY_ID, dedupeLocators, pinArmorNeckLocator } from "../tools/importer/locators.ts";
+import { GEOMETRY_ID, dedupeLocators } from "../tools/importer/locators.ts";
+import { headSignature, planHeadRenames, renameHeadBone } from "../tools/importer/headLocator.ts"; // frente fix3
 import { perVariant } from "../tools/importer/mundoDetalhes.ts";
 import { validateClientModels } from "../tools/importer/validateClientModels.ts";
 
@@ -142,8 +143,15 @@ const json = (file: string) => JSON.parse(readFileSync(file, "utf8"));
 	const renamed = dedupeLocators(g1, reg, "geometry.zorua_hisuian");
 	assert.deepEqual([...renamed], [["item_hat", "item_hat_zorua_hisuian"], ["tail_tip", "tail_tip_zorua_hisuian"]]);
 	assert.deepEqual(Object.keys(g1.bones[1].locators!), ["eye1", "item_hat_zorua_hisuian"]); // igual fica
-	assert.ok(pinArmorNeckLocator(g0) && pinArmorNeckLocator(g1));
-	assert.deepEqual((g0.bones[0] as any).locators, (g1.bones[0] as any).locators);
+	// Frente fix3: o armor_offset.default_neck declarado colidia com o automático do cliente em toda geometria (2º teste em
+	// cliente); agora a geometria com a cabeça diferente da primeira fica sem osso `head` (tests/cliente-teste2.test.ts).
+	assert.equal(headSignature(g0), headSignature(g1));
+	assert.equal(planHeadRenames([{ id: "z", geometries: ["g0", "g1"] }], (g) => headSignature(g === "g0" ? g0 : g1)).size, 0);
+	const g2 = { bones: [{ name: "root_part" }, { name: "body", pivot: [0, 9, 0] }, { name: "head", pivot: [0, 6, -2], cubes: [{ origin: [0, 0, 0], size: [1, 1, 1] }] }, { name: "ear", parent: "head" }] };
+	(g0.bones as any[]).push({ name: "body", pivot: [0, 10, 0] });
+	(g1.bones as any[]).push({ name: "body", pivot: [0, 10, 0] });
+	assert.deepEqual([...planHeadRenames([{ id: "z", geometries: ["g0", "g2"] }], (g) => headSignature(g === "g0" ? g0 : g2))], ["g2"]);
+	assert.ok(renameHeadBone(g2) && g2.bones[2].name === "cobblemon_head" && g2.bones[3].parent === "cobblemon_head" && headSignature(g2) === undefined);
 	assert.ok(!GEOMETRY_ID.test("geometry.flabébé") && GEOMETRY_ID.test("geometry.flabebe") && GEOMETRY_ID.test("geometry.mr_mime-galar.v2"));
 }
 

@@ -158,6 +158,23 @@ export function conditionGroupOf(entry: SpawnEntry): number {
   return id;
 }
 
+/** Orçamento de uma fatia do passe de spawn (ms) — frente fix3. */
+export const SLICE_BUDGET_MS = 3;
+
+/**
+ * Relógio de fatia compartilhado por um job inteiro (frente fix3): `due` depois de `budgetMs` desde o último `reset`
+ * (chame `reset` logo depois de cada `yield`). Com um relógio por posição/entrada, o orçamento valia para cada pedaço
+ * e não para a fatia, e a fatia somava dezenas de pedaços sem ceder.
+ */
+export class SliceClock {
+  private start = Date.now();
+  constructor(readonly budgetMs = SLICE_BUDGET_MS) { }
+  get due(): boolean { return Date.now() - this.start >= this.budgetMs; }
+  /** Milissegundos que ainda cabem na fatia (≥ 0,5: a leitura em andamento cede logo). */
+  get remaining(): number { return Math.max(0.5, this.budgetMs - (Date.now() - this.start)); }
+  reset() { this.start = Date.now(); }
+}
+
 /**
  * Aquece os índices (bioma, bioma+bucket e grupos de condição) em fatias para `system.runJob`, no carregamento:
  * o primeiro passe em cada bioma não paga a montagem (dezenas de ms no QuickJS).
@@ -437,59 +454,63 @@ class Selection {
    * Avalia de antemão as condições dos grupos de entradas do bioma da posição (a parte cara do passe), para o
    * passe fatiado entre ticks (selectSpawnActionsJob). Só com a fonte padrão de entradas.
    */
-  *warmJob(ctx: SpawnContext, budgetMs = 4): Generator<string, void, void> {
-    if (this.opts.entriesFor) return;
+  *warmJob(ctx: SpawnContext, clock = new SliceClock(4), bucket?: string): Generator<string, void, void> {
+    if (this.opts.entriesFor || this.removedPositions.has(ctx)) return;
     // Cede por tempo, não por contagem: algumas condições consultam o mundo (blocos por perto, estruturas) e custam
-    // bem mais que as outras.
-    let start = Date.now();
-    for (const entry of entriesForBiome(ctx.biome)) {
+    // bem mais que as outras. Frente fix3: o relógio é o da fatia (compartilhado entre as posições), não um por posição.
+    // Frente fix3: só as entradas do bucket sorteado (as dos outros buckets não seriam usadas no passe).
+    for (const entry of bucket === undefined ? entriesForBiome(ctx.biome) : entriesForBiomeBucket(ctx.biome, bucket)) {
       this.allowed(entry, ctx);
-      if (Date.now() - start >= budgetMs) {
+      if (clock.due) {
         yield "condições";
-        start = Date.now();
+        clock.reset();
       }
     }
     yield "condições";
+    clock.reset();
   }
 
-  /** getDataForBucket em fatias (cede por tempo entre posições/entradas e entre leituras de espaço). */
-  *bucketDataJob(bucket: string): Generator<string, void, void> {
+  /**
+   * getDataForBucket em fatias (cede por tempo entre posições/entradas e entre leituras de espaço). Frente fix3: um só
+   * relógio para o bucket inteiro. Antes cada posição começava com o relógio zerado sem ceder, e 24–90 posições de
+   * ~2 ms somavam fatias de 20–37 ms no cliente (`passe lento: … na maior fatia (bucket; …)`).
+   */
+  *bucketDataJob(bucket: string, clock = new SliceClock(3)): Generator<string, void, void> {
     if (this.bucketData.has(bucket)) return;
     const data: BucketData = new Map();
-    for (const ctx of this.positions) yield* this.addPositionDataJob(data, bucket, ctx, 3);
+    for (const ctx of this.positions) yield* this.addPositionDataJob(data, bucket, ctx, clock);
     this.bucketData.set(bucket, data);
     yield "bucket"; // o sorteio vem na fatia seguinte
+    clock.reset();
   }
 
   private addPositionData(data: BucketData, bucket: string, ctx: SpawnContext): void {
-    const job = this.addPositionDataJob(data, bucket, ctx, Infinity);
+    const job = this.addPositionDataJob(data, bucket, ctx, undefined);
     while (!job.next().done) { /* sem fatias */ }
   }
 
-  /** Candidatas de uma posição num bucket; cede quando passa de `budgetMs` (hasSpace lê blocos do mundo). */
-  private *addPositionDataJob(data: BucketData, bucket: string, ctx: SpawnContext, budgetMs: number): Generator<string, void, void> {
+  /** Candidatas de uma posição num bucket; cede quando a fatia passa do orçamento (hasSpace lê blocos do mundo). */
+  private *addPositionDataJob(data: BucketData, bucket: string, ctx: SpawnContext, clock: SliceClock | undefined): Generator<string, void, void> {
     if (this.removedPositions.has(ctx)) return;
-    // `start` só volta a zero quando esta função cede: o tempo gasto dentro de hasSpaceJob sem ceder conta na fatia.
-    let start = budgetMs === Infinity ? 0 : Date.now();
     for (const entry of this.candidates(ctx, bucket)) {
-      if (budgetMs !== Infinity && Date.now() - start >= budgetMs) {
+      if (clock?.due) {
         yield "bucket";
-        start = Date.now();
+        clock.reset();
       }
-      if (budgetMs !== Infinity && ctx.hasSpaceJob && !entry.herd && this.needsSpace(entry, ctx)) {
+      if (clock && ctx.hasSpaceJob && !entry.herd && this.needsSpace(entry, ctx)) {
         // Mesma ordem de matches: o espaço (leituras de bloco, com orçamento) só é lido quando os filtros antes dele
         // passaram; aqui em fatias, e matches acha o resultado memorizado.
         const size = entrySizeOf(entry);
-        const job = ctx.hasSpaceJob(size.width, size.height);
+        const job = ctx.hasSpaceJob(size.width, size.height, clock.remaining);
         let step = job.next();
         while (!step.done) {
           yield step.value;
-          start = Date.now();
+          clock.reset();
           step = job.next();
         }
-        if (Date.now() - start >= budgetMs) {
+        if (clock.due) {
           yield "espaço";
-          start = Date.now();
+          clock.reset();
         }
       }
       if (!this.matches(entry, ctx)) continue;
@@ -732,20 +753,27 @@ export function* selectSpawnActionsJob(positions: SpawnContext[], opts: SelectOp
   if (positions.length === 0) return [];
   const random = opts.random ?? Math.random;
   const selection = new Selection(positions, opts, random);
-  // 1. Condições dos grupos de entradas de cada posição (em pedaços; puras, sem leitura de blocos do orçamento).
-  for (const ctx of positions) yield* selection.warmJob(ctx);
-  // 2. Os mesmos sorteios de runSelection, na mesma ordem; os dados do bucket sorteado são montados em fatias antes
-  // de escolher (como getDataForBucket faria na hora, com as mesmas leituras de espaço).
+  // Os mesmos sorteios de runSelection, na mesma ordem; os dados do bucket sorteado são montados em fatias antes de
+  // escolher (como getDataForBucket faria na hora, com as mesmas leituras de espaço). Frente fix3: um relógio de fatia
+  // para o job inteiro, e as condições de cada posição (em pedaços; puras, sem leitura de blocos do orçamento) só para
+  // o bucket sorteado, na primeira vez que ele sai (antes eram as de todos os buckets do bioma, ~⅓ a mais de trabalho).
+  const clock = new SliceClock(SLICE_BUDGET_MS);
+  const warmed = new Set<string>();
   const maxSpawns = Math.max(0, opts.maxSpawns ?? 1);
   const pool = opts.poolBuckets ?? poolBuckets();
   while (selection.actions.length < maxSpawns) {
     const bucket = selection.guaranteedBucket ?? chooseBucket(opts.buckets, opts.influences, pool, random);
-    yield* selection.bucketDataJob(bucket);
+    if (!warmed.has(bucket)) {
+      warmed.add(bucket);
+      for (const ctx of positions) yield* selection.warmJob(ctx, clock, bucket);
+    }
+    yield* selection.bucketDataJob(bucket, clock);
     const action = selection.selectSpawnAction(bucket);
     if (!action) break;
     selection.actions.push(action);
     // Cada sorteio remove posições/entradas de todos os buckets já montados (herds: vários por passe).
     yield "sorteio";
+    clock.reset();
   }
   return completeActions(selection);
 }

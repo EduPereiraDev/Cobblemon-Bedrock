@@ -15,6 +15,7 @@ import { buildStarterForm, getStarterCategories } from "../scripts/GUI/StarterGU
 import { renderMoveButton } from "../scripts/GUI/Battle";
 import { generate } from "../tools/ui/gen-telas";
 import { cameraFor, findStage, FRAMING, scanOverlayMessage, zoomStepAfterSlotChange, ZOOM_FOVS } from "../scripts/ui/studio";
+import { STUDIO_MAX_DISTANCE } from "../scripts/ui/studio/Studio"; // frente fix3
 
 const ROOT = process.cwd();
 const UI = join(ROOT, "resource_packs", "CobblemonBedrock", "ui");
@@ -225,7 +226,8 @@ function expectCells(node: unknown, expected: number[], what: string) {
   const big = cameraFor({ x: 0, y: 100, z: 0 }, 3, FRAMING.summary);
   assert.ok(big.distance > small.distance, "modelo maior, câmera mais longe");
   assert.ok(small.location.z > 0 && small.facing.y < small.location.y, "câmera ao sul mirando abaixo do centro (modelo acima do centro)");
-  assert.ok(cameraFor({ x: 0, y: 100, z: 0 }, 50, FRAMING.starter).distance <= 9, "distância limitada à área conferida");
+  // Frente fix3: a área conferida ao sul do palco foi até STUDIO_MAX_DISTANCE (40) para os Pokémon grandes caberem.
+  assert.ok(cameraFor({ x: 0, y: 100, z: 0 }, 50, FRAMING.starter).distance <= STUDIO_MAX_DISTANCE, "distância limitada à área conferida");
 
   assert.equal(zoomStepAfterSlotChange(1, 3, 4), 2);
   assert.equal(zoomStepAfterSlotChange(1, 0, 8), 0, "8 → 0 com volta conta como -1");

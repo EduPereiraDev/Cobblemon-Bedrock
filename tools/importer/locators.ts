@@ -8,8 +8,10 @@
 // nomes já renomeados. Os locators de item (item/item_hat/item_face) já viraram ossos âncora antes da troca
 // (mundoDetalhes.patchHeldItemBones), então o item segurado não muda.
 //
-// `armor_offset.default_neck` não existe nos .geo: o cliente cria sozinho para geometrias com osso `head` e ele também
-// colide entre formas. Declarado igual (osso root_part, origem) em todas as geometrias da entidade, não há o que colidir.
+// `armor_offset.default_neck` não existe nos .geo: o cliente cria sozinho para geometrias com osso `head` (a partir do
+// próprio osso) e ele também colide entre formas. Declará-lo igual em todas (versão anterior) não resolve: o automático
+// entra de qualquer jeito e colidia com o declarado em toda geometria (364 linhas no 2º teste em cliente). A correção
+// está em headLocator.ts (frente fix3).
 
 /**
  * Identificador de geometria que o cliente aceita. "geometry.flabébé" (acento) reprova o arquivo inteiro ("Required child
@@ -64,15 +66,4 @@ export function dedupeLocators(geo: any, registry: LocatorRegistry, geometryId: 
 		bone.locators = next;
 	}
 	return renamed;
-}
-
-/** Declara `armor_offset.default_neck` igual em todas as geometrias (ver cabeçalho). */
-export function pinArmorNeckLocator(geo: any): boolean {
-	const bones: any[] = geo?.bones ?? [];
-	if (!bones.some((b) => String(b?.name).toLowerCase() === "head")) return false;
-	const root = bones.find((b) => b?.name === "root_part");
-	if (!root) return false;
-	for (const b of bones) if (b !== root && b?.locators?.[ARMOR_NECK_LOCATOR] !== undefined) delete b.locators[ARMOR_NECK_LOCATOR];
-	root.locators = { ...(root.locators ?? {}), [ARMOR_NECK_LOCATOR]: [0, 0, 0] };
-	return true;
 }
