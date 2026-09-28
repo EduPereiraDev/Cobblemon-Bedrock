@@ -103,7 +103,13 @@ export const POKEMON_SCALE_MOLANG = `q.property('cobblemon:scale_modifier') * (1
 
 export function gimmickPreAnimation(): string[] {
 	const grow = `(q.property('${GIMMICK_PROPERTY}') >= ${GIMMICK_DYNAMAX} ? q.delta_time : -q.delta_time) / ${DYNAMAX_GROW_SECONDS.toFixed(1)}`;
-	return [`v.cobblemon_dmax = math.clamp((v.cobblemon_dmax ?? 0) + ${grow}, 0, 1);`];
+	return [
+		`v.cobblemon_dmax = math.clamp((v.cobblemon_dmax ?? 0) + ${grow}, 0, 1);`,
+		// Frente cliente-teste3-log: a cor do gimmick vem do on_entry de GIMMICK_TINT_CONTROLLER, mas o overlay_color dos
+		// render controllers foi avaliado antes dele (31 mil "unknown variable 'variable.cobblemon_gimmick_a'" no 3º teste,
+		// spinda/tentacool/bunnelby...). O `??` mantém a cor que o controller gravou.
+		"v.cobblemon_gimmick_a = v.cobblemon_gimmick_a ?? 0; v.cobblemon_gimmick_r = v.cobblemon_gimmick_r ?? 0; v.cobblemon_gimmick_g = v.cobblemon_gimmick_g ?? 0; v.cobblemon_gimmick_b = v.cobblemon_gimmick_b ?? 0;",
+	];
 }
 
 const channel = (rgb: number, shift: number) => (((rgb >> shift) & 255) / 255).toFixed(3);
@@ -871,7 +877,15 @@ export function buildServerEntity(e: ServerEntityInput): Json {
 		const aiMove: Json = { "minecraft:movement": components["minecraft:movement"] };
 		if (flightSpeed !== undefined) aiMove["minecraft:flying_speed"] = { value: flightSpeed };
 		if (components["minecraft:underwater_movement"]) aiMove["minecraft:underwater_movement"] = components["minecraft:underwater_movement"];
-		groups["cobblemon:move_ai"] = aiMove;
+		// Frente cliente-teste3-log: minecraft:behavior.float "tira os passageiros no momento em que a cabeça do mob fica
+		// embaixo d'água" (documentação do componente). Na base, o motor derrubava o jogador ao montar/entrar na água
+		// quem não respira embaixo d'água (garchomp, drampa: selftest do 3º teste e BDS, "o motor tirou o jogador:
+		// … LIQUID (-)"). No Java PokemonEntity.dismountsUnderwater() = false. Montável: o boiar da IA sai da base e fica
+		// no grupo cobblemon:move_ai (sem montaria: nasce com ele, sai no on_mount e volta no on_dismount), fora dos grupos
+		// de montaria (que copiam aiMove).
+		const float = components["minecraft:behavior.float"];
+		if (float) delete components["minecraft:behavior.float"];
+		groups["cobblemon:move_ai"] = float ? { ...aiMove, "minecraft:behavior.float": float } : aiMove;
 		const land = styleOf("LAND");
 		if (land) {
 			groups["cobblemon:ride_land"] = {
@@ -899,12 +913,19 @@ export function buildServerEntity(e: ServerEntityInput): Json {
 		const liquid = styleOf("LIQUID");
 		if (liquid) {
 			const underwater = liquid.key.endsWith("/submarine") || liquid.key.endsWith("/dolphin");
+			// Frente cliente-teste3-log: LIQUID de superfície (boat/burst: Garchomp, Drampa, Tauros de Paldea-Aqua). No Java o
+			// BoatBehaviour mantém a montaria boiando (sobe 0,5/tick enquanto há água em eyeY + surfaceLevelOffset). Montada,
+			// ela perde o behavior.float (ver cobblemon:move_ai acima, a causa de o motor derrubar o jogador) e afundaria:
+			// minecraft:buoyant (o do barco) a deixa na superfície enquanto está no LIQUID; o grupo sai ao desmontar (a base
+			// não tem o componente, então tirar o grupo não tira nada da base).
+			const surface = !underwater && !m.canBreatheUnderwater;
 			groups["cobblemon:ride_liquid"] = {
 				...aiMove,
 				"minecraft:movement": { value: liquid.speed },
 				"minecraft:underwater_movement": { value: liquid.speed },
 				"minecraft:free_camera_controlled": { strafe_speed_modifier: 0.5, backwards_movement_modifier: 0.3 },
 				...(underwater ? { "minecraft:underwater_mount_breathing": {} } : {}),
+				...(surface ? { "minecraft:buoyant": { base_buoyancy: 1.0, apply_gravity: true, simulate_waves: false, liquid_blocks: ["minecraft:water", "minecraft:flowing_water"] } } : {}),
 			};
 		}
 	}

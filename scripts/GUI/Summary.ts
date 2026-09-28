@@ -14,6 +14,7 @@ import { hasBlocksTraveledRequirement } from "../pokemon/BlocksTraveled";
 import { getBlocksTraveled, getIntFeature } from "../pokemon/SpeciesFeatures";
 
 import { PokemonData } from "../Pokemon";
+import { getExperienceGroup } from "../Experience";
 import { getSpeciesData, toSpeciesId } from "../speciesData";
 import { renderMove } from "../language";
 import { typeColorCodes } from "../language";
@@ -21,11 +22,11 @@ import { ElementalType } from "../Pokemon";
 import { Dex, toID } from "../showdown";
 import { getSafeTeam } from "../pokemonStorage";
 import { SCREEN } from "../ui/screens";
-import { GLYPH_FEMALE, GLYPH_MALE, GLYPH_SHINY, CATEGORY_GLYPHS, typeGlyph } from "../ui/glyphs";
 import { FRAMING, closeStudio, hasStudio, openStudio, prefersStudio, setPrefersStudio, studioAvailable, studioEntityOf } from "../ui/studio";
 import { playPoserAnimation } from "../battle/Animations";
 import {
-  BLANK, CellForm, GUI, SUB, SUMMARY, SUMMARY_TABS, SummaryTab, barTexture, layoutTitle, typeKeyTexture,
+  BLANK, CATEGORY_MARKERS, CellForm, GUI, SELECTED_MARKER, SUB, SUMMARY, SUMMARY_INFO, SUMMARY_MARKS, SUMMARY_MOVES, SUMMARY_TABS, SummaryTab,
+  barTexture, expStepFor, genderIcon, layoutTitle, typeCells, typeKeyTexture,
 } from "./layout";
 import {
   K, abilityName, getLivePokemon, getPokemonIconTexture, getPokemonProfileTexture, getExpProgress, getForm, getFriendship, getMarks, getMintedNature, getPokemonTypes,
@@ -210,30 +211,64 @@ function lines(parts: RawMessage[]): RawMessage {
   return { rawtext: out };
 }
 
-/** Texto do tile de golpe do resumo: tipo + nome; categoria + PP. */
-function moveTileText(pokemon: PokemonData, index: number): RawMessage {
-  const id = pokemon.moves[index];
-  const move = Dex.moves.get(id);
+/** PP do tile (MoveSlotWidget: dourado na metade, vermelho em 0) com o prefixo da categoria (ícone no layout). */
+function movePpText(pokemon: PokemonData, index: number): string {
+  const move = Dex.moves.get(pokemon.moves[index]);
   const info = pokemon.movesInfo[index];
-  const pp = info ? `${info.pp}/${info.maxPp}` : `${move.pp}/${move.pp}`;
-  const low = info && info.maxPp > 0 && info.pp <= Math.floor(info.maxPp / 2) ? (info.pp === 0 ? "§c" : "§6") : "§f";
-  return join(`§f${typeGlyph(toID(move.type))} `, { translate: `cobblemon.move.${toID(id)}` },
-    `\n${CATEGORY_GLYPHS[move.category] ?? ""} §fPP ${low}${pp}`);
+  const pp = info ? info.pp : move.pp;
+  const max = info ? info.maxPp : move.pp;
+  const color = max > 0 && pp <= Math.floor(max / 2) ? (pp === 0 ? "§c" : "§6") : "§f";
+  return `${CATEGORY_MARKERS[move.category] ?? CATEGORY_MARKERS.Status}${color}§l${pp}/${max}`;
 }
 
-/** Corpo da aba Golpes: descrição, poder, precisão e categoria do golpe escolhido. */
-function moveDetails(pokemon: PokemonData, index: number): RawMessage {
+/** Número da Pokédex com 4 dígitos (InfoWidget: zeros à esquerda). Nunca só dígitos no texto: vai com §l. */
+function dexNumberText(pokemon: PokemonData): string {
+  const n = getSpeciesData(pokemon.species)?.nationalPokedexNumber;
+  return `§l${n ? String(n).padStart(4, "0") : "????"}`;
+}
+
+/** Nome do tamanho (InfoWidget: icon_size_<xs|s|m|l|xl|alpha>). */
+function sizeIcon(pokemon: PokemonData): string | undefined {
+  if ((pokemon.aspects ?? []).includes("alpha")) return `${GUI}/summary/icon_size_alpha`;
+  const size = safe(() => pokemon.getSizeCategory(), undefined);
+  return size ? `${GUI}/summary/icon_size_${String(size).toLowerCase()}` : undefined;
+}
+
+/** Linhas do port sem lugar no Java (caixa de baixo à esquerda da aba Info). */
+function infoExtraLines(pokemon: PokemonData): RawMessage[] {
+  const out: RawMessage[] = [];
+  const form = getForm(pokemon);
+  if (form) out.push(label("cobblemon.ui.pokedex.info.form", form.name));
+  if (pokemon.cosmeticItem) out.push(label("cobblemon.cosmetic_item", itemName(pokemon.cosmeticItem)));
+  if (safe(() => hasBlocksTraveledRequirement(pokemon), false)) out.push(label("cobblemon.ui.stats.blocks_traveled", safe(() => getBlocksTraveled(pokemon), 0).toString()));
+  const coins = safe(() => getIntFeature(pokemon, "gimmighoul_coins"), undefined);
+  if (coins !== undefined) out.push(label("cobblemon.ui.stash.gold", coins.toString()));
+  const scrap = safe(() => getIntFeature(pokemon, "gimmighoul_netherite"), undefined);
+  if (scrap !== undefined) out.push(label("cobblemon.ui.stash.netherite", scrap.toString()));
+  // Frente msd-fase3: tipo Tera, Gigantamax e nível de Dynamax.
+  out.push(...extraSummaryInfo(pokemon));
+  return out;
+}
+
+/** Corpo da aba Golpes: a descrição do golpe escolhido (poder/precisão/efeito vão nas células). */
+function moveDescription(pokemon: PokemonData, index: number): RawMessage {
   const id = pokemon.moves[index];
   if (!id) return { text: "" };
-  const move = Dex.moves.get(id);
+  return join("§f", { translate: `cobblemon.move.${toID(id)}.desc` });
+}
+
+/** Poder, precisão e chance de efeito (MovesWidget: "—" quando não se aplica). */
+function moveNumbers(pokemon: PokemonData, index: number): [string, string, string] {
+  const move = Dex.moves.get(pokemon.moves[index]);
   const power = move.basePower > 0 ? String(move.basePower) : "—";
   const accuracy = move.accuracy === true ? "—" : `${move.accuracy}%`;
-  return join("§7", { translate: "cobblemon.ui.power" }, `: §f${power}  §7`, { translate: "cobblemon.ui.accuracy" }, `: §f${accuracy}  §7`,
-    { translate: `cobblemon.move.category.${MOVE_CATEGORY[move.category] ?? "status"}` }, "\n§f", { translate: `cobblemon.move.${toID(id)}.desc` });
+  const chance = move.secondary?.chance ?? move.secondaries?.find(x => x.chance)?.chance;
+  return [`§l${power}`, `§l${accuracy}`, `§l${chance ? `${chance}%` : "—"}`];
 }
 
 /**
  * Monta o form da aba (função pura sobre os dados: testável). Os índices seguem `SUMMARY` de `layoutSpec.ts`.
+ * Frente ui-layout: cada campo do Summary.kt na sua célula (nada de texto corrido no corpo).
  */
 export function buildSummaryForm(pokemon: PokemonData, view: SummaryView): CellForm<SummaryAction> {
   const subs = view.studio ? [tabMarker(view.tab), SUB.STUDIO] : [tabMarker(view.tab)];
@@ -244,28 +279,58 @@ export function buildSummaryForm(pokemon: PokemonData, view: SummaryView): CellF
   // Markings (MarkingsWidget): o texto "m<estado>" escolhe o quadro da textura no JSON UI.
   const markings = view.markings ?? getMarkings(pokemon);
   markings.forEach((state, i) => form.cell(SUMMARY.MARKINGS + i, `m${state}`, `${GUI}/summary/icon_marking_${i}`, { kind: "marking", index: i }));
-  const gender = pokemon.gender === "m" ? ` §9${GLYPH_MALE}` : pokemon.gender === "f" ? ` §d${GLYPH_FEMALE}` : "";
-  form.cell(SUMMARY.NAME, join("§f", pokemon.getTranslatedName(), `§r${gender}${pokemon.shiny ? ` §e${GLYPH_SHINY}` : ""}`));
+  // Cabeçalho: nome (+ gênero em ícone), "Nv. N" com a bola, status, brilhante.
+  form.cell(SUMMARY.NAME, join("§f§l", pokemon.getTranslatedName()), genderIcon(pokemon.gender));
   const ball = (pokemon.pokeball ?? "cobblemon:poke_ball").replace(/^[a-z0-9_]+:/, "");
-  form.cell(SUMMARY.LEVEL, tr("cobblemon.label.lv", pokemon.level), `${GUI}/ball/${ball}`);
+  form.cell(SUMMARY.LEVEL, join("§l", tr("cobblemon.label.lv", pokemon.level)), `${GUI}/ball/${ball}`);
+  const status = pokemon.currentHealth <= 0 ? "fnt" : pokemon.status;
+  if (status) form.cell(SUMMARY.STATUS, join("§l", { translate: `cobblemon.ui.status.${status}` }), `${GUI}/battle/battle_status_${status}`);
+  if (pokemon.shiny) form.cell(SUMMARY.SHINY, BLANK, `${GUI}/summary/icon_shiny`);
   form.cell(SUMMARY.ITEM, itemName(pokemon.minecraftItem));
-  const types = getPokemonTypes(pokemon);
-  const typeParts: (string | RawMessage)[] = [];
-  types.forEach((type, i) => typeParts.push(i > 0 ? " " : "", `§f${typeGlyph(type)}`, typeColorCodes[type as ElementalType] ?? "", typeName(type)));
-  const status = statusLabel(pokemon);
-  form.cell(SUMMARY.TYPES, join(...typeParts, "\n", hpText(pokemon), status ? join(" §c", status) : undefined));
+  typeCells(form, getPokemonTypes(pokemon), SUMMARY.TYPES, SUMMARY.TYPE2);
   if (view.studioToggle) form.cell(SUMMARY.STUDIO, view.studio ? "2D" : "3D", undefined, { kind: "studio" });
-  view.party?.slice(0, 6).forEach((member, i) => {
+  // Time (PartyWidget): fora do time (PC), o Java abre o resumo com a lista só deste Pokémon.
+  const party = view.party ?? [pokemon];
+  party.slice(0, 6).forEach((member, i) => {
     if (!member) return;
     const current = member.uuid === pokemon.uuid;
-    form.cell(SUMMARY.PARTY + i, `${current ? "§e" : "§f"}${member.level}`, getPokemonIconTexture(member), { kind: "party", slot: i });
+    form.cell(SUMMARY.PARTY + i, join(current ? SELECTED_MARKER : "", "§f", tr("cobblemon.ui.lv.number", member.level)), getPokemonIconTexture(member), { kind: "party", slot: i });
+    form.cell(SUMMARY.PARTY_NAMES + i, join("§f", member.getTranslatedName()), genderIcon(member.gender));
+    form.cell(SUMMARY.PARTY_BARS + i, BLANK, barTexture(member.currentHealth, member.maxHealth));
   });
 
-  const sections = buildSummarySections(pokemon);
   switch (view.tab) {
-    case "info":
-      form.body(lines(sections[0].lines));
+    case "info": {
+      // InfoWidget: Nº Dex, Espécie, Tipo, TO, Natureza, Habilidade (rótulos fixos no layout; aqui só os valores).
+      const species = getSpeciesData(pokemon.species);
+      const minted = getMintedNature(pokemon);
+      const hidden = safe(() => pokemon.hasHiddenAbility(), false);
+      const types = getPokemonTypes(pokemon);
+      const typeParts: (string | RawMessage)[] = [];
+      types.forEach((type, i) => typeParts.push(i > 0 ? "/" : "", typeName(type)));
+      const values: (string | RawMessage)[] = [
+        dexNumberText(pokemon),
+        join("§l", { translate: `cobblemon.species.${species ? toSpeciesId(pokemon.species) : "unknown"}.name` }),
+        join("§l", ...typeParts),
+        `§l${pokemon.ogTrainer ?? ""}`,
+        minted ? join("§l", natureName(minted), "§r§7*") : join("§l", natureName(pokemon.nature || "hardy")),
+        pokemon.ability ? join("§l", abilityName(pokemon.ability), hidden ? " §d(H)" : "") : "§l-",
+      ];
+      values.forEach((value, i) => form.cell(SUMMARY_INFO.ROWS + i, value));
+      const size = sizeIcon(pokemon);
+      if (size) form.cell(SUMMARY_INFO.SIZE, BLANK, size);
+      const exp = getExpProgress(pokemon);
+      form.cell(SUMMARY_INFO.EXP, `§l${exp.experience}`);
+      form.cell(SUMMARY_INFO.TO_NEXT, `§l${exp.toNextLevel}`);
+      const into = safe(() => pokemon.level <= 1 ? pokemon.experience : pokemon.experience - getExperienceGroup(pokemon.getExperienceGroup()).getExperience(pokemon.level), 0);
+      const span = into + exp.toNextLevel;
+      form.cell(SUMMARY_INFO.EXP_BAR, expStepFor(span > 0 ? into / span : 0));
+      const extra = infoExtraLines(pokemon);
+      if (extra.length) form.cell(SUMMARY_INFO.EXTRA, lines(extra));
+      // Descrição da habilidade (x 8, y 94,5).
+      form.body(pokemon.ability ? join("§f", { translate: `cobblemon.ability.${toID(pokemon.ability.replace(/^cobblemon:/, ""))}.desc` }) : "");
       break;
+    }
     case "stats": {
       if (view.statsPage) {
         const style = view.statsPage;
@@ -288,30 +353,45 @@ export function buildSummaryForm(pokemon: PokemonData, view: SummaryView): CellF
         form.cell(SUMMARY.STAT_ROWS + i, join("§f", { translate: STAT_LANG[stat] }, `: §l${stats[stat]}§r  §7IV §b${iv}${trained}  §7EV §a${pokemon.evs[stat] ?? 0}`));
         form.cell(SUMMARY.STAT_BARS + i, BLANK, barTexture(stats[stat] ?? 0, top));
       });
-      // Abaixo das barras: total de EVs, amizade e saciedade (summary_stats_other_*).
+      // Abaixo das barras (StatWidget "outros"): PV atual, total de EVs, amizade e saciedade.
+      const statLines = buildSummarySections(pokemon)[1].lines;
       form.body(lines([
-        sections[1].lines[sections[1].lines.length - 1],
+        label("cobblemon.ui.stats.hp", status ? join(hpText(pokemon), "  §c", statusLabel(pokemon) ?? "") : hpText(pokemon)),
+        statLines[statLines.length - 1],
         label("cobblemon.ui.stats.friendship", getFriendship(pokemon).toString()),
         label("cobblemon.ui.stats.fullness", `${safe(() => getFullness(pokemon), 0)}/${safe(() => getMaxFullness(pokemon), 0)}`),
         ...(rideStylesOf(pokemon).length ? [tr("cobblemon.port.summary.ride_next")] : []),
       ]));
       break;
     }
-    case "moves":
-      pokemon.moves.slice(0, 4).forEach((move, i) => form.cell(SUMMARY.MOVES + i, moveTileText(pokemon, i),
-        typeKeyTexture(toID(Dex.moves.get(move).type)), { kind: "move", index: i }));
-      form.body(pokemon.moves.length ? moveDetails(pokemon, Math.min(view.selected ?? 0, pokemon.moves.length - 1)) : tr(K.movesEmptySlot));
+    case "moves": {
+      const chosen = pokemon.moves.length ? Math.min(view.selected ?? 0, pokemon.moves.length - 1) : -1;
+      pokemon.moves.slice(0, 4).forEach((move, i) => {
+        form.cell(SUMMARY_MOVES.TILES + i, join(i === chosen ? SELECTED_MARKER : "", "§f", { translate: `cobblemon.move.${toID(move)}` }),
+          typeKeyTexture(toID(Dex.moves.get(move).type)), { kind: "move", index: i });
+        form.cell(SUMMARY_MOVES.PP + i, movePpText(pokemon, i));
+      });
+      if (chosen >= 0) {
+        const [power, accuracy, effect] = moveNumbers(pokemon, chosen);
+        form.cell(SUMMARY_MOVES.POWER, power).cell(SUMMARY_MOVES.ACCURACY, accuracy).cell(SUMMARY_MOVES.EFFECT, effect);
+      }
+      form.body(chosen >= 0 ? moveDescription(pokemon, chosen) : tr(K.movesEmptySlot));
       break;
+    }
     case "marks": {
       const marks = getMarks(pokemon).slice(0, SUMMARY.MARK_SLOTS);
+      const selected = view.selected ?? marks.findIndex(m => m === pokemon.activeMark);
       marks.forEach((mark, i) => {
         const id = mark.replace(/^[a-z0-9_]+:/, "");
-        form.cell(SUMMARY.MARKS + i, { translate: `cobblemon.mark.${id}` }, `${GUI}/mark/${id}`, { kind: "mark", index: i });
+        form.cell(SUMMARY_MARKS.SLOTS + i, join(i === selected ? SELECTED_MARKER : "", { translate: `cobblemon.mark.${id}` }), `${GUI}/mark/${id}`, { kind: "mark", index: i });
       });
-      const chosen = marks[view.selected ?? marks.findIndex(m => m === pokemon.activeMark)] ?? marks[0];
-      if (!chosen) form.body(tr(K.noMarks));
+      const chosen = marks[selected];
+      // MarksWidget: título = nome do Pokémon (ou o título da marca); descrição da marca escolhida.
+      form.cell(SUMMARY_MARKS.TITLE, join("§f", pokemon.getTranslatedName()));
+      if (!chosen) form.body(marks.length ? "" : tr(K.noMarks));
       else {
         const id = chosen.replace(/^[a-z0-9_]+:/, "");
+        form.cell(SUMMARY_MARKS.SELECTED, BLANK, `${GUI}/mark/${id}`);
         form.body(join(chosen === pokemon.activeMark ? "§e★ " : "§f", { translate: `cobblemon.mark.${id}` }, "\n§7", { translate: `cobblemon.mark.${id}.desc` }));
       }
       break;
@@ -344,7 +424,9 @@ export async function showSummary(player: Player, pokemon: PokemonData, options:
       let studio = false;
       if (wantStudio && toggle) studio = openStudio(player, current, FRAMING.summary);
       else if (hasStudio(player)) closeStudio(player);
-      const form = buildSummaryForm(current, { tab, studio, studioToggle: toggle, party: inParty ? team : undefined, selected, statsPage, markings });
+      // Fora do time (PC): a lista do painel é só este Pokémon (Summary.open(listOf(pokemon)) do Java).
+      const shownParty = inParty ? team : [current];
+      const form = buildSummaryForm(current, { tab, studio, studioToggle: toggle, party: shownParty, selected, statsPage, markings });
       const result = await form.show(player);
       if (!result?.action) {
         if (!result) { saveMarkings(); return; }
@@ -367,7 +449,7 @@ export async function showSummary(player: Player, pokemon: PokemonData, options:
           setPrefersStudio(player, wantStudio);
           break;
         case "party": {
-          const member = team[action.slot];
+          const member = (inParty ? team : [current])[action.slot];
           if (member) {
             saveMarkings();
             current = getLivePokemon(member); selected = undefined; statsPage = undefined;

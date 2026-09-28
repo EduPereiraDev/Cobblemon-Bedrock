@@ -173,6 +173,10 @@ export const structureRegistry = new StructureRegistry(worldStore);
 /** Consulta preguiçosa para ids sem marcador (vilas): Villages.ts instala. */
 type LazyCheck = (dimension: Dimension, location: Vector3) => void;
 const lazyChecks = new Map<string, LazyCheck>();
+/** Frente cliente-teste3-log: tempo máximo (ms) de consultas preguiçosas por tick (ver getStructuresAt). */
+export const LAZY_CHECK_BUDGET_MS = 4;
+let lazyTick = -1;
+let lazySpentMs = 0;
 export function setLazyStructureCheck(id: string, check: LazyCheck | undefined) {
   if (check) lazyChecks.set(id, check);
   else lazyChecks.delete(id);
@@ -182,11 +186,19 @@ export function setLazyStructureCheck(id: string, check: LazyCheck | undefined) 
  * Ids das estruturas que referenciam o chunk do ponto (como `allReferences` do Java). `only`: roda só as consultas
  * preguiçosas desses ids (as de estruturas vanilla da frente limites-b custam um containsBlock cada).
  */
-export function getStructuresAt(dimension: Dimension, location: Vector3, only?: readonly string[]): string[] {
+export function getStructuresAt(dimension: Dimension, location: Vector3, only?: readonly string[], now: () => number = Date.now, tick: number = system.currentTick): string[] {
+  if (tick !== lazyTick) { lazyTick = tick; lazySpentMs = 0; }
   for (const [id, check] of lazyChecks) {
     if (only && !only.includes(id)) continue;
+    // Frente cliente-teste3-log: orçamento por tick. Uma consulta preguiçosa é um containsBlock num volume grande (vila:
+    // 97×65×97 blocos); várias num tick só, vindas das condições `structures` do spawner, fecharam uma fatia de 57 ms
+    // no cliente ("passe lento … (espaço …)" no 3º teste). Passado o orçamento, as outras ficam para um tick seguinte
+    // (nada é gravado como negativo: a consulta simplesmente não rodou) e vale só o registro.
+    if (lazySpentMs >= LAZY_CHECK_BUDGET_MS) break;
+    const t0 = now();
     try { check(dimension, location); }
     catch { /* chunk descarregado etc. */ }
+    lazySpentMs += now() - t0;
   }
   return structureRegistry.structuresInChunk(dimension.id, chunkOf(location.x), chunkOf(location.z));
 }

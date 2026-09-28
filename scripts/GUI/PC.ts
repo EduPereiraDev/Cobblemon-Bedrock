@@ -23,12 +23,11 @@ import {
   movePokemon, renameBox, sortBox, spacesPerBox, withdrawFromPC, MAX_BOX_NAME_LENGTH,
 } from "../pokemonStorage";
 import { SCREEN, withScreen } from "../ui/screens";
-import { K, abilityName, getLivePokemon, getPokemonIconTexture, getPokemonProfileTexture, getPokemonSpriteTexture, getPokemonTypes, isInBattle, join, natureName, recallIfOut, tr } from "./common";
-import { PC, PC_DIM_MARKER, safeShow } from "./layout";
+import { K, abilityName, getLivePokemon, getPokemonIconTexture, getPokemonProfileTexture, getPokemonSpriteTexture, getPokemonTypes, isInBattle, itemName, join, natureName, recallIfOut, tr } from "./common";
+import { BLANK, GUI, PC, PC_DIM_MARKER, TYPE_DOUBLE, TYPE_SINGLE, genderIcon, safeShow, typeKeyTexture } from "./layout";
+import { toID } from "../showdown";
 import { SORT_MODES, SortMode, parseSearch, searchPasses, sortPokemon } from "../pokemon/SortMode";
-import { markingsText } from "../pokemon/Markings";
 import { getSelectedSlot } from "../ui/PartySelection";
-import { typeGlyph } from "../ui/glyphs";
 import { confirmRelease, partyButtonText, storageError } from "./Party";
 import { showSummary } from "./Summary";
 import { pasturedIds } from "../machines/pasture";
@@ -153,12 +152,31 @@ async function showBoxScreen(player: Player, boxID: number, selecting?: RawMessa
       else form.button({ translate: K.empty });
     }
     const preview = previewPokemon(player, team);
+    const page = previewPages.get(player.id) ?? 0;
     if (preview) {
       form.button(" ", getPokemonProfileTexture(preview));
-      form.button(previewText(preview));
+      form.button(page === 0 ? "" : previewStatsText(preview, page));
+      // Frente ui-layout: campos do painel da esquerda (PC.PREVIEW_LEVEL..PREVIEW_PAGE), na ordem dos índices.
+      const types = getPokemonTypes(preview);
+      const ball = (preview.pokeball ?? "cobblemon:poke_ball").replace(/^[a-z0-9_]+:/, "");
+      form.button(join("§l", tr("cobblemon.label.lv", preview.level)), `${GUI}/ball/${ball}`);
+      const gender = genderIcon(preview.gender);
+      if (gender) form.button(join("§f§l", preview.getTranslatedName()), gender);
+      else form.button(join("§f§l", preview.getTranslatedName()));
+      if (types.length) form.button(types.length > 1 ? TYPE_DOUBLE : TYPE_SINGLE, typeKeyTexture(types[0]));
+      else form.button("");
+      if (types.length > 1) form.button(BLANK, typeKeyTexture(types[1]));
+      else form.button("");
+      form.button(itemName(preview.minecraftItem));
+      if (preview.shiny) form.button(BLANK, `${GUI}/summary/icon_shiny`);
+      else form.button("");
+      const info = page === 0 ? previewInfo(preview) : undefined;
+      form.button(info?.nature ?? "").button(info?.ability ?? "").button(info?.moves ?? "");
+      form.button(BLANK);
     }
     const response = await safeShow(player, form);
     if (response?.selection === undefined) return undefined;
+    if (response.selection === PC.PREVIEW_PAGE) { previewPages.set(player.id, ((previewPages.get(player.id) ?? 0) + 1) % 3); continue; }
     if (response.selection >= PC.PARTY && response.selection < PC.PARTY + 6)
       return { kind: "slot", location: { location: PCPlace.Team, space: response.selection - PC.PARTY } };
     if (response.selection === 0) { pcSound(player, "click"); box = wrapBox(box, -1, boxes); continue; }
@@ -181,18 +199,31 @@ function previewPokemon(player: Player, team: (PokemonData | null)[]): PokemonDa
   return team[slot] ?? team.find((x): x is PokemonData => !!x) ?? undefined;
 }
 
-/** Texto da prévia: nome, nível e tipos (PCGUI: painel da esquerda). */
-function previewText(pokemon: PokemonData): RawMessage {
-  const name = renderPokemonName(pokemon);
-  const types = getPokemonTypes(pokemon).map(type => typeGlyph(type)).join(" ");
-  // PCGUI (1.7+): natureza (com Mint), habilidade e as linhas de IVs/EVs do Pokémon da prévia.
+/** Página da caixa de informação da prévia por jogador (0 = info, 1 = IVs, 2 = EVs; PCGUI.currentStatIndex). */
+const previewPages = new Map<string, number>();
+
+/** Página 0 da caixa (PCGUI STAT_INFO): natureza (com Mint), habilidade e os golpes. */
+function previewInfo(pokemon: PokemonData): { nature: RawMessage; ability: RawMessage; moves: RawMessage } {
+  const moves: (string | RawMessage)[] = [];
+  pokemon.moves.slice(0, 4).forEach((move, i) => moves.push(i > 0 ? "\n" : "", { translate: `cobblemon.move.${toID(move)}` }));
+  return {
+    nature: join("§f§l", natureName(pokemon.mintedNature || pokemon.nature || "hardy")),
+    ability: join("§f§l", pokemon.ability ? abilityName(pokemon.ability) : "-"),
+    moves: join("§f", ...(moves.length ? moves : ["-"])),
+  };
+}
+
+/** Páginas 1 e 2 (PCGUI STAT_IV/STAT_EV): um atributo por linha. */
+function previewStatsText(pokemon: PokemonData, page: number): RawMessage {
   const stats = ["hp", "atk", "def", "spa", "spd", "spe"] as const;
-  let ivs = "";
-  try { ivs = stats.map(stat => pokemon.getEffectiveIv(stat)).join("/"); } catch { ivs = stats.map(stat => pokemon.ivs[stat] ?? 0).join("/"); }
-  const evs = stats.map(stat => pokemon.evs[stat] ?? 0).join("/");
-  return join(typeof name === "string" ? { text: name } : name, "§r\n", tr("cobblemon.label.lv", pokemon.level), `\n§f${types}\n${markingsText(pokemon)}`,
-    "\n§7", natureName(pokemon.mintedNature || pokemon.nature || "hardy"), "§r\n§7", pokemon.ability ? abilityName(pokemon.ability) : "-",
-    "§r\n§b", { translate: "cobblemon.ui.stats.ivs" }, ` §f${ivs}\n§a`, { translate: "cobblemon.ui.stats.evs" }, ` §f${evs}`);
+  const lang: Record<string, string> = { hp: "hp", atk: "atk", def: "def", spa: "sp_atk", spd: "sp_def", spe: "speed" };
+  const value = (stat: typeof stats[number]) => {
+    if (page === 2) return pokemon.evs[stat] ?? 0;
+    try { return pokemon.getEffectiveIv(stat); } catch { return pokemon.ivs[stat] ?? 0; }
+  };
+  const parts: (string | RawMessage)[] = [page === 1 ? "§b§l" : "§a§l", { translate: page === 1 ? "cobblemon.ui.stats.ivs" : "cobblemon.ui.stats.evs" }, "§r"];
+  stats.forEach(stat => parts.push("\n§7", { translate: `cobblemon.ui.stats.${lang[stat]}` }, `: §f§l${value(stat)}`));
+  return join(...parts);
 }
 
 /** Menu da caixa: time, ir para caixa, renomear, buscar. undefined = voltar para a caixa. */

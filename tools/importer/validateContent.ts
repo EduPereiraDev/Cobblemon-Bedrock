@@ -157,6 +157,9 @@ export async function validateContent(err: (m: string) => void, warnMsg: (m: str
 		const c = j.components ?? {};
 		const icon = typeof c["minecraft:icon"] === "string" ? c["minecraft:icon"] : c["minecraft:icon"]?.textures?.default ?? c["minecraft:icon"]?.texture;
 		if (icon && !icons.has(icon) && id.startsWith("cobblemon:")) (f.startsWith(OUT_BP) ? err : warnMsg)(`${id}: ícone ${icon} fora do item_texture`);
+		// Frente cliente-teste3-log: item data-driven sem minecraft:icon → "[Item][error] Missing icon for data-driven
+		// item" no cliente a cada vez que aparece (1.651× o pokemon_model no 3º teste). Todo item precisa de ícone.
+		if (!icon && id.startsWith("cobblemon:")) err(`${id}: item sem minecraft:icon (o cliente acusa "Missing icon for data-driven item"): ${rel(f)}`);
 		const placer = c["minecraft:block_placer"];
 		if (placer?.block && !blocks.has(placer.block) && !VANILLA_BLOCKS.has(placer.block)) err(`${id}: block_placer para bloco inexistente ${placer.block}`);
 		if (placer?.replace_block_item && placer.block !== id) err(`${id}: replace_block_item exige o mesmo id do bloco (${placer.block})`);

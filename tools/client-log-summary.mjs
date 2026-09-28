@@ -193,3 +193,27 @@ if (!args.includes("--json")) {
 		console.log(`${String(hit.length).padStart(7)}  ${label}`);
 	}
 }
+
+// Frente cliente-teste3-log (docs/pendencias/cliente-teste3-log.md): o que o 3º teste em cliente achou. Cada linha tem
+// regra no `npm run validate` (tools/importer/validateVariables.ts e validateContent.ts) ou correção no script; deve
+// ficar em 0 no próximo teste.
+const UNKNOWN_VAR = /unhandled request for unknown variable/;
+const CLIENTE_TESTE3 = [
+	["partícula: variável lida sem definição (v.x ?? padrão no creation_expression)", (e) => e.category === "Molang" && /^particles\//.test(e.raw) && UNKNOWN_VAR.test(e.raw) && !/variable '\.[a-z]/.test(e.raw)],
+	["partícula: struct em variável (variable.color.r)", (e) => e.category === "Molang" && /^particles\//.test(e.raw) && (/unable to find member variable/.test(e.raw) || /unknown variable '\.[a-z]/.test(e.raw))],
+	["render controller: variável sem inicializar no pre_animation", (e) => e.category === "Molang" && /^render_controllers\//.test(e.raw) && UNKNOWN_VAR.test(e.raw)],
+	["animação: variável sem inicializar (cr_o_* colado etc.)", (e) => e.category === "Molang" && /^animations\//.test(e.raw) && UNKNOWN_VAR.test(e.raw)],
+	["animation controller: variável sem inicializar (quirk loops/pick)", (e) => e.category === "Molang" && /^animation_controllers\//.test(e.raw) && UNKNOWN_VAR.test(e.raw)],
+	["item data-driven sem ícone", (e) => e.category === "Item" && /Missing icon for data-driven item/.test(e.raw)],
+	["script: LocationInUnloadedChunkError", (e) => e.category === "Scripting" && /LocationInUnloadedChunkError/.test(e.raw)],
+	["spawner: fatia lenta no tick", (e) => e.category === "Scripting" && /\[spawn\] passe lento/.test(e.raw)],
+	["selftest: o motor tirou o jogador da montaria", (e) => e.category === "Scripting" && /o motor tirou o jogador da montaria/.test(e.raw)],
+];
+if (!args.includes("--json")) {
+	console.log("\n## Frente cliente-teste3-log (3º teste em cliente; regras no npm run validate)");
+	for (const [label, match] of CLIENTE_TESTE3) {
+		const hit = entries.filter(match);
+		const subjects = new Set(hit.map((e) => e.raw.split(" | ").slice(0, -1).join(" | ") || e.raw));
+		console.log(`${String(hit.length).padStart(7)}  ${label} (${subjects.size} assuntos)`);
+	}
+}

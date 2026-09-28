@@ -19,7 +19,7 @@ import { ActorType } from "../battle/BattleActor";
 import { CATEGORY_GLYPHS, typeGlyph } from "../ui/glyphs";
 import { SCREEN } from "../ui/screens";
 import {
-  BATTLE_MOVES, BATTLE_SWITCH, BATTLE_TARGET, BLANK, CellForm, GIMMICK_ON_MARKER, SUB, barTexture, battleMenuTexture, layoutTitle, typeKeyTexture,
+  BATTLE_MOVES, BATTLE_SWITCH, BATTLE_TARGET, BLANK, CATEGORY_MARKERS, CellForm, GIMMICK_ON_MARKER, SUB, barTexture, battleMenuTexture, layoutTitle, typeKeyTexture,
 } from "./layout";
 import {
   GIMMICK_CHOICE, Gimmick, MoveTileInfo, availableGimmicks, gimmickLabelKey, gimmickTexture, moveTileInfo,
@@ -210,7 +210,9 @@ async function showMoveMenu(context: MenuContext): Promise<MenuResult<ActionResp
     let form = moveForm<MoveCell>({ translate: "cobblemon.battle.ui.fight" }, withTeraType(pokemonNameAt(context, slot), self));
     moveset.moves.slice(0, 4).forEach((_, i) => {
       let tile = moveTileInfo(moveset!, i, toggled);
-      form.cell(BATTLE_MOVES.MOVES + i, renderMoveTile(tile, self, foes), tileTypeKey(tile, self), { kind: "move", index: i });
+      let plain = tile.displayId === tile.baseId && !tile.zStatus;
+      form.cell(BATTLE_MOVES.MOVES + i, moveTileText(tile.baseId, tile.pp, tile.maxpp, tile.disabled, self, foes,
+        plain ? undefined : { name: tileName(tile), type: tile.type, category: tile.category }), tileTypeKey(tile, self), { kind: "move", index: i });
     });
     gimmicks.forEach((gimmick, i) => form.cell(BATTLE_MOVES.GIMMICKS + i, gimmickButtonText(gimmick, toggled === gimmick), gimmickTexture(gimmick), { kind: "gimmick", gimmick }));
     let response = await show(context, form.build());
@@ -278,13 +280,6 @@ function tileName(tile: MoveTileInfo): RawMessage {
   return tile.zStatus ? { rawtext: [{ text: "Z-" }, getMoveTranslation(tile.baseId)] } : getMoveTranslation(tile.displayId);
 }
 
-/** Tile de golpe com gimmick: tipo/nome do golpe Z/Max, categoria e PP do golpe base (MoveTile do Cobblemon). */
-function renderMoveTile(tile: MoveTileInfo, self: SimPokemon | undefined, foes: SimPokemon[]): RawMessage {
-  if (tile.displayId === tile.baseId && !tile.zStatus)
-    return renderMoveButton(tile.baseId, tile.pp, tile.maxpp, tile.disabled, self, foes);
-  return renderMoveButton(tile.baseId, tile.pp, tile.maxpp, tile.disabled, self, foes, { name: tileName(tile), type: tile.type, category: tile.category });
-}
-
 function tileTypeKey(tile: MoveTileInfo, self?: SimPokemon): string {
   return tile.displayId === tile.baseId && !tile.zStatus ? moveTypeKey(tile.baseId, self) : typeKeyTexture(toID(tile.type));
 }
@@ -336,6 +331,32 @@ export function renderMoveButton(
   if (hint)
     rawtext.push({ text: " " }, hint);
   return { rawtext };
+}
+
+/**
+ * Frente ui-layout: tile de golpe do layout (MoveTile do BattleMoveSelection). O texto tem 3 linhas (MOVE_TILE_LINES):
+ * PP com o prefixo da categoria (o layout mostra o ícone), dica de efetividade e o nome; o JSON UI mostra cada linha no
+ * seu lugar. Golpe indisponível começa com §8 (como antes: os bots pulam esse tile). Sem glifos: no cliente um glifo de
+ * página tem 32 px × escala e invadia o tile vizinho.
+ */
+export function moveTileText(
+  moveId: string, pp: number | undefined, maxpp: number | undefined, disabled: boolean, self: SimPokemon | undefined, foes: SimPokemon[],
+  shown?: { name: RawMessage; type: string; category: string },
+): RawMessage {
+  let move = Dex.moves.get(moveId);
+  let category = shown?.category ?? move.category;
+  let empty = !shown && pp !== undefined && pp <= 0 && move.id !== "struggle";
+  let color = pp === undefined || maxpp === undefined ? "§f" : pp === 0 ? "§c" : pp <= Math.floor(maxpp / 2) ? "§6" : "§f";
+  let ppText = pp !== undefined && maxpp !== undefined ? (pp === 100 && maxpp === 100 ? "—/—" : `${pp}/${maxpp}`) : " ";
+  let hint = effectivenessHint(move.id, category, shown?.type ?? displayedMoveType(moveId, self), foes);
+  return {
+    rawtext: [
+      { text: `${disabled || empty ? "§8" : ""}${CATEGORY_MARKERS[category] ?? CATEGORY_MARKERS.Status}${color}${ppText}§r\n` },
+      hint ?? { text: " " },
+      { text: `§r\n${disabled || empty ? "§8" : "§f"}` },
+      shown?.name ?? getMoveTranslation(move.id),
+    ],
+  };
 }
 
 /** Dica de efetividade contra os inimigos em campo (não considera habilidades). */
@@ -537,7 +558,7 @@ async function useBagItem(context: MenuContext, entry: BagEntry): Promise<MenuRe
 async function chooseMoveForItem(context: MenuContext, def: BagItemDef, target: SimPokemon): Promise<MenuResult<string>> {
   let slots = target.baseMoveSlots.filter(slot => slot.pp < slot.maxpp).slice(0, 4);
   let form = moveForm({ translate: def.itemName }, { translate: "cobblemon.port.battle.ui.restore_pp" });
-  slots.forEach((slot, i) => form.cell(BATTLE_MOVES.MOVES + i, renderMoveButton(slot.id, slot.pp, slot.maxpp, false, undefined, []), moveTypeKey(slot.id), i));
+  slots.forEach((slot, i) => form.cell(BATTLE_MOVES.MOVES + i, moveTileText(slot.id, slot.pp, slot.maxpp, false, undefined, []), moveTypeKey(slot.id), i));
   let response = await show(context, form.build());
   if (!response || response.selection === undefined)
     return CLOSED;

@@ -5,11 +5,15 @@
  */
 
 /** Modos aceitos pelo comando (`status` e `stop` não rodam fases). */
-export const SELFTEST_MODES = ["quick", "full", "ui", "entities", "movement", "blocks", "particles", "sounds", "battle", "stop", "status"] as const;
+export const SELFTEST_MODES = ["quick", "full", "ui", "entities", "movement", "blocks", "particles", "sounds", "battle", "telas", "stop", "status"] as const;
 export type SelfTestMode = (typeof SELFTEST_MODES)[number];
+/** Outros nomes aceitos (também vão para o enum do comando). */
+export const SELFTEST_MODE_ALIASES: Readonly<Record<string, SelfTestMode>> = { screens: "telas" };
 
+/** Fases automáticas (as do quick/full, nesta ordem). */
 export const SELFTEST_PHASES = ["entities", "movement", "blocks", "particles", "sounds", "ui", "battle"] as const;
-export type SelfTestPhase = (typeof SELFTEST_PHASES)[number];
+/** Todas as fases: as automáticas + `screens` (roteiro de telas para prints, só no modo `telas`). */
+export type SelfTestPhase = (typeof SELFTEST_PHASES)[number] | "screens";
 
 /** `sample` = amostra representativa (quick); `all` = tudo. */
 export type Coverage = "sample" | "all";
@@ -22,6 +26,7 @@ export interface PhasePlan {
 /** Modo digitado (maiúsculas/espaços ignorados; vazio = quick) ou undefined se não existe. */
 export function parseSelfTestMode(raw: string | undefined): SelfTestMode | undefined {
   const value = (raw ?? "").trim().toLowerCase() || "quick";
+  if (SELFTEST_MODE_ALIASES[value]) return SELFTEST_MODE_ALIASES[value];
   return (SELFTEST_MODES as readonly string[]).includes(value) ? value as SelfTestMode : undefined;
 }
 
@@ -31,6 +36,7 @@ export function planFor(mode: SelfTestMode): PhasePlan[] {
     case "quick": return SELFTEST_PHASES.map(phase => ({ phase, coverage: "sample" as const }));
     case "full": return SELFTEST_PHASES.map(phase => ({ phase, coverage: "all" as const }));
     case "stop": case "status": return [];
+    case "telas": return [{ phase: "screens", coverage: "all" }];
     default: return [{ phase: mode, coverage: "all" }];
   }
 }
@@ -58,17 +64,77 @@ export interface PokemonTarget {
 export function pokemonTargets(
   combos: Record<string, number>, coverage: Coverage, isFamilyBase: (species: string) => boolean,
   known: readonly string[] = KNOWN_PROBLEM_SPECIES,
+  /** Combinações a mostrar por espécie (a cobertura de `coverCombos`); sem ela, todas. */
+  cover?: (species: string) => readonly number[] | undefined,
 ): PokemonTarget[] {
   const out: PokemonTarget[] = [];
   const knownSet = new Set(known);
   for (const [species, count] of Object.entries(combos)) {
     const total = Math.max(1, count);
     if (coverage === "all" || knownSet.has(species)) {
-      for (let variant = 0; variant < total; variant++) out.push({ species, variant });
+      const picked = cover?.(species);
+      if (picked?.length) { for (const variant of picked) if (variant >= 0 && variant < total) out.push({ species, variant }); }
+      else for (let variant = 0; variant < total; variant++) out.push({ species, variant });
     }
     else if (isFamilyBase(species)) out.push({ species, variant: 0 });
   }
   return out;
+}
+
+/** Combinação renderizável (a forma de `VariantCombo` de generated/scripts/variants.ts). */
+export interface ComboResources {
+  poser?: string;
+  model: string;
+  texture: string;
+  layers: readonly string[];
+}
+
+/**
+ * Recursos que o cliente carrega para uma combinação: modelo (geometria), textura base, poser (animações), cada camada
+ * (`nome=textura`) e o conjunto de nomes de camada (decide o render controller das camadas). Cada recurso distinto
+ * precisa aparecer ao menos uma vez para o ContentLog acusá-lo.
+ */
+export function comboFeatures(combo: ComboResources): string[] {
+  const out = [`model:${combo.model}`, `texture:${combo.texture}`, `poser:${combo.poser ?? ""}`];
+  for (const layer of combo.layers) out.push(`layer:${layer}`);
+  out.push(`layers:${combo.layers.map(layer => layer.split("=")[0]).sort().join(",")}`);
+  return out;
+}
+
+/**
+ * Cobertura mínima (gulosa) das combinações de uma espécie: começa pela 0 (a padrão) e, enquanto sobrar recurso sem
+ * aparecer, pega a combinação que mostra mais recursos novos (empate: o menor índice). Devolve os índices em ordem.
+ * Todo recurso de `comboFeatures` de todas as combinações fica coberto (ex.: Spinda: 1534 combinações → 50).
+ */
+export function coverCombos(combos: readonly ComboResources[]): number[] {
+  if (combos.length <= 1) return combos.length ? [0] : [];
+  // Recursos como inteiros (o laço guloso só compara números).
+  const ids = new Map<string, number>();
+  const sets = combos.map(combo => [...new Set(comboFeatures(combo).map(f => {
+    let id = ids.get(f);
+    if (id === undefined) ids.set(f, id = ids.size);
+    return id;
+  }))]);
+  const covered = new Uint8Array(ids.size);
+  let left = ids.size;
+  const picked: number[] = [];
+  const take = (index: number) => {
+    picked.push(index);
+    for (const id of sets[index]) if (!covered[id]) { covered[id] = 1; left--; }
+  };
+  take(0);
+  while (left > 0) {
+    let best = -1;
+    let gain = 0;
+    for (let i = 0; i < sets.length; i++) {
+      let g = 0;
+      for (const id of sets[i]) if (!covered[id]) g++;
+      if (g > gain) { gain = g; best = i; }
+    }
+    if (best < 0) break;
+    take(best);
+  }
+  return picked.sort((a, b) => a - b);
 }
 
 /** Permutação de bloco: estados que mudam em relação ao padrão (vazio = permutação padrão). */
@@ -581,4 +647,110 @@ export function mountRides(rideable: Record<string, readonly RideStyleName[]>, c
 /** Zona onde cada estilo de montaria acontece. */
 export function rideZone(style: RideStyleName): LocomotionZone {
   return style === "LIQUID" ? "water" : style === "AIR" ? "air" : "ground";
+}
+
+// ---------------------------------------------------------------------------------------------
+// Modo `telas`: cada tela custom com dados de exemplo, uma por vez, para o jogador tirar print
+
+/** Segundos com cada tela aberta (`/cobblemon:selftest telas <segundos>`): padrão, mínimo e máximo. */
+export const SCREEN_SECONDS = { fallback: 10, min: 3, max: 60 } as const;
+/** Aviso "Tela N/total: <nome>" antes de abrir cada tela (ticks). */
+export const SCREEN_ANNOUNCE_TICKS = 40;
+
+/** Segundos pedidos (texto do comando/scriptevent ou inteiro do parâmetro), limitados a 3..60; inválido = 10. */
+export function parseScreenSeconds(raw: unknown): number {
+  const value = typeof raw === "number" ? raw : typeof raw === "string" && raw.trim() !== "" ? Number(raw.trim()) : NaN;
+  if (!Number.isFinite(value)) return SCREEN_SECONDS.fallback;
+  return Math.min(SCREEN_SECONDS.max, Math.max(SCREEN_SECONDS.min, Math.round(value)));
+}
+
+/**
+ * Uma parada do roteiro. `form`: tela (fechar avança na hora); `hud`: só HUD/actionbar (avança pelo tempo).
+ * `actionbar`: a própria tela usa a actionbar (sem contagem regressiva por cima). `needs`: só entra se houver o dado.
+ */
+export interface ScreenStep {
+  key: string;
+  kind: "form" | "hud";
+  actionbar?: boolean;
+  needs?: "starter" | "dex";
+}
+
+/** Roteiro, na ordem mostrada (o nome de cada tela é `cobblemon.selftest.screen.<key>`). */
+export const SCREEN_TOUR: readonly ScreenStep[] = [
+  { key: "starter", kind: "form", needs: "starter" },
+  { key: "starter_3d", kind: "form", needs: "starter" },
+  { key: "starter_confirm", kind: "form", needs: "starter" },
+  { key: "starter_reminder", kind: "hud", actionbar: true },
+  { key: "party", kind: "form" },
+  { key: "party_hud", kind: "hud" },
+  { key: "summary_info", kind: "form" },
+  { key: "summary_moves", kind: "form" },
+  { key: "summary_stats", kind: "form" },
+  { key: "summary_marks", kind: "form" },
+  { key: "summary_info_3d", kind: "form" },
+  { key: "summary_moves_3d", kind: "form" },
+  { key: "summary_stats_3d", kind: "form" },
+  { key: "summary_marks_3d", kind: "form" },
+  { key: "pc", kind: "form" },
+  { key: "pc_empty", kind: "form" },
+  { key: "pokedex_list", kind: "form" },
+  { key: "pokedex_page", kind: "form", needs: "dex" },
+  { key: "pokedex_entry", kind: "form" },
+  { key: "dialogue", kind: "form" },
+  { key: "trade", kind: "form" },
+  { key: "battle_action", kind: "form" },
+  { key: "battle_moves", kind: "form" },
+  { key: "battle_gimmick", kind: "form" },
+  { key: "battle_switch", kind: "form" },
+  { key: "battle_bag", kind: "form" },
+  { key: "battle_target", kind: "form" },
+  { key: "battle_forfeit", kind: "form" },
+  { key: "battle_hud", kind: "hud" },
+  { key: "battle_hud_doubles", kind: "hud" },
+  { key: "battle_minimised", kind: "hud" },
+  { key: "battle_minimised_moves", kind: "hud" },
+  { key: "achievements", kind: "form" },
+  { key: "stats", kind: "form" },
+  { key: "toast_capture", kind: "hud" },
+  { key: "toast_advancement", kind: "hud" },
+];
+
+/** Roteiro sem as telas que dependem de um dado ausente (categorias de inicial, Pokédex regionais). */
+export function screenTour(available: { starter: boolean; dex: boolean }): ScreenStep[] {
+  return SCREEN_TOUR.filter(step => !step.needs || available[step.needs]);
+}
+
+export type ScreenOutcome = "closed" | "timeout" | "stopped";
+
+/**
+ * Espera uma tela aberta: termina quando o jogador fecha (`closed`), quando o tempo acaba ou quando o teste para
+ * (`stopped`, conferido antes de tudo). `onSecond(restantes)` roda a cada segundo novo (contagem regressiva).
+ * `wait(ticks)` é o `system.waitTicks` no jogo; nos testes, um relógio falso.
+ */
+export async function holdScreen(options: {
+  ticks: number;
+  wait: (ticks: number) => Promise<void>;
+  closed: () => boolean;
+  stopped: () => boolean;
+  onSecond?: (remaining: number) => void;
+  /** Ticks entre uma conferência e outra. */
+  step?: number;
+}): Promise<ScreenOutcome> {
+  const step = Math.max(1, Math.floor(options.step ?? 2));
+  const total = Math.max(0, Math.floor(options.ticks));
+  let elapsed = 0;
+  let lastSecond = -1;
+  while (true) {
+    if (options.stopped()) return "stopped";
+    if (options.closed()) return "closed";
+    if (elapsed >= total) return "timeout";
+    const remaining = Math.ceil((total - elapsed) / 20);
+    if (remaining !== lastSecond) {
+      lastSecond = remaining;
+      options.onSecond?.(remaining);
+    }
+    const dt = Math.min(step, total - elapsed);
+    await options.wait(dt);
+    elapsed += dt;
+  }
 }

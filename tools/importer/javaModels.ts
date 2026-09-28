@@ -318,6 +318,11 @@ export function itemIconTexture(itemId: string): { texture?: string; parent?: st
 	const layers = Object.keys(chain?.textures ?? {}).filter((k) => /^layer\d+$/.test(k)).sort();
 	const layer0 = layers.map((k) => chain!.textures[k]).find((t) => t.startsWith("cobblemon:")) ?? chain?.textures.layer0;
 	if (layer0) return { texture: layer0, parent };
+	// Frente cliente-teste3-log: item desenhado por código no Java (builtin/entity, ex.: pokemon_model, que o
+	// PokemonItemRenderer desenha como o Pokémon) não tem camada; o ícone 2D é a textura "particle" do próprio modelo
+	// (pokemon_model: a Cherish Ball). Sem ícone o cliente acusa "Missing icon for data-driven item" a cada uso.
+	const particle = chain?.textures.particle;
+	if (parent === "minecraft:builtin/entity" && particle?.startsWith("cobblemon:")) return { texture: particle, parent };
 	if (parent?.startsWith("cobblemon:block/") || parent?.startsWith("minecraft:block/")) return { blockModel: parent, parent };
 	return { parent };
 }

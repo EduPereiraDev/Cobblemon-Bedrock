@@ -30,7 +30,8 @@ export default {
 			bot.answerForm(form, "{cobblemon.battle.ui.fight}");
 			const moves = await bot.waitForForm(isMoveForm, { timeout: 20_000 });
 			const usable = moves.buttons.findIndex((b) => !b.includes("{gui.back}") && !b.startsWith("§8"));
-			t.step(`turno ${turns}: golpe ${moves.buttons[usable]?.replace(/\n.*/, "")}`);
+			// Frente ui-layout: o tile tem 3 linhas (PP, dica, nome); o nome é a última.
+			t.step(`turno ${turns}: golpe ${moves.buttons[usable]?.split("\n").pop()}`);
 			bot.answerForm(moves, usable);
 			const next = await waitForFormOrText(bot, { form: isActionForm, text: "{cobblemon.battle.win}", since: start, timeout: 60_000 });
 			if (next.text) { t.step(`fim: ${next.text.text}`); break; }

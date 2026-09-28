@@ -66,7 +66,7 @@ export function bobberBallIndex(itemId: string | undefined): number {
   return index < 0 ? 0 : index;
 }
 
-/** "#RRGGBB" → RGB 0–1 (MolangVariableMap.setColorRGB). */
+/** "#RRGGBB" → RGB 0–1 (v.color_r/g/b da partícula fishing_line). */
 export function lineColorRGB(hex: string): { red: number; green: number; blue: number } {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
   const n = m ? parseInt(m[1], 16) : 0x282828;

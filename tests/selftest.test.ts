@@ -11,7 +11,10 @@ import {
   pokemonTargets, regionCells, regionContains, runInBatches, sampleEvenly, sampleSounds, splitChunks, type DynamicValue, type SelfTestJournal,
   LOCOMOTION_ZONES, MOVEMENT_BATCH, MOVEMENT_SHELL, MOVEMENT_ZONES, SELFTEST_AREA, WATER_TOP, distinctPoserVariants, isWaterBlock, locomotionZones,
   mountRides, movementLayout, movementRounds, movementTargets, nudgeVector, rideZone, zoneSlots, type LocomotionZone,
+  SCREEN_SECONDS, SCREEN_TOUR, SELFTEST_PHASES, comboFeatures, coverCombos, holdScreen, parseScreenSeconds, screenTour,
 } from "../scripts/debug/selfTestPlan";
+import { readFileSync } from "node:fs";
+import { VARIANTS } from "../generated/scripts/variants";
 import * as stub from "../scripts/debug/selfTestManifest";
 // @ts-ignore módulo .mjs de ferramenta (sem tipos)
 import { locomotionFlags, manifestModuleSource, readSelfTestManifest, selfTestManifestPlugin, stateValues } from "../tools/selftest/manifest.mjs";
@@ -356,6 +359,109 @@ await test("manifesto: capacidades de locomoção pelo JSON da entidade", () => 
   assert.equal(locomotionFlags(entity({ "minecraft:can_fly": {}, "minecraft:navigation.fly": {} }, { "minecraft:behavior.random_fly": {}, "minecraft:behavior.random_stroll": {} })), "wf");
   assert.equal(locomotionFlags(entity({})), "");
   assert.equal(locomotionFlags(undefined), "");
+});
+
+// ---------------------------------------------------------------------------------------------
+// Frente cliente-teste3: modo `telas` e cobertura das combinações de Pokémon
+
+await test("telas: modo (alias screens), fase própria fora do quick/full, segundos 3..60", () => {
+  assert.equal(parseSelfTestMode("telas"), "telas");
+  assert.equal(parseSelfTestMode(" SCREENS "), "telas", "alias");
+  assert.deepEqual(planFor("telas"), [{ phase: "screens", coverage: "all" }]);
+  assert.ok(!planFor("quick").some(p => p.phase === "screens") && !planFor("full").some(p => p.phase === "screens"), "roteiro interativo não entra no quick/full");
+  assert.ok(!(SELFTEST_PHASES as readonly string[]).includes("screens"));
+  assert.equal(parseScreenSeconds(undefined), SCREEN_SECONDS.fallback);
+  assert.equal(parseScreenSeconds(""), 10);
+  assert.equal(parseScreenSeconds("15"), 15);
+  assert.equal(parseScreenSeconds(15), 15);
+  assert.equal(parseScreenSeconds(1), 3, "mínimo");
+  assert.equal(parseScreenSeconds("999"), 60, "máximo");
+  assert.equal(parseScreenSeconds("abc"), 10);
+  assert.equal(parseScreenSeconds(7.6), 8);
+});
+
+await test("telas: roteiro com todas as telas pedidas, chaves únicas, texto en_US/pt_BR e uma abertura em SelfTest.ts", () => {
+  const keys = SCREEN_TOUR.map(step => step.key);
+  assert.equal(new Set(keys).size, keys.length, "sem repetição");
+  for (const required of [
+    "starter", "starter_3d", "party", "party_hud", "summary_info", "summary_moves", "summary_stats", "summary_marks", "summary_info_3d",
+    "summary_marks_3d", "pc", "pc_empty", "pokedex_list", "pokedex_entry", "dialogue", "trade", "battle_action", "battle_moves",
+    "battle_gimmick", "battle_switch", "battle_bag", "battle_target", "battle_minimised", "starter_reminder",
+  ]) assert.ok(keys.includes(required), `tela ${required} no roteiro`);
+  assert.equal(screenTour({ starter: true, dex: true }).length, SCREEN_TOUR.length);
+  const noStarter = screenTour({ starter: false, dex: true });
+  assert.ok(!noStarter.some(step => step.key.startsWith("starter_") && step.key !== "starter_reminder") && !noStarter.some(step => step.key === "starter"));
+  assert.ok(!screenTour({ starter: true, dex: false }).some(step => step.key === "pokedex_page"));
+  const lang = (file: string) => readFileSync(`resource_packs/CobblemonBedrock/texts/${file}`, "utf8");
+  const source = readFileSync("scripts/debug/SelfTest.ts", "utf8");
+  for (const file of ["en_US.lang", "pt_BR.lang"]) {
+    const text = lang(file);
+    for (const key of [...keys.map(k => `cobblemon.selftest.screen.${k}`), "cobblemon.selftest.phase.screens", "cobblemon.selftest.screens.intro",
+      "cobblemon.selftest.screens.now", "cobblemon.selftest.screens.announce", "cobblemon.selftest.screens.countdown", "cobblemon.selftest.screens.order",
+      "cobblemon.selftest.summary.screens", "cobblemon.selftest.summary.entities_cover"])
+      assert.ok(new RegExp(`^${key.replace(/\./g, "\\.")}=`, "m").test(text), `${file}: ${key}`);
+  }
+  for (const key of keys) assert.ok(new RegExp(`\\b${key}: `).test(source), `SelfTest.ts sabe abrir ${key}`);
+});
+
+await test("telas: espera fechar, avança pelo tempo, para no stop, contagem regressiva por segundo", async () => {
+  const clock = { tick: 0 };
+  const wait = async (ticks: number) => { clock.tick += ticks; };
+  // Fechou no tick 30: avança na hora.
+  clock.tick = 0;
+  let seconds: number[] = [];
+  assert.equal(await holdScreen({ ticks: 200, wait, closed: () => clock.tick >= 30, stopped: () => false, onSecond: r => seconds.push(r) }), "closed");
+  assert.ok(clock.tick >= 30 && clock.tick < 34, `fechou no tick ${clock.tick}`);
+  assert.deepEqual(seconds, [10, 9], "10 s, depois 9 s");
+  // Nunca fecha: exatamente o tempo pedido, com a contagem de 3 até 1.
+  clock.tick = 0;
+  seconds = [];
+  assert.equal(await holdScreen({ ticks: 60, wait, closed: () => false, stopped: () => false, onSecond: r => seconds.push(r) }), "timeout");
+  assert.equal(clock.tick, 60);
+  assert.deepEqual(seconds, [3, 2, 1]);
+  // Stop no meio (e o stop vence um fechamento no mesmo instante).
+  clock.tick = 0;
+  assert.equal(await holdScreen({ ticks: 1200, wait, closed: () => false, stopped: () => clock.tick >= 100 }), "stopped");
+  assert.ok(clock.tick <= 102);
+  assert.equal(await holdScreen({ ticks: 1200, wait, closed: () => true, stopped: () => true }), "stopped");
+});
+
+await test("entidades: cobertura mínima das combinações mostra 100% dos modelos, texturas, camadas e posers", () => {
+  // Exemplo: 2 texturas × 3 camadas = 6 combinações, cobertas com 3.
+  const toy = [
+    { model: "m", texture: "a", layers: [] }, { model: "m", texture: "b", layers: [] },
+    { model: "m", texture: "a", layers: ["spots=1"] }, { model: "m", texture: "b", layers: ["spots=1"] },
+    { model: "m", texture: "a", layers: ["spots=2"] }, { model: "m", texture: "b", layers: ["spots=2"] },
+  ];
+  const picked = coverCombos(toy);
+  assert.equal(picked[0], 0, "a padrão sempre entra");
+  assert.equal(picked.length, 3);
+  let total = 0;
+  let covered = 0;
+  let species = 0;
+  for (const [id, data] of Object.entries(VARIANTS)) {
+    const combos = data.combos;
+    const chosen = coverCombos(combos);
+    const all = new Set(combos.flatMap(comboFeatures));
+    const seen = new Set(chosen.flatMap(i => comboFeatures(combos[i])));
+    assert.equal(seen.size, all.size, `${id}: ${seen.size}/${all.size} recursos cobertos`);
+    for (const feature of all) assert.ok(seen.has(feature), `${id}: falta ${feature}`);
+    assert.ok(combos.length === 0 || chosen[0] === 0, `${id}: combinação padrão`);
+    assert.equal(new Set(chosen).size, chosen.length, `${id}: sem repetição`);
+    assert.ok(chosen.every((v, i) => i === 0 || v > chosen[i - 1]), `${id}: em ordem`);
+    total += combos.length;
+    covered += chosen.length;
+    species++;
+  }
+  assert.ok(species > 800);
+  assert.ok(coverCombos(VARIANTS.spinda.combos).length <= 60, "Spinda: de 1534 para no máximo 60");
+  assert.ok(covered < total * 0.4, `${covered} de ${total} combinações (menos de 40%)`);
+  console.log(`  cobertura: ${covered} de ${total} combinações de ${species} espécies`);
+  // Os alvos da fase usam a cobertura (e as fora dela não aparecem).
+  const targets = pokemonTargets({ spinda: VARIANTS.spinda.combos.length, bulbasaur: 8 }, "all", () => true, undefined,
+    id => id === "spinda" ? coverCombos(VARIANTS.spinda.combos) : undefined);
+  assert.equal(targets.filter(t => t.species === "spinda").length, coverCombos(VARIANTS.spinda.combos).length);
+  assert.equal(targets.filter(t => t.species === "bulbasaur").length, 8, "sem cobertura: todas");
 });
 
 console.log(`selftest: ${passed} testes ok`);

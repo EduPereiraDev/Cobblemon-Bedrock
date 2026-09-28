@@ -19,6 +19,7 @@ import { encodePng } from "./png.ts";
 import { ASSETS, HAND_RP, OUT_RP, OUT_SCRIPTS, copyFile, count, readJson, walk, warn, writeJson, writeText } from "./util.ts";
 import { LEVEL_SOUND_EVENTS, PARTICLE_MAX_COLLISION_RADIUS } from "./clientRules.ts";
 import { rewriteMolang, scanMolang, unquote } from "./molang.ts";
+import { guardParticleVariables } from "./molangVars.ts"; // frente cliente-teste3-log
 
 const PARTICLES_DIR = `${ASSETS}/bedrock/particles`;
 
@@ -293,8 +294,9 @@ export function emitRequestedParticles(): number {
 //    viram booleanos; step_UV com Molang ("Expected Number") vira UV por expressão com o mesmo quadro por idade;
 //  - Molang que o parser do Snowstorm tolera e o do Bedrock não: ")" sobrando ou vírgula solta no nível de cima
 //    (o resto é descartado, como o parser lento do Java) e math.max/min com mais de 2 argumentos (aninhados);
-//  - partícula-filha (disparada por evento de outra) não herda as variáveis do emissor pai: v.entity_* ganham
-//    valor padrão (v.x ?? padrão, os mesmos do script quando a espécie não tem tamanho) na criação do emissor.
+//  - (frente cliente-teste3-log) toda variável lida e não escrita pela partícula ganha valor padrão (v.x ?? padrão;
+//    v.entity_* com os mesmos do script quando a espécie não tem tamanho, o resto 0 como o MoLangRuntime do Java)
+//    na criação do emissor: filhas não herdam as variáveis do pai e a partícula pode nascer sem MolangVariableMap.
 // ---------------------------------------------------------------------------------------------------------------
 
 /** Sons do Java sem namespace do Cobblemon citados por partículas → evento do Bedrock. */
@@ -304,8 +306,7 @@ const CLIENT_VANILLA_SOUNDS: Record<string, string> = {
 };
 /** Definições vanilla do Bedrock usadas como destino (os valores das tabelas acima). */
 const BEDROCK_VANILLA_SOUND_DEFS = new Set([...Object.values(VANILLA_SOUNDS), ...Object.values(CLIENT_VANILLA_SOUNDS)]);
-/** Padrões das variáveis v.entity_* quando ninguém as preenche (os mesmos de particleVariables sem tamanho). */
-const ENTITY_VAR_DEFAULTS: Record<string, number> = { width: 1, height: 1, size: 1, radius: 0.5, scale: 1 };
+// Padrões das variáveis quando ninguém as preenche: PARTICLE_VAR_DEFAULTS em molangVars.ts (frente cliente-teste3-log).
 
 export type SoundCue = { t: number; sounds: string[] };
 export type ChildCue = { t: number; effect: string };
@@ -454,17 +455,13 @@ export function clientSafeParticle(json: any, opts: { child?: boolean; soundEven
 	pe.components = repairDeep(comps);
 	if (pe.curves) pe.curves = repairDeep(pe.curves);
 	if (pe.events) pe.events = repairDeep(pe.events);
-	// Filha: v.entity_* com padrão (o pai não passa as variáveis dele).
-	if (opts.child) {
-		const text = JSON.stringify({ c: pe.components, e: pe.events ?? {}, k: pe.curves ?? {} });
-		const used = Object.keys(ENTITY_VAR_DEFAULTS).filter((v) => new RegExp(`\\b(?:v|variable)\\.entity_${v}\\b`).test(text));
-		if (used.length) {
-			const init = (pe.components["minecraft:emitter_initialization"] ??= {});
-			const guard = used.map((v) => `v.entity_${v} = v.entity_${v} ?? ${ENTITY_VAR_DEFAULTS[v]};`).join(" ");
-			const prev = typeof init.creation_expression === "string" ? init.creation_expression.trim() : "";
-			init.creation_expression = prev ? `${guard} ${prev}${prev.endsWith(";") ? "" : ";"}` : guard;
-		}
-	}
+	// Frente cliente-teste3-log: TODA variável lida e não escrita pela partícula ganha padrão no creation_expression
+	// (`v.x = v.x ?? padrão;`): filhas (o pai não passa as variáveis dele), as disparadas por animação/entidade/script
+	// sem MolangVariableMap e as curvas lidas antes da 1ª avaliação. O `??` mantém o valor que o script passar.
+	// Antes só as filhas e só v.entity_* (3º teste em cliente: 61 mil "unknown variable" em ~495 partículas).
+	void opts.child;
+	const guarded = guardParticleVariables(json);
+	if (guarded.length) count("partículas: variáveis lidas sem definição com padrão no creation_expression", 1);
 	// Sons e filhas por evento.
 	const eventSounds = new Map<string, string[]>();
 	const eventChildren = new Map<string, string[]>();

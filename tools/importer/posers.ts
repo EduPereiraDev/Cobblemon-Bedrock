@@ -712,6 +712,10 @@ class GenContext {
 			const max = Math.max(q.min, q.max);
 			const schedule = `${timer} = q.life_time + math.random(${min}, ${max});`;
 			initialize.push(`${timer} = math.random(${min}, ${max});`);
+			// Frente cliente-teste3-log: pick/loops só eram gravados no on_entry de "play"; a transição e as condições da
+			// animação chegaram a ser avaliadas antes dele (joltik quirk2/3 no 3º teste: "unknown variable"). Valor
+			// inicial = 1ª animação, 1 volta (o que o on_entry sorteia no mínimo).
+			initialize.push(`${pick} = 0; ${loops} = 1;`);
 			const id = `controller.animation.cobblemon.${this.safe}.quirk${qi}`;
 			controllers[id] = {
 				initial_state: "wait",

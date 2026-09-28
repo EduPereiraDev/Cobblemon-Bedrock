@@ -1,8 +1,9 @@
 /**
- * `/cobblemon:selftest [quick|full|ui|entities|movement|blocks|particles|sounds|battle|stop|status]` (também
- * `scriptevent cobblemon:selftest <modo>`): exercita o add-on de ponta a ponta DENTRO do mundo, no cliente real, para o
+ * `/cobblemon:selftest [quick|full|ui|entities|movement|blocks|particles|sounds|battle|telas|stop|status] [segundos]` (também
+ * `scriptevent cobblemon:selftest <modo> [segundos]`): exercita o add-on de ponta a ponta DENTRO do mundo, no cliente real, para o
  * ContentLog registrar os erros de recursos. O cliente só acusa um recurso (modelo, animação, render controller,
- * partícula, som, bloco, tela JSON UI) quando ele é usado, então o teste força o uso de cada um.
+ * partícula, som, bloco, tela JSON UI) quando ele é usado, então o teste força o uso de cada um. `telas` (alias `screens`)
+ * é o roteiro para prints: cada tela custom com dados de exemplo, `[segundos]` cada (3..60, padrão 10) ou até fechar.
  *
  * Segurança (nada roda sem o comando; ao terminar não sobra nada):
  *  - área temporária no céu, acima do jogador, que precisa estar TODA vazia (só ar): nenhuma construção é tocada; o
@@ -34,23 +35,25 @@ import { FRAMING, STUDIO_TAG, closeStudio, openStudio } from "../ui/studio";
 import { openPartyMenu, openPCGui, showSummary } from "../GUI";
 import { buildStarterForm, getStarterCategories, starterSpecies } from "../GUI/StarterGUI";
 import {
-  BATTLE_ACTION, BATTLE_MOVES, BATTLE_SWITCH, BATTLE_TARGET, BLANK, CellForm, PC, SCREEN, SUB, barTexture, battleMenuTexture,
-  layoutTitle, typeKeyTexture,
+  BATTLE_ACTION, BATTLE_MOVES, BATTLE_SWITCH, BATTLE_TARGET, BLANK, CellForm, GIMMICK_ON_MARKER, PC, SCREEN, SUB, barTexture,
+  battleMenuTexture, layoutTitle, typeKeyTexture,
 } from "../GUI/layout";
 import { getPokemonIconTexture, getPokemonProfileTexture, getPokemonSpriteTexture } from "../GUI/common";
-import { handleMoveRequest, renderMoveButton } from "../GUI/Battle";
+import { handleMoveRequest, moveTileText } from "../GUI/Battle";
 import { boxWallpaperTexturePath } from "../GUI/PCWallpapers";
 import { renderPokemonName } from "../language";
 import { openDexList, openDexPage, openPokedex } from "../pokedex/PokedexUI";
 import { getDexes } from "../pokedex/DexData";
 import { forgetPokedex } from "../pokedex/PokedexStorage";
 import { openDialogueCommand } from "../npc";
-import { stopDialogue } from "../npc/dialogue/DialogueManager";
+import { getActiveDialogue, stopDialogue } from "../npc/dialogue/DialogueManager";
 import { describePokemon } from "../trade/TradeUI";
 import { advancementToast, captureToast, openAchievements, showToast } from "../ui";
 import { openStatsScreen } from "../ui/StatsScreen";
 import { getHudChannel, setHudChannel } from "../ui/HudBus";
-import { BattleHudView, BattleTileView, CHANNEL, battleHpText, encodeBattleBody } from "../ui/hudProtocol";
+import { BATTLE_PROMPT, BattleHudView, BattleTileView, CHANNEL, battleHpText, encodeBattleBody } from "../ui/hudProtocol";
+import { partyButtonText } from "../GUI/Party";
+import { GIMMICK_ORDER, gimmickLabelKey, gimmickTexture } from "../battle/Gimmicks";
 import { displayName, pushParty } from "../ui/PartyOverlay";
 import { portraitPath } from "../ui/portraits";
 import { ActorType, BAG_ITEMS, BattleActor, BattleFormat, PokemonBattle, isPlayerInAnyBattle, startBattle } from "../battle";
@@ -66,12 +69,13 @@ import {
   SELFTEST_BLOCKS, SELFTEST_ENTITIES, SELFTEST_LOCOMOTION, SELFTEST_MANIFEST_BUILT, SELFTEST_PARTICLES, SELFTEST_SOUNDS, SelfTestEntityInfo,
 } from "./selfTestManifest";
 import {
-  anchorPositions, rememberDone, BlockChangeLog, BlockPos, BlockTarget, Coverage, DynamicValue, LOCOMOTION_ZONES, LocomotionZone, MOVEMENT_ZONES,
-  MountRide, MovementTarget, PhasePlan, PokemonTarget, Region, RideStyleName, SELFTEST_AREA, SELFTEST_MODES, SelfTestJournal, SelfTestMode,
-  SelfTestPhase, StopSignal, WATER_TOP, blockTargets, chunk, decodeJournal, decodeSnapshot, diffDynamicProperties, distinctPoserVariants,
-  encodeJournal, encodeSnapshot, formatDuration, gridOffsets, isLeftoverWorldKey, isSelfTestLeftoverBlock, isWaterBlock, mountRides,
-  movementLayout, movementRounds, movementTargets, nudgeVector, parseSelfTestMode, planFor, pokemonTargets, regionCells, rideZone,
-  runInBatches, sampleEvenly, sampleSounds, splitChunks, zoneSlots,
+  anchorPositions, rememberDone, BlockChangeLog, BlockPos, BlockTarget, Coverage, DynamicValue, KNOWN_PROBLEM_SPECIES, LOCOMOTION_ZONES, LocomotionZone, MOVEMENT_ZONES,
+  MountRide, MovementTarget, PhasePlan, PokemonTarget, Region, RideStyleName, SCREEN_ANNOUNCE_TICKS, SELFTEST_AREA, SELFTEST_MODES,
+  SELFTEST_MODE_ALIASES, ScreenOutcome, ScreenStep, SelfTestJournal, SelfTestMode, SelfTestPhase, StopSignal, WATER_TOP, blockTargets, chunk,
+  coverCombos, decodeJournal, decodeSnapshot, diffDynamicProperties, distinctPoserVariants, encodeJournal, encodeSnapshot, formatDuration,
+  gridOffsets, holdScreen, isLeftoverWorldKey, isSelfTestLeftoverBlock, isWaterBlock, mountRides, movementLayout, movementRounds,
+  movementTargets, nudgeVector, parseScreenSeconds, parseSelfTestMode, planFor, pokemonTargets, regionCells, rideZone, runInBatches,
+  sampleEvenly, sampleSounds, screenTour, splitChunks, zoneSlots,
 } from "./selfTestPlan";
 
 /** Tag das entidades criadas pelo teste (sem ":" para funcionar em seletores). */
@@ -175,6 +179,9 @@ interface Session {
   /** Dynamic properties do mundo antes do teste (a verificação final lista o que apareceu, sumiu ou mudou). */
   worldIds: Set<string>;
   worldValues: Map<string, unknown>;
+  /** Modo `telas`: segundos com cada tela aberta e as telas mostradas, na ordem (chaves de SCREEN_TOUR). */
+  screenSeconds: number;
+  screensShown: string[];
 }
 
 /** Um teste por vez no mundo. */
@@ -246,7 +253,8 @@ function setProgress(s: Session, done: number, total: number) {
 }
 
 function showProgress(s: Session) {
-  if (!s.player.isValid || !s.phase) return;
+  // No roteiro de telas a actionbar é do aviso "Tela N/total" e da contagem regressiva.
+  if (!s.player.isValid || !s.phase || s.phase === "screens") return;
   const { done, total } = s.progress;
   const percent = total > 0 ? `${Math.floor((done / total) * 100)}%` : "…";
   try { s.player.onScreenDisplay.setActionBar(tr("cobblemon.selftest.progress", phaseName(s.phase), done, total, percent)); } catch { }
@@ -609,6 +617,22 @@ async function familyBases(species: string[]): Promise<Set<string>> {
   return out;
 }
 
+/**
+ * Cobertura mínima das combinações de cada espécie (coverCombos: toda geometria, textura, camada e poser aparece ao
+ * menos uma vez). Fatiado: uma espécie por passo do job (o Spinda sozinho tem 1534 combinações).
+ */
+async function comboCover(species: string[]): Promise<Map<string, number[]>> {
+  const out = new Map<string, number[]>();
+  await job((function* () {
+    for (const id of species) {
+      const combos = VARIANTS[id]?.combos;
+      if (combos && combos.length > 1) out.set(id, coverCombos(combos));
+      yield;
+    }
+  })());
+  return out;
+}
+
 function poserKey(target: PokemonTarget): string {
   const poser = VARIANTS[target.species]?.combos[target.variant]?.poser ?? target.species;
   return poser.replace(/^[a-z0-9_]+:/, "");
@@ -759,7 +783,10 @@ async function entitiesPhase(s: Session, coverage: Coverage) {
   const counts = comboCounts();
   const species = Object.keys(counts);
   const bases = coverage === "sample" ? await familyBases(species) : new Set(species);
-  const targets = pokemonTargets(counts, coverage, id => bases.has(id));
+  // Em vez de todas as combinações (8485, o Spinda sozinho 1534), o mínimo que mostra cada recurso distinto.
+  const cover = await comboCover(coverage === "all" ? species : species.filter(id => (KNOWN_PROBLEM_SPECIES as readonly string[]).includes(id)));
+  const everything = pokemonTargets(counts, coverage, id => bases.has(id));
+  const targets = pokemonTargets(counts, coverage, id => bases.has(id), undefined, id => cover.get(id));
   // Amostra: NPC, barcos, exibições e as bolas comuns (+ a antiga); completo: todas, inclusive as bolas "dummy" da captura.
   const sampleBall = /^cobblemon:(poke|great|ultra|master|ancient_poke)_ball$/;
   const others = SELFTEST_ENTITIES.filter(e => coverage === "all" || e.group !== "pokeballs" || sampleBall.test(e.id));
@@ -768,6 +795,9 @@ async function entitiesPhase(s: Session, coverage: Coverage) {
   const rep = report(s, "entities");
   rep.total = targets.length + others.length;
   rep.extra.species = new Set(targets.map(t => t.species)).size;
+  rep.extra.combos = everything.length;
+  rep.extra.covered = targets.length;
+  console.info(`[selftest] entidades: ${targets.length} de ${everything.length} combinações de Pokémon (cobertura de modelos, texturas, camadas e posers)`);
   const total = targets.length + others.length + thrown.length;
   let done = 0;
   const pokemon = await runInBatches(targets, POKEMON_BATCH, s.signal, async batch => {
@@ -1376,7 +1406,7 @@ function sampleBattleForms(team: PokemonData[]): [string, { show(player: Player)
     .body(lead ? lead.getTranslatedName() : "");
   (["thunderbolt", "quickattack", "irontail", "thunderwave"]).forEach((id, i) => {
     const move = Dex.moves.get(id);
-    moves.cell(BATTLE_MOVES.MOVES + i, renderMoveButton(id, i === 3 ? 0 : move.pp, move.pp, i === 3, undefined, []), typeKeyTexture(toID(move.type)));
+    moves.cell(BATTLE_MOVES.MOVES + i, moveTileText(id, i === 3 ? 0 : move.pp, move.pp, i === 3, undefined, []), typeKeyTexture(toID(move.type)));
   });
   moves.cell(BATTLE_MOVES.BACK, { translate: "gui.back" });
   out.push(["battle-moves", moves]);
@@ -1404,6 +1434,252 @@ function sampleBattleForms(team: PokemonData[]): [string, { show(player: Player)
     .button1({ translate: "cobblemon.battle.ui.forfeit" }).button2({ translate: "gui.back" });
   out.push(["battle-forfeit", forfeit]);
   return out;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Fase: roteiro de telas para print (modo `telas`)
+
+/** Como abrir, renovar e fechar uma parada do roteiro. */
+interface ScreenRun {
+  /** Abre a tela. Uma promessa termina quando o jogador fecha (fechar = próxima); sem promessa, só o tempo conta. */
+  open: () => unknown;
+  /** A cada segundo com a tela aberta (HUD que precisa ser renovado, como a actionbar do lembrete). */
+  refresh?: () => void;
+  /** Ao sair da tela (fecha o estúdio/diálogo, devolve o HUD). */
+  close?: () => void;
+}
+
+function screenName(key: string): RawMessage {
+  return { translate: `cobblemon.selftest.screen.${key}` };
+}
+
+/** Time como no /cobblemon:party (Party.openPartyMenu), com o time de exemplo. */
+function samplePartyForm(team: PokemonData[]): ActionFormData {
+  const form = new ActionFormData().title({ translate: "cobblemon.ui.party" });
+  for (const pokemon of team) form.button(partyButtonText(pokemon, false), getPokemonSpriteTexture(pokemon.species));
+  for (let i = team.length; i < 6; i++) form.button({ translate: "cobblemon.ui.empty" });
+  return form.button("PC", "textures/block/pc");
+}
+
+/** Confirmação do inicial (StarterGUI.showStarterGUI), sem escolher nada. */
+function sampleStarterConfirm(species: string): MessageFormData {
+  return new MessageFormData()
+    .title({ translate: "cobblemon.ui.starter.title" })
+    .body({ translate: "cobblemon.port.starter.confirm", with: { rawtext: [{ translate: `cobblemon.species.${species}.name` }] } })
+    .button1({ translate: "gui.back" })
+    .button2({ translate: "cobblemon.ui.starter.choosebutton" });
+}
+
+/** Golpes com os botões de gimmick (Battle.showMoveMenu com Mega/Z/Tera disponíveis; o primeiro ligado). */
+function sampleGimmickMovesForm(team: PokemonData[]): CellForm {
+  const lead = team[3] ?? team[0];
+  const form = new CellForm(layoutTitle(SCREEN.BATTLE, SUB.BATTLE_MOVES, { translate: "cobblemon.battle.ui.fight" }), BATTLE_MOVES.COUNT)
+    .body(lead ? lead.getTranslatedName() : "");
+  (["thunderbolt", "quickattack", "irontail", "thunderwave"]).forEach((id, i) => {
+    const move = Dex.moves.get(id);
+    form.cell(BATTLE_MOVES.MOVES + i, moveTileText(id, move.pp, move.pp, false, undefined, []), typeKeyTexture(toID(move.type)));
+  });
+  form.cell(BATTLE_MOVES.BACK, { translate: "gui.back" });
+  const gimmicks = GIMMICK_ORDER.filter(g => g === "mega" || g === "zmove" || g === "terastal").slice(0, BATTLE_MOVES.GIMMICK_SLOTS);
+  gimmicks.forEach((gimmick, i) => form.cell(BATTLE_MOVES.GIMMICKS + i,
+    { rawtext: [{ text: i === 0 ? GIMMICK_ON_MARKER : "" }, { translate: gimmickLabelKey(gimmick) }] }, gimmickTexture(gimmick)));
+  return form;
+}
+
+/** PC de exemplo com a caixa vazia (mesma ordem de botões do PC real). */
+function sampleEmptyPcForm(player: Player, team: PokemonData[]): ActionFormData {
+  let wallpaper = "";
+  try { wallpaper = boxWallpaperTexturePath(player, 1); } catch { }
+  const form = new ActionFormData()
+    .title({ rawtext: [{ text: SCREEN.PC }, { text: "PC - Selftest" }] })
+    .body(wallpaper)
+    .button("<<").button({ translate: "cobblemon.ui.pc.box.title", with: ["2"] }).button(">>").button("").button("").button("");
+  for (let i = 0; i < PC.PARTY - PC.SLOTS; i++) form.button({ translate: "cobblemon.ui.empty" });
+  for (let i = 0; i < 6; i++) {
+    const p = team[i];
+    if (p) form.button(renderPokemonName(p), getPokemonIconTexture(p));
+    else form.button({ translate: "cobblemon.ui.empty" });
+  }
+  return form;
+}
+
+/** Resolve quando o diálogo do jogador acaba (o diálogo não devolve promessa: confere o estado a cada 5 ticks). */
+function dialogueEnded(player: Player): Promise<void> {
+  return new Promise(resolve => {
+    const id = system.runInterval(() => {
+      let open = false;
+      try { open = player.isValid && getActiveDialogue(player) !== undefined; } catch { }
+      if (open) return;
+      system.clearRun(id);
+      resolve();
+    }, 5);
+  });
+}
+
+/** Como mostrar cada parada do roteiro (dados de exemplo; nada é gravado no jogador). */
+function screenRuns(s: Session, team: PokemonData[], hud: { party?: string; battle?: string }): Record<string, ScreenRun> {
+  const player = s.player;
+  const categories = getStarterCategories();
+  const starter = categories.length ? starterSpecies(categories[0].pokemon[0]) ?? "bulbasaur" : "bulbasaur";
+  const sample = team[3] ?? team[0];
+  const battleForms = new Map(sampleBattleForms(team));
+  const showBattle = (label: string) => () => battleForms.get(label)?.show(player);
+  const battleHud = (view: BattleHudView): ScreenRun => ({
+    open: () => setHudChannel(player, CHANNEL.BATTLE, encodeBattleBody(view)),
+    close: () => setHudChannel(player, CHANNEL.BATTLE, hud.battle ?? encodeBattleBody(undefined)),
+  });
+  const summary = (tab: "info" | "moves" | "stats" | "marks", studio: boolean): ScreenRun => ({
+    open: () => sample && showSummary(player, sample, { tab, studio }),
+    close: studio ? () => closeStudio(player) : undefined,
+  });
+  const reminder = () => player.onScreenDisplay.setActionBar({ translate: "cobblemon.ui.starter.chooseyourstarter", with: ["/cobblemon:starter"] });
+  const dex = getDexes()[0];
+  const moves = (["thunderbolt", "quickattack", "irontail", "thunderwave"]).map((id, i) => {
+    const move = Dex.moves.get(id);
+    return { id, type: toID(move.type), pp: `${i === 3 ? 0 : move.pp}/${move.pp}`, usable: i !== 3 };
+  });
+  return {
+    starter: { open: () => buildStarterForm(categories, { category: 0, position: 0, page: 0, studio: false, studioToggle: true }).show(player) },
+    starter_3d: {
+      open: () => {
+        const studio = openStudio(player, { species: starter }, FRAMING.starter);
+        return buildStarterForm(categories, { category: 0, position: 0, page: 0, studio, studioToggle: true }).show(player);
+      },
+      close: () => closeStudio(player),
+    },
+    starter_confirm: { open: () => sampleStarterConfirm(starter).show(player) },
+    starter_reminder: { open: reminder, refresh: reminder, close: () => player.onScreenDisplay.setActionBar(" ") },
+    party: { open: () => samplePartyForm(team).show(player) },
+    party_hud: {
+      open: () => pushParty(player, team, 1, true),
+      close: () => { if (hud.party !== undefined) setHudChannel(player, CHANNEL.PARTY, hud.party); },
+    },
+    summary_info: summary("info", false),
+    summary_moves: summary("moves", false),
+    summary_stats: summary("stats", false),
+    summary_marks: summary("marks", false),
+    summary_info_3d: summary("info", true),
+    summary_moves_3d: summary("moves", true),
+    summary_stats_3d: summary("stats", true),
+    summary_marks_3d: summary("marks", true),
+    pc: { open: () => samplePcForm(player, team).show(player) },
+    pc_empty: { open: () => sampleEmptyPcForm(player, team).show(player) },
+    pokedex_list: { open: () => openDexList(player) },
+    pokedex_page: { open: () => dex && openDexPage(player, dex.id, 0, "all") },
+    pokedex_entry: { open: () => openPokedex(player, "pikachu") },
+    dialogue: {
+      open: () => {
+        openDialogueCommand("cobblemon:example", player);
+        return dialogueEnded(player);
+      },
+      close: () => stopDialogue(player),
+    },
+    trade: { open: () => sampleTradeForm(team).show(player) },
+    battle_action: { open: showBattle("battle-action") },
+    battle_moves: { open: showBattle("battle-moves") },
+    battle_gimmick: { open: () => sampleGimmickMovesForm(team).show(player) },
+    battle_switch: { open: showBattle("battle-switch") },
+    battle_bag: { open: showBattle("battle-bag") },
+    battle_target: { open: showBattle("battle-target") },
+    battle_forfeit: { open: showBattle("battle-forfeit") },
+    battle_hud: battleHud({ slotsPerActor: 1, left: [team[0] && sampleTile(team[0], 0.8, true)], right: [team[4] && sampleTile(team[4], 0.25, false)] }),
+    battle_hud_doubles: battleHud({
+      slotsPerActor: 2, leftActor: player.name, rightActor: "Selftest",
+      left: team.slice(0, 2).map(p => sampleTile(p, 0.6, true)), right: team.slice(2, 4).map(p => sampleTile(p, 0.1, false)),
+    }),
+    battle_minimised: battleHud({
+      slotsPerActor: 1, left: [team[1] && sampleTile(team[1], 1, true)], right: [team[5] && sampleTile(team[5], 0.5, false)],
+      ui: { minimised: true, prompt: BATTLE_PROMPT.ACTIONS },
+    }),
+    battle_minimised_moves: battleHud({
+      slotsPerActor: 1, left: [team[3] && sampleTile(team[3], 0.7, true)], right: [team[4] && sampleTile(team[4], 0.4, false)],
+      ui: { minimised: true, prompt: BATTLE_PROMPT.MENU, cursor: 0, moves },
+    }),
+    achievements: { open: () => openAchievements(player) },
+    stats: { open: () => openStatsScreen(player) },
+    toast_capture: { open: () => { if (team[3]) showToast(player, captureToast(String(toID(team[3].species)), getPokemonIconTexture(team[3]))); } },
+    toast_advancement: { open: () => showToast(player, advancementToast("task", "cobblemon.selftest.phase.screens")) },
+  };
+}
+
+/** Mostra uma parada: aviso, abre, espera (fechar, tempo ou stop) e fecha. */
+async function showScreen(s: Session, step: ScreenStep, run: ScreenRun, index: number, total: number): Promise<ScreenOutcome> {
+  const player = s.player;
+  const name = screenName(step.key);
+  const n = index + 1;
+  try { player.onScreenDisplay.setActionBar(tr("cobblemon.selftest.screens.announce", n, total, name)); } catch { }
+  tell(player, tr("cobblemon.selftest.screens.now", n, total, name));
+  await waitTicks(SCREEN_ANNOUNCE_TICKS);
+  if (stopped(s)) {
+    console.info(`[selftest] tela ${n}/${total} ${step.key}: stopped em 0.0 s`);
+    return "stopped";
+  }
+  let settled = false;
+  let promise = false;
+  const started = system.currentTick;
+  try {
+    const result = run.open();
+    if (result && typeof (result as Promise<unknown>).then === "function") {
+      promise = true;
+      (result as Promise<unknown>).catch(e => {
+        // Jogador saiu com a tela aberta (FormRejectError), ou o teste já acabou: não é falha da tela.
+        if (!s.player.isValid || active !== s || String(e).includes("FormRejectError")) return;
+        fail(s, `tela ${step.key}`, e);
+      }).finally(() => { settled = true; });
+    }
+  }
+  catch (e) { fail(s, `tela ${step.key}`, e); settled = true; promise = true; }
+  const outcome = await holdScreen({
+    ticks: s.screenSeconds * 20,
+    wait: waitTicks,
+    stopped: () => stopped(s),
+    closed: () => promise && settled,
+    onSecond: remaining => {
+      try { run.refresh?.(); } catch { }
+      if (step.actionbar) return;
+      try { player.onScreenDisplay.setActionBar(tr("cobblemon.selftest.screens.countdown", n, total, name, remaining)); } catch { }
+    },
+  });
+  try { run.close?.(); } catch { }
+  closeForms(player);
+  for (let i = 0; i < 10 && promise && !settled; i++) await waitTicks(1);
+  console.info(`[selftest] tela ${n}/${total} ${step.key}: ${outcome} em ${((system.currentTick - started) / 20).toFixed(1)} s`);
+  return outcome;
+}
+
+async function screensPhase(s: Session) {
+  const player = s.player;
+  const team = sampleTeam();
+  const rep = report(s, "screens");
+  const steps = screenTour({ starter: getStarterCategories().length > 0, dex: getDexes().length > 0 });
+  rep.total = steps.length;
+  try { player.camera.clear(); } catch { }
+  const hud = { party: getHudChannel(player, CHANNEL.PARTY), battle: getHudChannel(player, CHANNEL.BATTLE) };
+  const runs = screenRuns(s, team, hud);
+  tell(player, tr("cobblemon.selftest.screens.intro", steps.length, s.screenSeconds, "Win+Alt+PrtScn", "Videos\\Captures"));
+  const outcomes: Record<ScreenOutcome, number> = { closed: 0, timeout: 0, stopped: 0 };
+  try {
+    for (const [index, step] of steps.entries()) {
+      if (stopped(s)) break;
+      setProgress(s, index, steps.length);
+      const outcome = await showScreen(s, step, runs[step.key] ?? { open: () => undefined }, index, steps.length);
+      outcomes[outcome]++;
+      if (outcome === "stopped") break;
+      s.screensShown.push(step.key);
+      rep.done = s.screensShown.length;
+    }
+  }
+  finally {
+    setHudChannel(player, CHANNEL.BATTLE, hud.battle ?? encodeBattleBody(undefined));
+    if (hud.party !== undefined) setHudChannel(player, CHANNEL.PARTY, hud.party);
+    try { closeStudio(player); } catch { }
+    try { player.onScreenDisplay.setActionBar(" "); } catch { }
+  }
+  rep.extra.closed = outcomes.closed;
+  rep.extra.timeout = outcomes.timeout;
+  setProgress(s, rep.done, rep.total);
+  console.info(`[selftest] telas: ${rep.done}/${rep.total} (${outcomes.closed} fechada(s) pelo jogador, ${outcomes.timeout} pelo tempo de ${s.screenSeconds} s); ordem: ${s.screensShown.join(", ")}`);
+  try { player.camera.setCamera("minecraft:free", { location: add(s.origin, CAMERA), facingLocation: add(s.origin, CAMERA_TARGET) }); } catch { }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1514,6 +1790,7 @@ async function runPhase(s: Session, plan: PhasePlan) {
       case "sounds": await soundsPhase(s, plan.coverage); break;
       case "ui": await uiPhase(s); break;
       case "battle": await battlePhase(s); break;
+      case "screens": await screensPhase(s); break;
     }
   }
   catch (e) { fail(s, `fase ${plan.phase}`, e instanceof Error ? `${e.message}\n${e.stack ?? ""}` : e); }
@@ -1521,7 +1798,7 @@ async function runPhase(s: Session, plan: PhasePlan) {
   console.info(`[selftest] fase ${plan.phase} (${plan.coverage}) em ${formatDuration(Date.now() - started)}`);
 }
 
-async function startSession(player: Player, mode: SelfTestMode) {
+async function startSession(player: Player, mode: SelfTestMode, screenSeconds: number) {
   if (active) { tell(player, tr("cobblemon.selftest.already_running", active.playerName)); return; }
   // Área de um teste interrompido ainda por limpar, ou este jogador ainda não restaurado: espera.
   if ([...pending.values()].some(p => !p.journal.regionClean) || pendingOf(player)) { tell(player, tr("cobblemon.selftest.recovering")); return; }
@@ -1555,7 +1832,7 @@ async function startSession(player: Player, mode: SelfTestMode) {
     player, playerId: player.id, playerName: player.name, mode, plan, signal: new StopSignal(), startedAt: Date.now(),
     dimension: player.dimension, origin, journal, changes: new BlockChangeLog<BlockPermutation>(), entityIds: new Set(), snapshot,
     inventory: snapshotInventory(player), progress: { done: 0, total: 0 }, reports: {}, failures: [],
-    worldIds, worldValues,
+    worldIds, worldValues, screenSeconds, screensShown: [],
   };
   active = s;
   console.info(`[selftest] ${player.name}: modo ${mode}, área ${JSON.stringify(journal.region)}`);
@@ -1665,7 +1942,10 @@ function sendReport(s: Session, elapsed: string) {
   const player = s.player;
   tell(player, tr(s.signal.stopped ? "cobblemon.selftest.interrupted" : "cobblemon.selftest.finished", elapsed, s.mode));
   const r = s.reports;
-  if (r.entities) tell(player, tr("cobblemon.selftest.summary.entities", r.entities.extra.pokemon ?? 0, r.entities.extra.species ?? 0, r.entities.extra.other ?? 0, r.entities.extra.thrown ?? 0));
+  if (r.entities) {
+    tell(player, tr("cobblemon.selftest.summary.entities", r.entities.extra.pokemon ?? 0, r.entities.extra.species ?? 0, r.entities.extra.other ?? 0, r.entities.extra.thrown ?? 0));
+    tell(player, tr("cobblemon.selftest.summary.entities_cover", r.entities.extra.covered ?? 0, r.entities.extra.combos ?? 0));
+  }
   if (r.movement) {
     const m = r.movement.extra;
     tell(player, tr("cobblemon.selftest.summary.movement", m.ground ?? 0, m.walked ?? 0, m.water ?? 0, m.swam ?? 0, m.air ?? 0, m.flew ?? 0, m.ridden ?? 0, m.rides ?? 0));
@@ -1675,6 +1955,12 @@ function sendReport(s: Session, elapsed: string) {
   if (r.sounds) tell(player, tr("cobblemon.selftest.summary.sounds", r.sounds.done, r.sounds.extra.of ?? 0));
   if (r.ui) tell(player, tr("cobblemon.selftest.summary.ui", r.ui.done));
   if (r.battle) tell(player, tr("cobblemon.selftest.summary.battle", r.battle.extra.turns ?? 0));
+  if (r.screens) {
+    tell(player, tr("cobblemon.selftest.summary.screens", r.screens.done, r.screens.total, r.screens.extra.closed ?? 0, r.screens.extra.timeout ?? 0));
+    // Ordem das telas, para casar com os prints (Win+Alt+PrtScn numera os arquivos na mesma ordem).
+    tell(player, tr("cobblemon.selftest.screens.order"));
+    s.screensShown.forEach((key, i) => tell(player, { rawtext: [{ text: `§7${i + 1}. ` }, screenName(key)] }));
+  }
   const times = s.plan.map(p => `${p.phase} ${formatDuration(r[p.phase]?.extra.ms ?? 0)}`).join(", ");
   tell(player, { text: `§7${times}` });
   if (s.failures.length) tell(player, tr("cobblemon.selftest.summary.failures", s.failures.length));
@@ -1787,14 +2073,17 @@ function statusOf(player: Player | undefined) {
   tell(player, tr("cobblemon.selftest.status", s.playerName, s.mode, s.phase ? phaseName(s.phase) : "-", s.progress.done, s.progress.total, formatDuration(Date.now() - s.startedAt)));
 }
 
-/** Executa um modo para o jogador (comando ou scriptevent). */
-export function runSelfTestCommand(player: Player | undefined, raw: string | undefined) {
+/**
+ * Executa um modo para o jogador (comando ou scriptevent).
+ * @param seconds Modo `telas`: segundos com cada tela aberta (3..60, padrão 10).
+ */
+export function runSelfTestCommand(player: Player | undefined, raw: string | undefined, seconds?: number | string) {
   const mode = parseSelfTestMode(raw);
   if (!mode) { tell(player, tr("cobblemon.selftest.usage", SELFTEST_MODES.join("|"))); return; }
   if (mode === "stop") return stopSession(player);
   if (mode === "status") return statusOf(player);
   if (!player) { console.info("[selftest] só jogadores podem rodar o teste (use o comando no jogo)"); return; }
-  startSession(player, mode).catch(e => {
+  startSession(player, mode, parseScreenSeconds(seconds)).catch(e => {
     console.info(`[selftest] erro: ${e}`);
     if (active?.player === player) active = undefined;
   });
@@ -1804,14 +2093,15 @@ export function runSelfTestCommand(player: Player | undefined, raw: string | und
 export function registerSelfTestCommand(event: StartupEvent) {
   const registry = event.customCommandRegistry;
   try {
-    registry.registerEnum(MODE_ENUM, [...SELFTEST_MODES]);
+    registry.registerEnum(MODE_ENUM, [...SELFTEST_MODES, ...Object.keys(SELFTEST_MODE_ALIASES)]);
     registry.registerCommand({
       name: COMMAND_NAME,
       description: "Exercises the add-on in-world to fill the client ContentLog / Testa o add-on no mundo para gerar o ContentLog (admin).",
       permissionLevel: CommandPermissionLevel.GameDirectors,
       cheatsRequired: true,
-      optionalParameters: [{ name: MODE_ENUM, type: CustomCommandParamType.Enum }],
-    }, (origin: CustomCommandOrigin, value?: string): CustomCommandResult => {
+      // `telas <segundos>`: tempo de cada tela (3..60).
+      optionalParameters: [{ name: MODE_ENUM, type: CustomCommandParamType.Enum }, { name: "seconds", type: CustomCommandParamType.Integer }],
+    }, (origin: CustomCommandOrigin, value?: string, seconds?: number): CustomCommandResult => {
       const source = origin.initiator ?? origin.sourceEntity;
       const player = source instanceof Player ? source : undefined;
       const mode = parseSelfTestMode(value);
@@ -1819,19 +2109,20 @@ export function registerSelfTestCommand(event: StartupEvent) {
         return { status: CustomCommandStatus.Failure, message: "Only players / Só jogadores" };
       if (!player && mode !== "stop" && mode !== "status")
         return { status: CustomCommandStatus.Failure, message: "Run it in-game: /cobblemon:selftest quick / Rode no jogo" };
-      system.run(() => runSelfTestCommand(player, value));
+      system.run(() => runSelfTestCommand(player, value, seconds));
       return { status: CustomCommandStatus.Success };
     });
   }
   catch (e) { console.warn(`Não foi possível registrar ${COMMAND_NAME}: ${e}`); }
-  // scriptevent cobblemon:selftest <modo> [jogador]
+  // scriptevent cobblemon:selftest <modo> [segundos] [jogador]
   system.afterEvents.scriptEventReceive.subscribe(event => {
     if (event.id !== SCRIPT_EVENT_ID) return;
     const [modeText, ...rest] = event.message.trim().split(/\s+/);
+    const seconds = rest.length && /^\d+$/.test(rest[0]) ? rest.shift() : undefined;
     let player = event.sourceEntity instanceof Player ? event.sourceEntity : undefined;
     const name = rest.join(" ");
     if (name) player = world.getPlayers({ name })[0] ?? player;
-    runSelfTestCommand(player, modeText);
+    runSelfTestCommand(player, modeText, seconds);
   });
   world.afterEvents.worldLoad.subscribe(() => startRecovery());
   world.afterEvents.entityLoad.subscribe(({ entity }) => {

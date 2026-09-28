@@ -64,12 +64,17 @@ system.run(() => {
       catch { return; }
       const block = hit?.block;
       if (!block?.isValid) return;
+      // Frente cliente-teste3-log: bloco num chunk carregado que não tica (borda da simulação) lança
+      // LocationInUnloadedChunkError no typeId; sem catch, o erro ia para o log a cada acerto.
+      let id: string;
+      try { id = block.typeId; }
+      catch { return; }
       const projectile = event.projectile?.isValid ? event.projectile.typeId : "";
-      if (block.typeId === RING_TARGET) {
+      if (id === RING_TARGET) {
         hitRingTarget(block, targetPower(hit.face, hit.faceLocation), targetDuration(projectile));
         return;
       }
-      if (ARROWS.has(projectile) && buttonSpec(block.typeId).arrows && block.typeId.endsWith("_button") && block.typeId.startsWith("cobblemon:")) pressButton(block);
+      if (ARROWS.has(projectile) && buttonSpec(id).arrows && id.endsWith("_button") && id.startsWith("cobblemon:")) pressButton(block);
     });
   }
   catch { /* ambiente sem mundo (testes) */ }

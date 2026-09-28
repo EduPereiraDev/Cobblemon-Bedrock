@@ -7,7 +7,7 @@
 import { Player, RawMessage, system } from "@minecraft/server";
 import { ActionFormData, ActionFormResponse, FormCancelationReason } from "@minecraft/server-ui";
 import { SCREEN, ScreenMarker, withScreen } from "../ui/screens";
-import { SubMarker } from "./layoutSpec";
+import { GUI, SubMarker, TYPE_DOUBLE, TYPE_SINGLE, typeKeyTexture } from "./layoutSpec";
 
 export * from "./layoutSpec";
 
@@ -114,3 +114,16 @@ export function cellForm<T = unknown>(screen: ScreenMarker, sub: SubMarker | Sub
 }
 
 export { SCREEN };
+
+/** Espaçador e 1º tipo (SUMMARY.TYPES / STARTER.TYPES / PC): o texto escolhe o espaçador, o ícone é a chave do tipo. */
+export function typeCells<T>(form: CellForm<T>, types: string[], primaryIndex: number, secondaryIndex: number) {
+  if (!types.length) return;
+  form.cell(primaryIndex, types.length > 1 ? TYPE_DOUBLE : TYPE_SINGLE, typeKeyTexture(types[0]));
+  if (types.length > 1) form.cell(secondaryIndex, BLANK, typeKeyTexture(types[1]));
+}
+
+/** Ícone de gênero (party_gender_*: 5×7, como o ♂/♀ colorido do Java). */
+export function genderIcon(gender: string | undefined): string | undefined {
+  return gender === "m" ? `${GUI}/party/party_gender_male` : gender === "f" ? `${GUI}/party/party_gender_female` : undefined;
+}
+

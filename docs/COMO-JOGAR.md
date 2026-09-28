@@ -71,7 +71,7 @@ Mac na rede local.
 | PC: ordenar e filtrar | **Ordenar** a caixa por nome, nível, tipo, nº da Pokédex ou gênero (crescente/decrescente). **Filtrar** escurece quem não passa: nome parcial (`pika`), `!` para negar, `holding`, `fainted`, `legendary`, `mythical`, `ultrabeast` ou propriedades (`shiny`, `level=50`, `gender=female`...) |
 | Pokémon selecionado do time (setas do overlay no Cobblemon) | agachar duas vezes rápido passa para o próximo (o HUD marca o selecionado; em batalha não troca), ou `/cobblemon:selectslot <1-6>` |
 | Envio rápido (tecla R do Cobblemon) | agachado + pular: solta/recolhe o selecionado onde você olha; mirando um selvagem, batalha com ele na frente; mirando um jogador, abre batalha/troca; em batalha, minimiza ou reabre a tela da batalha (linha abaixo). Também `/cobblemon:sendout [1-6]` |
-| Capturar | arremessar uma Poké Bola no Pokémon selvagem |
+| Capturar | arremessar uma Poké Bola no Pokémon selvagem. Como no Cobblemon, a bola que **não chega a capturar** (bateu no chão ou num bloco, acertou outra coisa, ou a captura foi recusada: Pokémon com dono, incapturável, ocupado, em batalha de outro, fora da sua vez) cai no chão como item da mesma bola e pode ser pega de volta; no criativo ela só some (e não é gasta). A bola em que o Pokémon **escapou** é gasta (quebra), e a que voa 30 s sem acertar nada some |
 | Pokédex e scanner | usar a Pokédex sem mirar abre a tela; usar mirando um Pokémon (até 10 blocos) escaneia com zoom por 15 ticks e abre a entrada. **Agachar + usar** liga o modo scanner: a roda do mouse/troca de hotbar dá zoom e mirar registra sem abrir a tela; usar sem agachar, trocar de item ou morrer desliga |
 | Move Dex (golpes na Pokédex) | na entrada de uma espécie, botão **Golpes**: golpes por nível, TM e ovo (filtros Todos/Nível/TM/Ovo), ordem por nível/nome/tipo/descoberto, troca de forma e detalhes do golpe. TMs que você ainda não aprendeu aparecem travados (a config `unlockAllMoveDexMovesByDefault` libera todos) |
 | Filtros e busca da Pokédex | filtros Todos/Obtidos/Vistos/Não registrados/Montáveis/TM não descoberto; a busca aceita espécie, habilidade, golpe ou drop (pelo nome em inglês do Cobblemon, não pelo traduzido) |
@@ -163,15 +163,33 @@ abre. Para não precisar fazer tudo à mão, há um teste automático que força
 
 | Modo | O que faz | Tempo medido (servidor de teste) |
 |---|---|---|
-| `quick` (padrão) | Tudo, em amostra: 1 Pokémon por família (forma padrão) + todas as variantes dos casos já vistos no log (torchic, altaria, zubat, skarmory, porygon-z, exeggutor/dugtrio/ninetales de Alola, flabébé, unown, furret, blaziken, frillish); NPC, barcos, exibições e 4 bolas (paradas e arremessadas); movimento em amostra (os casos já vistos + outras espécies andando, nadando e voando, e 3 montarias: terra, água e ar); cada bloco no estado padrão e em todos os estágios de crescimento; 160 partículas e 160 sons; todas as telas; batalha curta | ~4 min 10 s |
-| `full` | Tudo, completo: todas as espécies × todas as combinações (shiny, formas regionais, gênero, Alfa, formas como Unown/Flabébé), todas as entidades do pack com cada valor das propriedades e cada animação, todas as bolas arremessadas, o movimento completo, cada bloco em cada estado (um estado por vez), todas as partículas e todos os sons | ~33 min (soma das fases) |
-| `entities` | Só as entidades, completo (a parte mais longa do `full`) | ~22 min |
+| `quick` (padrão) | Tudo, em amostra: 1 Pokémon por família (forma padrão) + as variantes dos casos já vistos no log (a cobertura: cada modelo, textura, camada e poser deles) (torchic, altaria, zubat, skarmory, porygon-z, exeggutor/dugtrio/ninetales de Alola, flabébé, unown, furret, blaziken, frillish); NPC, barcos, exibições e 4 bolas (paradas e arremessadas); movimento em amostra (os casos já vistos + outras espécies andando, nadando e voando, e 3 montarias: terra, água e ar); cada bloco no estado padrão e em todos os estágios de crescimento; 160 partículas e 160 sons; todas as telas; batalha curta | ~4 min 10 s |
+| `full` | Tudo, completo: todas as espécies com a **cobertura** das combinações (o menor conjunto de combinações de shiny, formas regionais, gênero, Alfa, manchas do Spinda etc. em que cada modelo, textura, camada e poser da espécie aparece ao menos uma vez: 2588 das 8485 combinações; o resumo no chat mostra "X de Y"), todas as entidades do pack com cada valor das propriedades e cada animação, todas as bolas arremessadas, o movimento completo, cada bloco em cada estado (um estado por vez), todas as partículas e todos os sons | ~19 min (antes da cobertura: ~33 min) |
+| `entities` | Só as entidades, completo (a parte mais longa do `full`) | ~8 min |
 | `movement` | Só o movimento, completo. Três caixas fechadas por barreira na frente da câmera: um **cercado** (andar e correr), uma **piscina** de água (nadar e flutuar) e um **volume aberto com teto** (voar e planar). Cada espécie (cada forma com animações próprias, como as de Alola) vai para a caixa do jeito que ela se move, com a IA ligada e empurrões para não ficar parada, em rodadas de 20 + 10 + 12 Pokémon por ~4 s. Antes, você monta cada montaria (terra no cercado, água na piscina, ar decolando do chão com pulo duplo, voando e planando no fim), com a câmera de montaria de verdade | ~7 min 30 s |
 | `blocks` | Só os blocos, cada estado | ~1 min |
 | `particles` | Só as partículas (todas) | ~15 s |
 | `sounds` | Só os sons (todos, volume baixo) | ~40 s |
 | `ui` | Só as telas: inicial (2D e 3D), time, resumo (4 abas e 3D), PC (o seu e uma caixa de exemplo cheia), Pokédex (lista, página, entrada), diálogo de NPC, troca, batalha (menu, golpes, troca, mochila, alvo, desistir), conquistas, estatísticas e o HUD (time, caixas da batalha em simples/duplas/minimizada, toasts). Cada tela fica ~2,5 s e fecha sozinha | ~1 min 10 s |
 | `battle` | Batalha contra um Magikarp selvagem de teste com um time temporário (Pikachu, Charmander, Squirtle nível 5): golpe, troca, item da mochila (X Attack) e golpe; o menu de verdade aparece a cada turno e fecha sozinho | ~30 s |
+| `telas` (ou `screens`) | Roteiro para **prints**: abre cada tela custom, uma por vez, com dados de exemplo, e fica nela um tempo fixo (padrão 10 s; `/cobblemon:selftest telas 15` = 15 s, de 3 a 60). Fechar a tela passa para a próxima na hora. Antes de cada uma, a actionbar mostra "Tela N/total: nome" por ~2 s e o chat diz o nome e para tirar o print; com a tela aberta, a actionbar conta os segundos que faltam (se o seu cliente não mostrar a actionbar por cima da tela, o aviso de antes basta). No fim o chat lista a ordem das telas, que é a mesma dos prints. Não entra no `quick` nem no `full` | 36 telas × o tempo escolhido (~7 min com 10 s) |
+
+### Prints de todas as telas (`/cobblemon:selftest telas`)
+
+1. `/cobblemon:selftest telas` (ou `telas 20` para 20 s por tela). O chat avisa quantas telas são e o atalho do print.
+2. Em cada tela: tire o print com **Win+Alt+PrtScn** (Windows; a Barra de Jogo salva em `Videos\Captures`). Se já tirou,
+   feche a tela (Esc) para ir à próxima; senão ela avança sozinha quando o tempo acaba.
+3. Ordem das 36 telas (as do inicial somem se a config não tiver categorias de inicial):
+   inicial (categorias 2D, estúdio 3D, confirmação), lembrete do inicial (actionbar), time, HUD do time, resumo nas 4
+   abas (Info, Golpes, Atributos, Marcas) sem e com o estúdio 3D, PC com uma caixa cheia e com uma caixa vazia, Pokédex
+   (lista, página de entradas, entrada do Pikachu), diálogo de NPC, troca, batalha (ações, golpes, golpes com os botões
+   de gimmick Mega/Z/Tera, troca, mochila, alvo, desistir), HUD da batalha (simples, duplas, minimizada com o aviso e
+   minimizada com os golpes no HUD), conquistas, estatísticas e os avisos (toasts) de captura e de conquista.
+4. No fim o chat repete a lista numerada; `/cobblemon:selftest stop` para no meio. A restauração é a mesma dos outros
+   modos (lugar, modo de jogo, câmera, HUD, área, inventário e dados).
+
+Nenhuma tela de exemplo grava nada: o time, o PC e a troca são montados com Pokémon de exemplo que não entram no seu
+time, e clicar num botão só fecha a tela (passa para a próxima).
 
 Como fica o mundo e o jogador:
 

@@ -13,12 +13,13 @@ import type { PoserOutput } from "./posers.ts";
 import { emitBiomeTagsModule, emitSpawnsModule, emitSpeciesModule, emitVariantsModule } from "./scriptsOut.ts";
 import { emitStudioFramingModule } from "./studioFraming.ts"; // frente fix3
 import { fixArmorNeckCollisions } from "./headLocator.ts"; // frente fix3
-import { fixBlockZFighting } from "./zfight.ts"; // frente fix3
+import { fixBlockZFighting, fixEntityFlatPlanes } from "./zfight.ts"; // frente fix3; cliente-teste3-log (planos de entidade)
+import { ensureEntityVariables } from "./molangVars.ts"; // frente cliente-teste3-log
 import type { VariantsEntry } from "./scriptsOut.ts";
 import { SoundIndex } from "./sounds.ts";
 import { SpawnBuilder } from "./spawns.ts";
 import { gameplaySubset, loadSpecies, movementOf } from "./species.ts";
-import { ASSETS, HAND_BP, OUT, OUT_FINAL, OUT_RP, UPSTREAM, copyFile, count, rel, report, splitId, warn, writeJson, writeStats } from "./util.ts";
+import { ASSETS, HAND_BP, HAND_RP, OUT, OUT_FINAL, OUT_RP, UPSTREAM, copyFile, count, rel, report, splitId, warn, writeJson, writeStats } from "./util.ts";
 import { enumerateCombos, layerKey, loadFeatureDefs, loadResolvers } from "./variants.ts";
 import type { Combo } from "./variants.ts";
 import { BiomeResolver, BlockResolver } from "./worldgen.ts";
@@ -397,6 +398,18 @@ report.counts["geometrias"] = models.emittedCount;
 report.counts["grupos de animação"] = anims.emittedCount;
 report.counts["texturas"] = copiedTextures.size;
 await portraitsDone;
+// Frente cliente-teste3-log (depois dos retratos, que leem as geometrias em paralelo): planos de espessura zero das
+// entidades ganham espessura (z-fighting com o material de dois lados) e toda variável lida por uma client entity é
+// inicializada no pre_animation (render controllers/animações/controllers: "unknown variable" no cliente).
+{
+	const flat = fixEntityFlatPlanes();
+	report.counts["z-fighting: cubos planos de entidade com espessura (inflate)"] = flat.cubes;
+	report.counts["z-fighting: geometrias de entidade com planos"] = flat.geometries;
+	const vars = ensureEntityVariables(OUT_RP, HAND_RP);
+	report.counts["client entities com variáveis inicializadas no pre_animation"] = vars.entities;
+	report.counts["variáveis inicializadas no pre_animation (v.x ?? 0)"] = vars.variables;
+	if (vars.names.size) console.log(`  variáveis sem inicialização (entidades): ${[...vars.names].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([n, c]) => `${n}×${c}`).join(", ")}`);
+}
 report.durationMs = Date.now() - started;
 report.output = writeStats();
 writeJson(`${OUT}/import-report.json`, report);

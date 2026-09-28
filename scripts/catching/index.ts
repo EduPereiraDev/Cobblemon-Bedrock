@@ -3,7 +3,7 @@
  * sequência de captura. Ver docs/pendencias/captura.md para a API e os pedidos às outras frentes.
  */
 import { resolveMockTarget } from "../battle/effects/Mock";
-import { Entity, GameMode, ItemStack, Player, Vector3, world } from "@minecraft/server";
+import { Dimension, Entity, GameMode, ItemStack, Player, Vector3, system, world } from "@minecraft/server";
 import { PokemonData } from "../Pokemon";
 import { tryGetBattleFromEntity } from "../battle";
 import { ActorType } from "../battle/BattleActor";
@@ -15,7 +15,8 @@ import { MultiplierModifier } from "./MultiplierModifier";
 import { bindCaptureEntity } from "./WorldStateModifier";
 import { CaptureContext, calculateCapture } from "./CaptureCalculator";
 import { PokeBall, getPokeBall, getPokeBallOrDefault, pokeBallName } from "./PokeBalls";
-import { BattleCaptureAction, beginBattleCapture, runCaptureSequence } from "./CaptureSequence";
+import { BattleCaptureAction, beginBattleCapture, isCaptureInProgress, runCaptureSequence } from "./CaptureSequence";
+import { BALL_MAX_FLIGHT_TICKS, missedBallItem, shouldExpireBall } from "./MissedBall";
 import { DexProgress, getPokedex } from "../pokedex/PokedexStorage";
 import { bindPokedex } from "../pokedex";
 import { bindPCWallpapers } from "../GUI/PCWallpapers";
@@ -90,14 +91,47 @@ export function processCapture(thrower: Player, pokeball: Entity | PokeBall, tar
   });
 }
 
-/** Devolve a bola como item (fora do criativo) e remove a entidade. */
-function dropPokeball(pokeball: Entity, player?: Player) {
-  try {
-    if (player?.getGameMode() !== GameMode.Creative)
-      pokeball.dimension.spawnItem(new ItemStack(getPokeBallOrDefault(pokeball.typeId).id, 1), pokeball.location);
+/** Onde a bola bateu (vem do evento de acerto: continua válido mesmo se o projétil já tiver sido invalidado). */
+interface HitPlace {
+  dimension: Dimension;
+  location: Vector3;
+}
+
+function safeTypeId(entity: Entity): string | undefined {
+  try { return entity.typeId; }
+  catch { return undefined; }
+}
+
+function isCreative(player: Player): boolean {
+  try { return player.getGameMode() === GameMode.Creative; }
+  catch { return false; }
+}
+
+/**
+ * EmptyPokeBallEntity.onHitBlock/drop(): a bola some e, fora do criativo, cai como item da mesma bola (MissedBall.ts).
+ * Sem dono (jogador saiu), o Java só descarta. O item nasce no ponto do acerto (`at`), com fallback na entidade.
+ */
+function dropPokeball(pokeball: Entity, player: Player | undefined, at?: HitPlace) {
+  const itemId = missedBallItem(safeTypeId(pokeball), player?.isValid ? { creative: isCreative(player) } : undefined);
+  if (itemId) {
+    try {
+      const place = at ?? { dimension: pokeball.dimension, location: pokeball.location };
+      place.dimension.spawnItem(new ItemStack(itemId, 1), place.location);
+    }
+    catch (e) { console.warn(`Não foi possível devolver a Poké Bola: ${e}`); }
   }
-  catch (e) { console.warn(`Não foi possível devolver a Poké Bola: ${e}`); }
-  pokeball.triggerEvent("cobblemon:instant_kill");
+  try { if (pokeball.isValid) pokeball.triggerEvent("cobblemon:instant_kill"); }
+  catch { }
+}
+
+/** EmptyPokeBallEntity.tick: 600 ticks sem capturar → a bola some (sem item). */
+function expireBall(pokeball: Entity) {
+  try {
+    if (!pokeball.isValid) return;
+    const capturing = pokeball.getDynamicProperty("activated") === true || isCaptureInProgress(pokeball);
+    if (shouldExpireBall(BALL_MAX_FLIGHT_TICKS, capturing)) pokeball.triggerEvent("cobblemon:instant_kill");
+  }
+  catch { }
 }
 
 function isPokeballEntity(entity: Entity): boolean {
@@ -137,7 +171,7 @@ function isUncatchable(entity: Entity): boolean {
 }
 
 /** EmptyPokeBallEntity.onHitEntity: valida e começa a captura. */
-function handleBallHit(projectile: Entity, hitEntity: Entity, thrower: Player, hitVector: Vector3) {
+function handleBallHit(projectile: Entity, hitEntity: Entity, thrower: Player, hitVector: Vector3, at?: HitPlace) {
   // Acertos duplicados são comuns no Bedrock.
   if (projectile.getDynamicProperty("activated")) return;
   // Illusion/Transform (frente visual-batalha): a bola que acerta a entidade de exibição mira o Pokémon real.
@@ -145,7 +179,7 @@ function handleBallHit(projectile: Entity, hitEntity: Entity, thrower: Player, h
   const ball = getPokeBallOrDefault(projectile.typeId);
   const fail = (text: Parameters<typeof message.error>[0]) => {
     thrower.sendMessage(message.error(text));
-    dropPokeball(projectile, thrower);
+    dropPokeball(projectile, thrower, at);
   };
 
   if (!isWild(target)) return fail(message.With("cobblemon.capture.not_wild", [pokemonName(target)]));
@@ -158,7 +192,7 @@ function handleBallHit(projectile: Entity, hitEntity: Entity, thrower: Player, h
     if (!throwerActor) return fail(message.With("cobblemon.capture.in_battle", [pokemonName(target)]));
     const hitActor = battle.actors.find(actor => actor.isForPokemon(target));
     const hitActive = hitActor?.activePokemon.find(active => active?.entity.id === target.id);
-    if (!hitActor || !hitActive) { dropPokeball(projectile, thrower); return; }
+    if (!hitActor || !hitActive) { dropPokeball(projectile, thrower, at); return; }
     if (battle.format.battleType !== BattleTypes.SINGLES || hitActor.pokemon.filter(x => x.currentHealth > 0).length > 1)
       return fail({ translate: "cobblemon.capture.not_single" });
     if (!throwerActor.canFitForcedAction())
@@ -196,6 +230,7 @@ export function bindCatchEvents() {
     if (owner) entity.setDynamicProperty("player_id", owner.id);
     const ball = getPokeBall(entity.typeId);
     try { entity.playAnimation(`animation.${ball?.ancient ? "ancient_poke_ball" : "poke_ball"}.throw`); } catch { }
+    system.runTimeout(() => expireBall(entity), BALL_MAX_FLIGHT_TICKS);
   });
 
   // Bateu num bloco sem capturar: nuvem, som de madeira agudo e volta a ser item.
@@ -208,7 +243,7 @@ export function bindCatchEvents() {
       // SoundEvents.WOOD_PLACE com pitch 2,5 (o Java limita a 2,0); no Bedrock, colocar madeira = dig.wood.
       arg.dimension.playSound("dig.wood", arg.location, { pitch: 2 });
     } catch { }
-    dropPokeball(projectile, arg.source instanceof Player ? arg.source : getThrower(projectile));
+    dropPokeball(projectile, arg.source instanceof Player ? arg.source : getThrower(projectile), { dimension: arg.dimension, location: arg.location });
   });
 
   world.afterEvents.projectileHitEntity.subscribe(arg => {
@@ -217,12 +252,15 @@ export function bindCatchEvents() {
     if (projectile.getDynamicProperty("activated")) return;
     const thrower = getThrower(projectile, arg.source);
     const target = arg.getEntityHit().entity;
-    if (!thrower) { dropPokeball(projectile); return; }
-    if (!isPokemonEntity(target)) { dropPokeball(projectile, thrower); return; }
-    try { handleBallHit(projectile, target, thrower, arg.hitVector); }
+    const at: HitPlace = { dimension: arg.dimension, location: arg.location };
+    // Sem dono: o Java descarta a bola (tick: owner == null) sem item.
+    if (!thrower) { dropPokeball(projectile, undefined, at); return; }
+    // Entidade que não é Pokémon: no Java a bola segue e cai no próximo bloco; aqui o projétil parou, cai ali mesmo.
+    if (!isPokemonEntity(target)) { dropPokeball(projectile, thrower, at); return; }
+    try { handleBallHit(projectile, target, thrower, arg.hitVector, at); }
     catch (e) {
       console.error(`Erro ao processar acerto da Poké Bola: ${e}`);
-      dropPokeball(projectile, thrower);
+      dropPokeball(projectile, thrower, at);
     }
   });
 

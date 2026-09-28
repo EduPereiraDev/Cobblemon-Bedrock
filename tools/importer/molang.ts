@@ -182,7 +182,10 @@ export function scanMolang(expr: string, visit: (call: MolangCall) => string | u
 					end = Math.min(j + 1, expr.length);
 				}
 				const replacement = visit({ prefix, name, args, start: i, end });
-				if (replacement !== undefined) out += replacement;
+				// Frente cliente-teste3-log: operando colado depois da chamada ("q.r.pitch_change(0)30", erro de digitação do
+				// charizard/flygon) não pode grudar no nome trocado ("v.cr_o_pitch_change30", variável inexistente): um espaço
+				// mantém os dois tokens e o conserto com a semântica do Java (molangSyntax) descarta o resto, como o bedrockk.
+				if (replacement !== undefined) out += replacement + (/[a-z0-9_]$/i.test(replacement) && /^[a-z0-9_.]/i.test(expr.slice(end)) ? " " : "");
 				else if (inner) {
 					// Chamada mantida: os argumentos também passam pelo visitante (q.x dentro de math.clamp(...)).
 					out += expr.slice(i, inner[0]) + scanMolang(expr.slice(inner[0], inner[1]), visit) + expr.slice(inner[1], end);

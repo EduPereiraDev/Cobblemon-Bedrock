@@ -590,6 +590,21 @@ export function tickDecoratedPotSlice(tick: number) {
 // ---------------------------------------------------------------------------------------------
 // Eventos
 
+/**
+ * O vaso atingido por um projétil de impacto, ou undefined. Frente cliente-teste3-log: o bloco atingido pode estar num
+ * chunk carregado mas que não tica (projétil na borda da distância de simulação, encostado no chunk vizinho): ler
+ * `typeId` lança LocationInUnloadedChunkError, sem catch no evento (3º teste em cliente: 54× em main.js:597, blocos
+ * (-472, 70|71, 991), z = 991 é a última linha do chunk). Aí não há vaso a quebrar agora.
+ */
+export function potHitByProjectile(event: { getBlockHit(): { block: Block }; projectile?: { typeId?: string } }): Block | undefined {
+  try {
+    const block = event.getBlockHit().block;
+    if (!block?.isValid || block.typeId !== DECORATED_POT) return undefined;
+    return IMPACT_PROJECTILES.has(event.projectile?.typeId ?? "") ? block : undefined;
+  }
+  catch { return undefined; }
+}
+
 export function startDecoratedPots() {
   system.runInterval(() => tickDecoratedPotSlice(system.currentTick), 1);
 
@@ -623,10 +638,8 @@ export function startDecoratedPots() {
 
   // DecoratedPotBlock.onProjectileHit: projétil de impacto (com mobGriefing) racha o vaso.
   world.afterEvents.projectileHitBlock.subscribe(event => {
-    let block: Block | undefined;
-    try { block = event.getBlockHit().block; }
-    catch { return; }
-    if (block?.typeId !== DECORATED_POT || !IMPACT_PROJECTILES.has(event.projectile?.typeId ?? "")) return;
+    const block = potHitByProjectile(event);
+    if (!block) return;
     if (!world.gameRules.mobGriefing) return;
     const { dimension, location } = { dimension: block.dimension, location: { ...block.location } };
     try {

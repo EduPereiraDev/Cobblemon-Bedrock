@@ -9,6 +9,7 @@ import { pathToFileURL } from "node:url";
 import { BEDROCK_MATH, BEDROCK_QUERIES, scanMolang } from "./molang.ts";
 import { checkParticle, checkSoundDefinitions } from "./clientRules.ts";
 import { validateClientModels } from "./validateClientModels.ts"; // frente cliente-modelos
+import { validateMolangVariables } from "./validateVariables.ts"; // frente cliente-teste3-log
 import { blockZFights, coplanarConflicts, geometryFaces } from "./zfight.ts"; // frente fix3
 import { HAND_BP, HAND_RP, OUT, OUT_BP, OUT_FINAL, OUT_RP, OUT_SCRIPTS, parseLenient, rel, walk } from "./util.ts";
 import { comboKey, loadResolvers, resolveCombo } from "./variants.ts";
@@ -367,6 +368,9 @@ for (const [k, n] of molangIssues) err(`Molang desconhecido: ${k}${n > 1 ? ` ×$
 
 // 8c. Frente cliente-modelos: o que o cliente recusa em modelos, animações, controllers e client entities.
 const clientModels = validateClientModels(docs, err, rel);
+// Frente cliente-teste3-log: variáveis lidas sem definição (partículas, client entities) e planos de espessura zero nas
+// geometrias de entidade (z-fighting).
+const molangVariables = validateMolangVariables(docs, err, rel);
 
 // 8d. Frente fix3: z-fighting em blocos (faces coplanares sobrepostas). Faces opostas com material que desenha as duas
 // (alpha_test) são erro (piscam dos dois lados); faces do mesmo lado entre cubos só entram no resumo (vêm dos modelos do
@@ -416,12 +420,16 @@ console.log(`Partículas geradas: ${generatedParticles}`);
 console.log(`Validação: ${docs.size} JSON, ${entities} client entities, ${serverEntities} entidades BP, ${geometryIds.size} geometrias, ${animationIds.size} animações, ${controllerIds.size} animation controllers, ${renderControllerIds.size} render controllers, ${attachables} attachables, ${checks} checagens de resolveVariant`);
 console.log(`Conteúdo: ${contentSummary}`);
 console.log(`Cliente (modelos): ${Object.entries(clientModels).map(([k, v]) => `${k} ${v}`).join(", ")}`);
+console.log(`Cliente (variáveis e planos): ${molangVariables.particles} partículas, ${molangVariables.entities} client entities e ${molangVariables.geometries} geometrias de entidade conferidas`);
 for (const w of warnings.slice(0, 50)) console.log(`  aviso: ${w}`);
 if (errors.length) {
-	for (const e of errors.slice(0, 80)) console.log(`  ERRO: ${e}`);
-	if (errors.length > 80) console.log(`  ... +${errors.length - 80} erros`);
+	// COBBLEMON_VALIDATE_ALL=1 lista todos (frente cliente-teste3-log).
+	const shown = process.env.COBBLEMON_VALIDATE_ALL ? errors.length : 80;
+	for (const e of errors.slice(0, shown)) console.log(`  ERRO: ${e}`);
+	if (errors.length > shown) console.log(`  ... +${errors.length - shown} erros`);
 	console.log(`${errors.length} erro(s)`);
-	process.exit(1);
+	// exitCode (não process.exit): com a saída num pipe, process.exit cortava a lista longa (frente cliente-teste3-log).
+	process.exitCode = 1;
 }
-console.log("OK: nenhum erro");
+else console.log("OK: nenhum erro");
 void warnMsg;

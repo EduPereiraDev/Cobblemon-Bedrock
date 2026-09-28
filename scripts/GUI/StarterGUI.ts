@@ -10,17 +10,14 @@
  */
 import { Player, RawMessage } from "@minecraft/server"
 import { ActionFormData, MessageFormData } from "@minecraft/server-ui"
-import { typeColorCodes } from "../language";
-import { ElementalType } from "../Pokemon";
 import { PokemonProperties } from "../PokemonProperties";
 import { getSpeciesData } from "../speciesData";
 import { StarterCategory, getConfig, sortStarterCategories } from "../Config";
 import { K, getPokemonProfileTexture, join, tr } from "./common";
 import { SCREEN } from "../ui/screens";
-import { typeGlyph } from "../ui/glyphs";
 import { FRAMING, closeStudio, hasStudio, openStudio, prefersStudio, setPrefersStudio, studioAvailable } from "../ui/studio";
 import { descriptionKeys } from "../pokedex/PokedexUI";
-import { BLANK, CellForm, GUI, STARTER, SUB, layoutTitle, safeShow } from "./layout";
+import { BLANK, CellForm, GUI, STARTER, SUB, layoutTitle, safeShow, typeCells } from "./layout";
 
 /** Categorias válidas da config (ignora Pokémon de espécies que não foram importadas). */
 export function getStarterCategories(): StarterCategory[] {
@@ -80,10 +77,10 @@ export function buildStarterForm(categories: StarterCategory[], view: StarterVie
   form.cell(STARTER.MODEL, BLANK, view.studio ? undefined : getPokemonProfileTexture(species));
   form.cell(STARTER.PLATFORM, BLANK, `${GUI}/starterselection/starter_platform_base_${primary}`);
   form.cell(STARTER.NAME, join("§l§f", { translate: `cobblemon.species.${species}.name` }), undefined, { kind: "choose" });
+  // Frente ui-layout: número da Pokédex (#0004) ao lado do nome e os tipos como ícones (TypeIcon), sem glifos.
+  form.cell(STARTER.DEX_NUMBER, `§l§f#${data?.nationalPokedexNumber ? String(data.nationalPokedexNumber).padStart(4, "0") : "????"}`);
   const types = [data?.primaryType, data?.secondaryType].filter(t => !!t).map(t => String(t).toLowerCase());
-  const typeParts: (string | RawMessage)[] = [];
-  types.forEach((type, i) => typeParts.push(i > 0 ? "  " : "", `§f${typeGlyph(type)} `, typeColorCodes[type as ElementalType] ?? "", { translate: `cobblemon.type.${type}` }));
-  form.cell(STARTER.TYPES, join(...typeParts));
+  typeCells(form, types, STARTER.TYPES, STARTER.TYPE2);
   const description = data ? descriptionKeys(species, data, undefined).map(key => ({ translate: key })) : [];
   form.cell(STARTER.DESCRIPTION, description.length ? join("§f", ...description) : { translate: "cobblemon.ui.starter.random_description" });
   if (entries.length > 1) {

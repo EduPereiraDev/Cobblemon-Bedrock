@@ -409,3 +409,73 @@ export function fixBlockZFighting(): { separated: number; blocks: number; instan
 	const z = fixBlockDoubleSidedPlanes(walk(`${OUT_BP}/blocks`, (n) => n.endsWith(".json")), (id) => geos.get(id), readJson, writeJson);
 	return { separated, ...z };
 }
+
+// ---------------------------------------------------------------------------------------------------------------
+// Frente cliente-teste3-log: planos de espessura zero nas geometrias de ENTIDADE (Pokémon, NPC, bolas, exibições).
+//
+// No Java os modelos das entidades são desenhados com RenderType.entityCutout/entityTranslucent, que descartam a face
+// de trás: de cada lado de um plano (cubo com uma dimensão 0: folhas, penas, franjas, o "cachecol" do Slowking de
+// Galar) aparece só a face virada para quem olha. Os materiais de entidade do Bedrock usados aqui (entity_alphatest,
+// entity_alphablend, entity_emissive_alpha) desenham as duas faces, no MESMO plano e com texturas diferentes (outra
+// região da textura, espelhada) → z-fighting (~40–50% dos Pokémon no 3º teste em cliente).
+// O Bedrock não tem material de entidade vanilla com recorte e descarte de face de trás (a lista da bedrock.dev só tem
+// entity_emissive_alpha_one_sided, que usa o alfa como brilho, não como recorte), e material próprio em resource
+// pack não é suportado de forma confiável com o RenderDragon. Correção na geometria: o plano ganha espessura
+// (`inflate` +FLAT_ENTITY_INFLATE px): as duas faces se separam, cada lado mostra a sua face na frente (a outra fica
+// atrás, escondida pela profundidade), como no Java. A UV não muda (inflate não mexe na UV); o plano cresce
+// 2 × 0,025 px (1/40 de texel) e as bordas viram faixas de 0,05 px, invisíveis. A diferença de inflate entre planos
+// empilhados (separateCoplanarCubes) é mantida, porque todos sobem o mesmo tanto.
+
+/** Inflate acrescentado aos cubos de espessura zero das entidades (px). */
+export const FLAT_ENTITY_INFLATE = 0.025;
+
+/**
+ * Cubo plano de entidade ainda sem espessura bastante: uma dimensão 0 (as outras duas não) e espessura
+ * (2 × inflate) abaixo de 2 × FLAT_ENTITY_INFLATE. Os que só tinham o inflate de 0,01 do separateCoplanarCubes
+ * (0,02 px entre as faces) também entram: de longe a profundidade não separa 0,02 px.
+ */
+export function isFlatEntityCube(c: any): boolean {
+	if (!Array.isArray(c?.size) || c.size.length !== 3) return false;
+	const zero = c.size.filter((s: number) => Math.abs(s) < 1e-6).length;
+	if (zero !== 1) return false;
+	return 2 * (c.inflate ?? 0) < 2 * FLAT_ENTITY_INFLATE - 1e-9;
+}
+
+/** Cubos planos de uma geometria de entidade ("osso#índice"). */
+export function flatEntityCubes(geo: any): string[] {
+	const out: string[] = [];
+	for (const b of geo?.bones ?? []) (b.cubes ?? []).forEach((c: any, i: number) => { if (isFlatEntityCube(c)) out.push(`${b.name}#${i}`); });
+	return out;
+}
+
+/**
+ * Dá espessura aos cubos planos: inflate + FLAT_ENTITY_INFLATE (todos sobem o mesmo tanto, então a ordem dos planos
+ * empilhados continua); inflate negativo vira FLAT_ENTITY_INFLATE.
+ */
+export function thickenFlatEntityCubes(geo: any): number {
+	let n = 0;
+	for (const b of geo?.bones ?? []) {
+		for (const c of b.cubes ?? []) {
+			if (!isFlatEntityCube(c)) continue;
+			const g = c.inflate ?? 0;
+			c.inflate = Math.round(Math.max(g + FLAT_ENTITY_INFLATE, FLAT_ENTITY_INFLATE) * 10000) / 10000;
+			n++;
+		}
+	}
+	return n;
+}
+
+/** Pós-passe do import: todas as geometrias em models/entity do RP gerado. */
+export function fixEntityFlatPlanes(root = `${OUT_RP}/models/entity`): { cubes: number; geometries: number } {
+	let cubes = 0, geometries = 0;
+	for (const f of walk(root, (n) => n.endsWith(".json"))) {
+		const json = tryReadJson(f);
+		let changed = 0;
+		for (const g of json?.["minecraft:geometry"] ?? []) {
+			const k = thickenFlatEntityCubes(g);
+			if (k) { changed += k; geometries++; }
+		}
+		if (changed) { writeJson(f, json); cubes += changed; }
+	}
+	return { cubes, geometries };
+}

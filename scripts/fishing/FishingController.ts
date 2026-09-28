@@ -516,7 +516,10 @@ function drawLine(b: ActiveBobber) {
   const points = Math.max(4, Math.min(FISHING_TUNING.lineMaxPoints, Math.ceil(distance * 2)));
   const sag = b.phase === "bobbing" && !b.fishing.caughtFish ? Math.min(1.2, distance * 0.06) : 0;
   const vars = new MolangVariableMap();
-  vars.setColorRGB("variable.color", b.lineColor);
+  // Frente cliente-teste3-log: cor em variáveis escalares (a partícula não lê struct: "unable to find member variable .r").
+  vars.setFloat("variable.color_r", b.lineColor.red);
+  vars.setFloat("variable.color_g", b.lineColor.green);
+  vars.setFloat("variable.color_b", b.lineColor.blue);
   for (let i = 1; i < points; i++) {
     const t = i / points;
     particle(b.dimension, FISHING_PARTICLES.line, {
