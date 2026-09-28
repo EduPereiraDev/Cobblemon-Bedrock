@@ -12,6 +12,7 @@ import { decodePng, encodePng } from "./png.ts";
 import type { Png } from "./png.ts";
 import { GLYPH_PAGE_BALLS, GLYPH_PAGE_ICONS, glyphSources } from "../../scripts/ui/glyphs.ts";
 import { BATTLE_BAR_PX, PARTY_BAR_PX, depletableColor } from "../../scripts/ui/hudProtocol.ts";
+import { emitRadarTextures } from "../ui/radar.ts"; // frente ui-polish
 
 const GUI = `${ASSETS}/textures/gui`;
 const HUD = `${OUT_RP}/textures/ui/cobblemon/hud`;
@@ -190,5 +191,6 @@ function glyphPages(): number {
 export function emitGuiTextures() {
 	count("texturas de GUI do Cobblemon", copyGui());
 	count("texturas derivadas do HUD", derivedTextures());
+	count("setores do gráfico de atributos do resumo", emitRadarTextures(OUT_RP));
 	count("glifos (E2/E3)", glyphPages());
 }

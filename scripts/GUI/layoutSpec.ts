@@ -29,11 +29,31 @@ export const SUB = {
   SUMMARY_MOVES: "§2§2§r",
   SUMMARY_STATS: "§2§3§r",
   SUMMARY_MARKS: "§2§4§r",
+  /**
+   * Frente ui-polish: modo da aba Atributos (StatWidget.statOptions). Sem marcador = gráfico hexagonal (STATS/IV/EV);
+   * RIDE = pentágono de montaria; OTHER = barras de amizade, saciedade e afins.
+   */
+  SUMMARY_STATS_RIDE: "§2§7§r",
+  SUMMARY_STATS_OTHER: "§2§8§r",
+  /** O Pokémon tem montaria: a barra de modos tem 5 (Atributos, IVs, EVs, Montar, Outro) em vez de 4. */
+  SUMMARY_STATS_RIDE_TAB: "§2§5§r",
   /** Variante "estúdio" (modelo 3D ao vivo atrás da janela transparente): somado ao sub-marcador da aba. */
   STUDIO: "§2§9§r",
   STARTER: "§3§1§r",
   POKEDEX_LIST: "§4§1§r",
   POKEDEX_ENTRY: "§4§2§r",
+  /** Frente ui-polish: batalha, confirmação de desistência (ForfeitConfirmationSelection). */
+  BATTLE_FORFEIT: "§1§a§r",
+  /**
+   * Frente ui-polish: diálogo (DialogueScreen): opções em coluna, só "continuar" (tocar na caixa) ou lado a lado com 1 a
+   * 4 opções (H1..H4: o Java centra a fileira pela quantidade; células têm posição fixa, então cada quantidade tem a sua).
+   */
+  DIALOGUE_VERTICAL: "§7§2§r",
+  DIALOGUE_CONTINUE: "§7§3§r",
+  DIALOGUE_H1: "§7§4§r",
+  DIALOGUE_H2: "§7§5§r",
+  DIALOGUE_H3: "§7§6§r",
+  DIALOGUE_H4: "§7§7§r",
 } as const;
 
 export type SubMarker = (typeof SUB)[keyof typeof SUB];
@@ -57,6 +77,21 @@ export const MOVE_TILE_LINES = { PP: 0, HINT: 1, NAME: 2 } as const;
  * textura, como o `toggled` do BattleGimmickButton).
  */
 export const GIMMICK_ON_MARKER = "§1§9§r";
+/** Frente ui-polish: batalha, desistir (ForfeitConfirmationSelection: aceitar e recusar, 34×19). */
+export const BATTLE_FORFEIT = { ACCEPT: 0, DECLINE: 1, COUNT: 2 } as const;
+
+/**
+ * Frente ui-polish: diálogo (DialogueScreen). As opções vêm primeiro (ordem do form = ordem das opções; os bots E2E
+ * respondem pelo índice) e o retrato vai sempre na célula PORTRAIT, depois das vazias. O texto do retrato diz o lado e o
+ * tipo (`left_skin`, `right_pokemon`...): o layout escolhe a moldura e o recorte (rosto de skin 8×8 ou retrato).
+ */
+export const DIALOGUE = { OPTIONS: 0, OPTION_SLOTS: 8, PORTRAIT: 8, COUNT: 9 } as const;
+/** Prefixo invisível da opção que não pode ser escolhida (o layout usa o 3º quadro do botão e o texto cinza). */
+export const DIALOGUE_DISABLED_MARKER = "§7§9§r";
+export const DIALOGUE_FACES = ["left_skin", "right_skin", "left_pokemon", "right_pokemon"] as const;
+/** Opções lado a lado que cabem (96 px + 4 cada, na largura do DialogueScreen); mais que isso vai em coluna. */
+export const DIALOGUE_MAX_HORIZONTAL = 4;
+
 /** Batalha, alvo (BattleTargetSelection): inimigos em cima, aliados embaixo. */
 export const BATTLE_TARGET = { FOES: 0, ALLIES: 3, BACK: 6, COUNT: 7 } as const;
 /** Batalha, troca (BattleSwitchPokemonSelection): 6 tiles, voltar, 6 barras de HP. Também a escolha do alvo de item. */
@@ -97,8 +132,100 @@ export const SUMMARY = {
   PARTY_BARS: 43,
   /** Duas células extras por aba (Marcas: título e ícone da marca escolhida). */
   EXTRA: 49,
-  COUNT: 51,
+  /**
+   * Frente ui-polish: aba Atributos como o StatWidget. STAT_ROWS = rótulo + valor em cada vértice; STAT_BARS = setor do
+   * gráfico (triângulo centro → vértice k → vértice k+1, textura pré-renderizada por passo); STAT_TABS = barra de baixo
+   * (Atributos, IVs, EVs, [Montar], Outro). No modo OTHER, STAT_ROWS/STAT_BARS são as barras e as sobreposições.
+   */
+  STAT_TABS: 51,
+  STAT_TAB_COUNT: 5,
+  COUNT: 56,
 } as const;
+
+/** Modos da aba Atributos na ordem do StatWidget.statOptions (RIDE só para quem tem montaria). */
+export const STAT_MODES = ["stats", "ivs", "evs", "ride", "other"] as const;
+export type StatMode = (typeof STAT_MODES)[number];
+
+/**
+ * Gráfico de atributos (StatWidget.drawStatPolygon): polígono de 6 (atributos) ou 5 lados (montaria) em volta do centro,
+ * cada vértice na razão do atributo (mínimo 5/raio, como o `coerceIn` do Java). Coordenadas na aba (134×148).
+ */
+export interface RadarShape {
+  key: "h" | "p";
+  sides: number;
+  centerX: number;
+  centerY: number;
+  radius: number;
+  /** hexagonVerticesOffset/pentagonVerticesOffset: centro dos rótulos (o valor vai 5,5 px abaixo). */
+  labels: readonly (readonly [number, number])[];
+}
+export const RADAR_HEXAGON: RadarShape = {
+  key: "h", sides: 6, centerX: 67, centerY: 22 + 48, radius: 48,
+  labels: [[67, 10.5], [122, 42.5], [122, 93.5], [67, 124.5], [12, 93.5], [12, 42.5]],
+};
+export const RADAR_PENTAGON: RadarShape = {
+  key: "p", sides: 5, centerX: 67, centerY: 22 + 49, radius: 49,
+  labels: [[67, 10.5], [123, 47.5], [103, 112.5], [31, 112.5], [11, 47.5]],
+};
+/** Passos por raio das texturas dos setores (1..RADAR_STEPS): 10 = 4,8 px no hexágono. */
+export const RADAR_STEPS = 10;
+/** Cor de cada modo (o texto da célula do setor escolhe; a textura é branca com 60% de opacidade, como o Java). */
+export const RADAR_COLORS: Record<string, readonly [number, number, number]> = {
+  stats: [50, 215, 255], ivs: [216, 100, 255], evs: [255, 255, 100],
+  land: [255, 165, 0], liquid: [65, 135, 255], air: [40, 205, 165],
+};
+
+/**
+ * Modo OTHER (BarSummarySpeciesFeatureRenderer): barra de 110 px em passos de 1 px (`summary/radar/fill_<px>`, branca) e a cor
+ * pelo prefixo invisível do texto da linha (FriendshipFeatureRenderer: rosa, mais forte a partir de 160; Fullness:
+ * verde/amarelo/vermelho pela razão; os demais: branco).
+ */
+export const STAT_FILL_PX = 110;
+export const STAT_FILL_MARKERS: Record<string, string> = {
+  friendship: "§4§1§r", friendship_high: "§4§2§r", green: "§4§3§r", yellow: "§4§4§r", red: "§4§5§r", white: "§4§6§r",
+};
+export const STAT_FILL_COLORS: Record<string, readonly [number, number, number]> = {
+  friendship: [255, 143, 163], friendship_high: [255, 71, 102], green: [120, 200, 80], yellow: [240, 200, 65], red: [230, 80, 65], white: [255, 255, 255],
+};
+export function statFillTexture(ratio: number): string {
+  const px = Math.max(0, Math.min(STAT_FILL_PX, Math.ceil(Math.max(0, Math.min(1, ratio)) * STAT_FILL_PX)));
+  return `${GUI}/summary/radar/fill_${px}`;
+}
+/** Linhas do texto de uma barra do modo OTHER (valor e % curtos antes: não quebram nas janelas estreitas). */
+export const STAT_BAR_LINES = { VALUE: 0, PERCENT: 1, NAME: 2 } as const;
+
+/** Vértice k no raio cheio (ângulo -90° + k·360°/lados, horário a partir do topo). */
+export function radarVertex(shape: RadarShape, k: number): [number, number] {
+  const angle = ((-90 + (k % shape.sides) * 360 / shape.sides) * Math.PI) / 180;
+  return [shape.centerX + shape.radius * Math.cos(angle), shape.centerY + shape.radius * Math.sin(angle)];
+}
+
+/** Caixa (inteira, na aba) do setor k no raio cheio: onde a textura do setor é desenhada. */
+export function radarSectorBox(shape: RadarShape, k: number): [number, number, number, number] {
+  const points = [[shape.centerX, shape.centerY], radarVertex(shape, k), radarVertex(shape, k + 1)];
+  const x0 = Math.floor(Math.min(...points.map(p => p[0])) + 1e-6);
+  const y0 = Math.floor(Math.min(...points.map(p => p[1])) + 1e-6);
+  const x1 = Math.ceil(Math.max(...points.map(p => p[0])) - 1e-6);
+  const y1 = Math.ceil(Math.max(...points.map(p => p[1])) - 1e-6);
+  return [x0, y0, x1 - x0, y1 - y0];
+}
+
+/** Passo (1..RADAR_STEPS) da razão de um vértice. */
+export function radarStep(shape: RadarShape, ratio: number): number {
+  const r = Math.max(5 / shape.radius, Math.min(1, Number.isFinite(ratio) ? ratio : 0));
+  return Math.max(1, Math.min(RADAR_STEPS, Math.round(r * RADAR_STEPS)));
+}
+
+/** Textura do setor k com os vértices nos passos a (vértice k) e b (vértice k+1). */
+export function radarSectorTexture(shape: RadarShape, k: number, a: number, b: number): string {
+  return `${GUI}/summary/radar/${shape.key}${k}_${a}_${b}`;
+}
+
+/** Texturas dos setores para as razões (uma por vértice, a partir do topo, no sentido horário). */
+export function radarTextures(shape: RadarShape, ratios: readonly number[]): string[] {
+  const steps = Array.from({ length: shape.sides }, (_, k) => radarStep(shape, ratios[k] ?? 0));
+  return steps.map((a, k) => radarSectorTexture(shape, k, a, steps[(k + 1) % shape.sides]));
+}
 
 /** Aba Info (InfoWidget + InfoOneLineWidget): uma célula por campo, na caixa do `summary_info_base`. */
 export const SUMMARY_INFO = {
@@ -213,7 +340,10 @@ export const POKEDEX_LIST = {
   REGION: 32,
   SEEN: 33,
   CAUGHT: 34,
-  COUNT: 35,
+  /** Frente ui-polish: setas da região (PokedexGUI.regionSelectWidgetUp/Down, x 95, y 14,5/19,5). */
+  REGION_PREV: 35,
+  REGION_NEXT: 36,
+  COUNT: 37,
 } as const;
 
 /**
@@ -245,7 +375,9 @@ export const POKEDEX_ENTRY = {
   REGION: 45,
   SEEN: 46,
   CAUGHT_COUNT: 47,
-  COUNT: 48,
+  REGION_PREV: 48,
+  REGION_NEXT: 49,
+  COUNT: 50,
 } as const;
 /** Abas da entrada na ordem do PokedexGUI (TAB_DESCRIPTION..TAB_DROPS). */
 export const POKEDEX_TABS = ["info", "abilities", "size", "stats", "drops"] as const;

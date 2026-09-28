@@ -22,13 +22,15 @@ export const SCREEN = {
   STARTER: "§0§4§r",
   POKEDEX: "§0§5§r",
   ACHIEVEMENTS: "§0§6§r",
+  /** Frente ui-polish: diálogo de NPC (DialogueScreen, ui/dialogue.json). */
+  DIALOGUE: "§0§7§r",
 } as const;
 
 export type ScreenMarker = (typeof SCREEN)[keyof typeof SCREEN];
 
 /** Marcadores que já têm layout no JSON UI (o `long_form` vanilla some para eles). */
 // Frente telas: resumo, inicial e Pokédex (ui/summary.json, ui/starter.json, ui/pokedex.json).
-export const ROUTED_SCREENS: readonly ScreenMarker[] = [SCREEN.PC, SCREEN.BATTLE, SCREEN.SUMMARY, SCREEN.STARTER, SCREEN.POKEDEX];
+export const ROUTED_SCREENS: readonly ScreenMarker[] = [SCREEN.PC, SCREEN.BATTLE, SCREEN.SUMMARY, SCREEN.STARTER, SCREEN.POKEDEX, SCREEN.DIALOGUE];
 
 /** Título com o marcador na frente (o texto exibido continua o mesmo). */
 export function withScreen(marker: ScreenMarker, title: string | RawMessage): RawMessage {

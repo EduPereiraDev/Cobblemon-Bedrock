@@ -895,6 +895,15 @@ export function addServerQueries(env: MoEnvironment, dimension: Dimension | unde
   });
 }
 
+/** Textura da skin do NPC (NPC_SKINS pela propriedade cobblemon:npc_skin), sem namespace e sem ".png". */
+export function npcSkinTexture(entity: Entity): string | undefined {
+  try {
+    const index = entity.getProperty(NPC_SKIN_PROPERTY);
+    const skin = NPC_SKINS[typeof index === "number" ? index : 0];
+    return skin?.texture.replace(/^[a-z0-9_]+:/, "").replace(/\.png$/, "");
+  } catch { return undefined; }
+}
+
 /** Abre um diálogo com o NPC como `q.npc` (q.npc.run_dialogue / interação de diálogo). */
 export function openNPCDialogue(npc: NPC, player: Player, dialogueId: string): boolean {
   const dialogue = getDialogue(dialogueId);
@@ -905,6 +914,8 @@ export function openNPCDialogue(npc: NPC, player: Player, dialogueId: string): b
   speakers.set(npc.entity.id, player.id);
   startDialogue(player, dialogue, {
     npc: npc.struct,
+    // Frente ui-polish: rosto do NPC no retrato do diálogo (a skin atual).
+    npcSkin: npcSkinTexture(npc.entity),
     // ExitSpeakersActivityTask: sem ninguém conversando, volta a ficar parado.
     onClosed: () => { if (activities.get(npc.entity.id) === "cobblemon:npc_chatting") npc.setActivity("minecraft:idle"); },
   });

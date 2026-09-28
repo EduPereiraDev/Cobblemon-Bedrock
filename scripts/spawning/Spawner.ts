@@ -22,7 +22,7 @@
 import { spawnRulesInfluence } from "./SpawnRules";
 import { Block, BlockVolume, Dimension, Entity, ItemStack, Player, system, Vector3, WeatherType, world } from "@minecraft/server";
 import { BEST_SPAWNER_CONFIG, SpawnEntry } from "../../generated/scripts/spawns";
-import { getConfig, getGameRule } from "../Config";
+import { debugProbesEnabled, getConfig, getGameRule } from "../Config";
 import { attachHoneyInfluences } from "./HoneyLog";
 import { PokemonData } from "../Pokemon";
 import { toID } from "../showdown";
@@ -35,7 +35,7 @@ import { DespawnSettings, evaluateDespawn, SPAWN_TIME_PROPERTY } from "./Despawn
 import {
   ACTIVATED_MAX_PER_CHUNK, activatedBuckets, activatedInfluence, applyHabitats, currentPhase, habitatSpawnerId, HabitatState, phaseMatches,
 } from "./Habitats";
-import { baseWeight, entryAllowed, FishingInfo, nearbyRange, PositionType, SpawnContext, worldClock } from "./SpawnConditions";
+import { baseWeight, entryAllowed, FishingInfo, nearbyRange, PositionType, SpawnContext, timedWorldQuery, worldClock, worldQueryStats } from "./SpawnConditions";
 import {
   alphaTargetLevel, bucketNormalizingInfluence, entriesForBiome, hasSpaceBox, playerLevelRangeInfluence, rollLevel, selectSpawnActions,
   selectSpawnActionsJob, warmSpawnIndex, SLICE_BUDGET_MS,
@@ -275,7 +275,7 @@ function zoneIsFull(zone: Zone, perChunk: number): boolean {
 export class ZoneBlockCache {
   private readonly cells = new Map<string, CellInfo>();
   reads = 0;
-  constructor(private readonly read: (x: number, y: number, z: number) => CellInfo, readonly budget: number = SPAWN_TUNING.hasSpaceReadBudget) { }
+  constructor(private readonly read: (x: number, y: number, z: number) => CellInfo, readonly budget: number = SPAWN_TUNING.hasSpaceReadBudget, private readonly stats?: ReadStats) { }
   put(x: number, y: number, z: number, cell: CellInfo) { this.cells.set(`${x},${y},${z}`, cell); }
   /** Célula (cache ou leitura); undefined quando o orçamento acabou. */
   get(x: number, y: number, z: number): CellInfo | undefined {
@@ -284,10 +284,33 @@ export class ZoneBlockCache {
     if (cell) return cell;
     if (this.reads >= this.budget) return undefined;
     this.reads++;
+    const t = this.stats ? Date.now() : 0;
     cell = this.read(x, y, z);
+    if (this.stats) noteRead(this.stats, Date.now() - t);
     this.cells.set(key, cell);
     return cell;
   }
+}
+
+/**
+ * Frente cliente-teste4 (docs/pendencias/cliente-teste4.md): leituras de bloco do passe e a mais lenta (getBlock +
+ * classificação: uma chamada nativa, que o fatiamento não divide), no passe e na fatia em andamento. Vai no aviso de
+ * passe lento para separar "trabalho demais numa fatia" de "uma leitura parada" (o passe já cede entre leituras).
+ */
+export interface ReadStats { maxReadMs: number; reads: number; sliceMaxReadMs?: number }
+function noteRead(stats: ReadStats, ms: number) {
+  stats.reads++;
+  if (ms > stats.maxReadMs) stats.maxReadMs = ms;
+  if (ms > (stats.sliceMaxReadMs ?? 0)) stats.sliceMaxReadMs = ms;
+}
+
+/**
+ * Frente cliente-teste4: complemento do aviso de passe lento quando a maior fatia é quase toda UMA leitura de bloco
+ * (≥ 80%): a parada está dentro de uma única chamada, não no trabalho do spawner (que cede entre leituras).
+ */
+export function singleReadNote(worstSliceMs: number, worstSliceReadMs: number): string {
+  if (worstSliceMs <= 0 || worstSliceReadMs < worstSliceMs * 0.8) return "";
+  return `; ${worstSliceReadMs} ms numa única leitura de bloco (chamada indivisível: parada do motor ou do coletor de lixo, não trabalho do spawner)`;
 }
 
 /** AreaSpawnablePosition.isSafeSpace por tipo de posição (o bloco que o hitbox ocuparia). */
@@ -390,7 +413,7 @@ function resolvePositions(zone: Zone): SpawnContext[] {
  * resolvePositions em fatias (frente cliente-log): cede o tick entre colunas quando a leitura de blocos passa de ~3 ms
  * (no BDS emulado uma zona de 12 colunas chegava a 45 ms num tick só). Mesmo resultado.
  */
-function* resolvePositionsJob(zone: Zone): Generator<string, SpawnContext[], void> {
+function* resolvePositionsJob(zone: Zone, stats?: ReadStats): Generator<string, SpawnContext[], void> {
   const { dimension } = zone;
   let sliceStart = Date.now();
   const out: SpawnContext[] = [];
@@ -405,7 +428,7 @@ function* resolvePositionsJob(zone: Zone): Generator<string, SpawnContext[], voi
   while (columns.size < wanted) columns.add(Math.floor(Math.random() * total));
   const top = zone.baseY + zone.height + SPAWN_TUNING.clearanceScan;
   const maxVertical = Math.max(1, getConfig().maxVerticalSpace || 8);
-  const blockCache = new ZoneBlockCache((x, y, z) => classify(safeBlock(dimension, { x, y, z })));
+  const blockCache = new ZoneBlockCache((x, y, z) => classify(safeBlock(dimension, { x, y, z })), SPAWN_TUNING.hasSpaceReadBudget, stats);
   const bounds: ZoneBounds = { minX: zone.baseX, maxX: zone.baseX + zone.diameter, minY: zone.baseY, maxY: zone.baseY + zone.height, minZ: zone.baseZ, maxZ: zone.baseZ + zone.diameter };
   const zoneCache = new Map<string, boolean>();
   const zoneHasAny = (blocks: string[]): boolean => {
@@ -414,10 +437,10 @@ function* resolvePositionsJob(zone: Zone): Generator<string, SpawnContext[], voi
     if (found === undefined) {
       const h = nearbyRange.horizontal, v = nearbyRange.vertical;
       try {
-        found = dimension.containsBlock(
+        found = timedWorldQuery(() => dimension.containsBlock(
           new BlockVolume({ x: zone.baseX - h, y: zone.baseY - v, z: zone.baseZ - h }, { x: zone.baseX + zone.diameter + h, y: top + v, z: zone.baseZ + zone.diameter + h }),
           { includeTypes: blocks }, false,
-        );
+        ));
       }
       catch { found = true; } // na dúvida, deixa a consulta por posição decidir
       zoneCache.set(key, found);
@@ -430,7 +453,9 @@ function* resolvePositionsJob(zone: Zone): Generator<string, SpawnContext[], voi
     // Coluna do fundo da zona (−1) até o topo + folga, lida uma vez.
     const cells: CellInfo[] = [];
     for (let y = zone.baseY - 1; y <= top; y++) {
+      const t = stats ? Date.now() : 0;
       const cell = classify(safeBlock(dimension, { x, y, z }));
+      if (stats) noteRead(stats, Date.now() - t);
       cells.push(cell);
       blockCache.put(x, y, z, cell);
       // No BDS emulado cada leitura de bloco custa perto de 1 ms: cede no meio da coluna também.
@@ -609,6 +634,11 @@ export function spawnActionEntity(action: SpawnAction, influences: SpawnInfluenc
  */
 function spawnPreparedEntity(action: SpawnAction, data: PokemonData, influences: SpawnInfluence[] = []): Entity | undefined {
   let entity: Entity | undefined;
+  // Passe fatiado: entre escolher a posição e criar a entidade o jogador pode ter se afastado e o chunk descarregado.
+  // O Java simplesmente não spawna nesse caso (sem aviso).
+  const dim = action.ctx.dimension;
+  try { if (typeof dim.isChunkLoaded === "function" && !dim.isChunkLoaded(action.ctx.location)) return undefined; }
+  catch { return undefined; }
   try {
     entity = action.ctx.dimension.spawnEntity(data.getEntityId(), action.ctx.location);
     data.applyToCobblemon(entity);
@@ -861,16 +891,29 @@ function* spawnPass(player: Player, sliced: boolean): Generator<void, SpawnActio
   if (!s.enableSpawning || !spawningEnabled || !getGameRule("doPokemonSpawning")) return [];
   if (s.worldSpawningBlocklist.includes(player.dimension.id)) return [];
   const t0 = Date.now();
+  const readStats: ReadStats = { maxReadMs: 0, reads: 0, sliceMaxReadMs: 0 };
+  worldQueryStats.calls = 0;
+  worldQueryStats.maxMs = 0;
   let sliceStart = t0;
   let worstSlice = 0;
   let worstPart = "";
+  let worstSliceRead = 0;
   const endSlice = (part: string) => {
     const ms = Date.now() - sliceStart;
-    if (ms > worstSlice) { worstSlice = ms; worstPart = part; }
+    if (ms > worstSlice) { worstSlice = ms; worstPart = part; worstSliceRead = readStats.sliceMaxReadMs ?? 0; }
+    readStats.sliceMaxReadMs = 0;
   };
   const zone = constrainZone(zoneFor(player, s), s);
   if (!zone) return [];
   if (zoneIsFull(zone, s.pokemonPerChunk)) return [];
+  // Frente cliente-teste4: as duas consultas de entidades (getEntities, nativas) em fatias separadas; juntas passavam de
+  // 20 ms no BDS emulado ("passe lento: 22 ms na maior fatia (zona …)"). Mesmas consultas, mesma ordem.
+  if (sliced) {
+    endSlice("zona");
+    yield;
+    sliceStart = Date.now();
+    if (!player.isValid) return [];
+  }
   if (wildNear(player, s.maximumSpawningZoneDistanceFromPlayer + 16) >= SPAWN_TUNING.maxWildPerPlayer) return [];
   const t1 = Date.now();
   if (sliced) {
@@ -880,7 +923,7 @@ function* spawnPass(player: Player, sliced: boolean): Generator<void, SpawnActio
   }
   let positions: SpawnContext[];
   if (sliced) {
-    const job = resolvePositionsJob(zone);
+    const job = resolvePositionsJob(zone, readStats);
     let step = job.next();
     while (!step.done) {
       endSlice(step.value);
@@ -941,9 +984,11 @@ function* spawnPass(player: Player, sliced: boolean): Generator<void, SpawnActio
   const t4 = Date.now();
   // Fatiado, o que pesa no tick é a maior fatia (o passe inteiro se espalha por vários ticks).
   const cost = sliced ? worstSlice : t4 - t0;
+  // Frente cliente-teste4: sonda (desligada por padrão) com a composição de cada passe fatiado.
+  if (sliced && debugProbesEnabled()) console.info(`[spawn] passe: maior fatia ${worstSlice} ms (${worstPart}), relógio ${t4 - t0} ms, posições ${positions.length}, leituras de bloco ${readStats.reads}, a maior ${readStats.maxReadMs} ms, na maior fatia ${worstSliceRead} ms, consultas ao mundo ${worldQueryStats.calls}, a maior ${worldQueryStats.maxMs} ms, entidades ${done.length}`);
   if (cost > SPAWN_TUNING.slowPassMs && t4 - lastSlowWarning > 10000) {
     lastSlowWarning = t4;
-    console.warn(`[spawn] passe lento: ${cost} ms${sliced ? ` na maior fatia (${worstPart}; passe em ${t4 - t0} ms de relógio)` : ""} (zona ${t1 - t0}, posições ${t2 - t1} [${positions.length}], seleção ${t3 - t2}, entidades ${t4 - t3} [${done.length}])`);
+    console.warn(`[spawn] passe lento: ${cost} ms${sliced ? ` na maior fatia (${worstPart}; passe em ${t4 - t0} ms de relógio)` : ""} (zona ${t1 - t0}, posições ${t2 - t1} [${positions.length}], seleção ${t3 - t2}, entidades ${t4 - t3} [${done.length}]; leituras de bloco ${readStats.reads}, a maior ${readStats.maxReadMs} ms; consultas ao mundo ${worldQueryStats.calls}, a maior ${worldQueryStats.maxMs} ms${sliced ? singleReadNote(worstSlice, worstSliceRead) : ""})`);
   }
   return done;
 }

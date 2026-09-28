@@ -8,7 +8,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from "node:path";
 import { decodePng, encodePng } from "../importer/png.ts";
 import type { Png } from "../importer/png.ts";
-import { GLYPH_CELL, LINE_HEIGHT, buildScene, checkScene, indexUi, isPageGlyph, parseUiFile } from "./layoutScene.mjs";
+import { GLYPH_CELL, LINE_HEIGHT, buildScene, checkButtonStates, checkScene, indexUi, isPageGlyph, parseUiFile } from "./layoutScene.mjs";
 import { buildFixtures, loadLang } from "./previewFixtures";
 import { SCREEN_RULES } from "./layoutRules.mjs";
 
@@ -21,6 +21,12 @@ const TEXTURE_ROOTS = [
 	join(ROOT, "generated", "resource_packs", "CobblemonBedrock"),
 	join(ROOT, "generated", "resource_packs", "CobblemonMegaShowdown"),
 ];
+
+/** Texturas da vanilla usadas pelas telas, trocadas por uma do port com o mesmo recorte (skin 64 px: rosto em 8,8). */
+const VANILLA_STAND_INS: Record<string, string> = {
+	"textures/entity/steve": "textures/npcs/default",
+	"textures/entity/alex": "textures/npcs/default",
+};
 
 // Fonte 5×7 (colunas, bit 0 = linha de cima), ASCII 0x20..0x7E.
 const FONT5x7 = (
@@ -151,7 +157,8 @@ export function renderScene(scene: { nodes: any[] }, problems: string[], outline
 	for (const node of scene.nodes) {
 		const clip = node.clip ? [node.clip[0] * ZOOM, node.clip[1] * ZOOM, (node.clip[0] + node.clip[2]) * ZOOM, (node.clip[1] + node.clip[3]) * ZOOM] : undefined;
 		if (node.kind === "image") {
-			const tex = texture(node.texture);
+			// Frente ui-polish: textura da vanilla (fora dos packs do port) desenhada com um substituto do mesmo formato.
+			const tex = texture(VANILLA_STAND_INS[node.texture] ?? node.texture);
 			if (!tex) {
 				c.fill(node.rect[0] * ZOOM, node.rect[1] * ZOOM, node.rect[2] * ZOOM, node.rect[3] * ZOOM, [1, 0, 1], 0.35, clip);
 				problems.push(`textura ausente: ${node.texture} (${node.path})`);
@@ -178,7 +185,11 @@ function loadUi() {
 async function main() {
 	const args = process.argv.slice(2);
 	const outline = args.includes("--outline");
-	const only = args.filter(a => !a.startsWith("--"));
+	// Frente ui-polish: `--state hover|pressed|locked` desenha TODOS os botões naquele estado (<tela>-<estado>.png) e
+	// soma as regras de estado (checkButtonStates) aos problemas.
+	const stateArg = args.indexOf("--state");
+	const state = stateArg >= 0 ? args[stateArg + 1] : undefined;
+	const only = args.filter((a, i) => !a.startsWith("--") && i !== stateArg + 1);
 	const index = loadUi();
 	const fixtures = await buildFixtures(ROOT, { battle: !args.includes("--no-battle") });
 	const lang = loadLang(ROOT);
@@ -186,9 +197,10 @@ async function main() {
 	let total = 0;
 	for (const fx of fixtures) {
 		if (only.length && !only.some(o => fx.name.includes(o))) continue;
-		const scene = buildScene(index, fx.root, { ...fx, lang }, VIEWPORT);
-		const problems = [...scene.issues, ...checkScene(scene, SCREEN_RULES[fx.name.replace(/-3d$/, "")] ?? {})];
-		writeFileSync(join(OUT, `${fx.name}.png`), renderScene(scene, problems, outline));
+		const rules = SCREEN_RULES[fx.name.replace(/-3d$/, "")] ?? {};
+		const scene = buildScene(index, fx.root, { ...fx, lang }, VIEWPORT, { buttonState: state ?? "default" });
+		const problems = [...scene.issues, ...checkScene(scene, rules), ...checkButtonStates(index, fx.root, { ...fx, lang }, VIEWPORT, rules)];
+		writeFileSync(join(OUT, `${fx.name}${state ? `-${state}` : ""}.png`), renderScene(scene, problems, outline));
 		writeFileSync(join(OUT, `${fx.name}.json`), JSON.stringify({ title: fx.title, body: fx.body, buttons: fx.buttons }, null, 1));
 		total += problems.length;
 		console.log(`${fx.name}: ${problems.length ? `${problems.length} problema(s)` : "ok"}`);

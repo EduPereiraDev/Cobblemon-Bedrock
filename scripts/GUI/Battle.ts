@@ -1,4 +1,4 @@
-import { ActionFormData, ActionFormResponse, MessageFormData, MessageFormResponse } from "@minecraft/server-ui";
+import { ActionFormData, ActionFormResponse, MessageFormResponse } from "@minecraft/server-ui";
 import { Player, RawMessage, system } from "@minecraft/server";
 import { RequestData, RequestPokemon, requestPokemonUUID } from "../battle/Request";
 import { renderHealthBar, typeColorCodes, typeSymbols, message, getMoveTranslation } from "../language";
@@ -19,7 +19,7 @@ import { ActorType } from "../battle/BattleActor";
 import { CATEGORY_GLYPHS, typeGlyph } from "../ui/glyphs";
 import { SCREEN } from "../ui/screens";
 import {
-  BATTLE_MOVES, BATTLE_SWITCH, BATTLE_TARGET, BLANK, CATEGORY_MARKERS, CellForm, GIMMICK_ON_MARKER, SUB, barTexture, battleMenuTexture, layoutTitle, typeKeyTexture,
+  BATTLE_FORFEIT, BATTLE_MOVES, BATTLE_SWITCH, BATTLE_TARGET, BLANK, CATEGORY_MARKERS, CellForm, GIMMICK_ON_MARKER, SUB, barTexture, battleMenuTexture, layoutTitle, typeKeyTexture,
 } from "./layout";
 import {
   GIMMICK_CHOICE, Gimmick, MoveTileInfo, availableGimmicks, gimmickLabelKey, gimmickTexture, moveTileInfo,
@@ -172,16 +172,23 @@ async function showActionMenu(context: MenuContext): Promise<MenuResult<ActionRe
   }
 }
 
-async function confirmForfeit(context: MenuContext): Promise<MenuResult<ActionResponse>> {
-  let form = new MessageFormData()
-    .title({ translate: "cobblemon.battle.ui.forfeit" })
+/**
+ * Frente ui-polish: ForfeitConfirmationSelection — "Desistir" com aceitar/recusar dentro da tela da batalha (antes, a
+ * caixa de mensagem da vanilla). Fechar (Esc) volta ao menu, como recusar.
+ */
+export function forfeitForm(): CellForm<boolean> {
+  return new CellForm<boolean>(layoutTitle(SCREEN.BATTLE, SUB.BATTLE_FORFEIT, { translate: "cobblemon.battle.ui.forfeit" }), BATTLE_FORFEIT.COUNT)
     .body({ translate: "cobblemon.battle.ui.forfeit_confirmation" })
-    .button1({ translate: "cobblemon.battle.ui.forfeit" })
-    .button2({ translate: "gui.back" });
-  let response = await show(context, form);
-  if (!response || response.canceled)
+    .cell(BATTLE_FORFEIT.ACCEPT, { translate: "cobblemon.battle.ui.forfeit" }, undefined, true)
+    .cell(BATTLE_FORFEIT.DECLINE, { translate: "gui.back" }, undefined, false);
+}
+
+async function confirmForfeit(context: MenuContext): Promise<MenuResult<ActionResponse>> {
+  let form = forfeitForm();
+  let response = await show(context, form.build());
+  if (!response || response.selection === undefined)
     return BACK;
-  return response.selection === 0 ? new ForfeitActionResponse() : BACK;
+  return form.actionAt(response.selection) === true ? new ForfeitActionResponse() : BACK;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -484,6 +491,24 @@ function isFainted(pokemon: RequestPokemon) {
 // Mochila
 // ---------------------------------------------------------------------------------------------
 
+/**
+ * Frente ui-polish: ícone do item na mochila da batalha (textura do item no RP: item_texture.json do importador). Remédios
+ * ficam em `item/medicine`, frutas em `item/berries`, itens de batalha em `item/battle_items`; os demais têm caminho próprio.
+ */
+const BAG_ICON_PATHS: Record<string, string> = {
+  berry_juice: "textures/item/berry_juice", revival_herb: "textures/item/revival_herb", moomoo_milk: "textures/item/food/moomoo_milk",
+  // Nomes do arquivo do Cobblemon diferentes do id do item.
+  x_defence: "textures/item/battle_items/x_defense", x_special_attack: "textures/item/battle_items/x_sp_atk",
+  x_special_defence: "textures/item/battle_items/x_sp_def",
+};
+export function bagItemIcon(typeId: string): string {
+  const id = typeId.replace(/^[a-z0-9_]+:/, "");
+  if (BAG_ICON_PATHS[id]) return BAG_ICON_PATHS[id];
+  if (id.endsWith("_berry")) return `textures/item/berries/${id}`;
+  if (id.startsWith("x_") || id === "dire_hit" || id === "guard_spec") return `textures/item/battle_items/${id}`;
+  return `textures/item/medicine/${id}`;
+}
+
 async function showBagMenu(context: MenuContext): Promise<MenuResult<ActionResponse>> {
   let { player, battle } = context;
   while (true) {
@@ -495,9 +520,9 @@ async function showBagMenu(context: MenuContext): Promise<MenuResult<ActionRespo
     }
     let form = new ActionFormData()
       .title(layoutTitle(SCREEN.BATTLE, SUB.BATTLE_LIST, { translate: "cobblemon.port.battle.ui.bag" }));
-    entries.forEach(entry => form.button({ rawtext: [{ translate: entry.def.itemName }, { text: ` §7x${entry.amount}` }] }));
+    entries.forEach(entry => form.button({ rawtext: [{ translate: entry.def.itemName }, { text: ` §7x${entry.amount}` }] }, bagItemIcon(entry.def.typeId)));
     if (showBallHint)
-      form.button({ translate: "cobblemon.port.battle.ui.throw_ball" });
+      form.button({ translate: "cobblemon.port.battle.ui.throw_ball" }, "textures/item/poke_balls/poke_ball");
     form.button({ translate: "gui.back" });
     let response = await show(context, form);
     if (!response || response.selection === undefined)

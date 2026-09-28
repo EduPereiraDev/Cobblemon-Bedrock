@@ -9,7 +9,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildScene, checkScene, indexUi, parseUiFile, plain } from "../tools/ui/layoutScene.mjs";
+import { BUTTON_STATES, buildScene, checkButtonStates, checkScene, indexUi, parseUiFile, plain } from "../tools/ui/layoutScene.mjs";
 import { SCREEN_RULES } from "../tools/ui/layoutRules.mjs";
 import { JAVA_FIELDS } from "../tools/ui/javaFields.mjs";
 import { buildFixtures, loadLang } from "../tools/ui/previewFixtures";
@@ -39,6 +39,59 @@ for (const fx of fixtures) {
 	checked++;
 }
 assert.ok(checked >= 18, `telas checadas (${checked})`);
+
+// 5. Frente ui-polish (4º teste em cliente real): rótulo, ícone, retrato e barra visíveis em TODOS os estados do botão
+// (default/hover/pressed/locked), por cima do fundo. Antes: nas ações da batalha o nome só aparecia num estado e nos
+// golpes/troca o hover (quadro opaco na camada 20) apagava nome, retrato e barra.
+let stateChecked = 0;
+for (const fx of fixtures) {
+	const issues = checkButtonStates(index, fx.root, { ...fx, lang }, [480, 270], SCREEN_RULES[fx.name.replace(/-3d$/, "")] ?? {});
+	assert.deepEqual(issues, [], `${fx.name}: conteúdo em todos os estados do botão`);
+	stateChecked++;
+}
+assert.equal(BUTTON_STATES.length, 4);
+// Toda célula clicável de batalha tem conteúdo acima do botão (o botão fica sob o conteúdo).
+for (const name of ["battle-action", "battle-moves", "battle-switch", "battle-target", "battle-bag"]) {
+	const fx = byName.get(name)!;
+	const hover = buildScene(index, fx.root, { ...fx, lang }, [480, 270], { buttonState: "hover" });
+	const labels = hover.nodes.filter(n => n.kind === "label" && plain(n.text).trim() && n.cell !== undefined);
+	assert.ok(labels.length >= 2, `${name}: rótulos das células no hover`);
+}
+
+// Casos negativos do estado do botão, nas duas direções vistas no cliente + o hover opaco por cima.
+{
+	const button = (controls: object[], layer = 20) => ({ "hit@common.button": { size: ["100%", "100%"], anchor_from: "top_left", anchor_to: "top_left", layer, controls } });
+	const tile = (label: object | undefined, controls: object[]) => ({
+		type: "collection_panel", collection_name: "form_buttons", size: [100, 30], anchor_from: "top_left", anchor_to: "top_left",
+		controls: [{ cell_0: { type: "panel", collection_index: 0, size: [90, 26], anchor_from: "top_left", anchor_to: "top_left", layer: 5, controls: [...(label ? [{ label }] : []), button(controls)] } }],
+	});
+	const nameLabel = { type: "label", text: "#form_button_text", size: [80, 10], layer: 6, anchor_from: "top_left", anchor_to: "top_left", bindings: [{ binding_name: "#form_button_text", binding_type: "collection", binding_collection_name: "form_buttons" }] };
+	const frame = (y: number) => ({ type: "image", texture: "textures/gui/cobblemon/battle/battle_menu_fight", uv: [0, y], uv_size: [90, 26], size: ["100%", "100%"], layer: 2 });
+	const data = { title: "", body: "", buttons: [{ text: "Atacar" }] };
+	const run = (root: object) => checkButtonStates(indexUi([{ namespace: "neg", root }]), "neg.root", data, [200, 100]);
+	// Golpes/troca: o nome aparece parado e o quadro opaco do hover (camada 20) o apaga.
+	const covered = run(tile(nameLabel, [{ default: { type: "panel" } }, { hover: frame(26) }, { pressed: frame(26) }]));
+	assert.ok(covered.some(e => e.startsWith("estado hover:") && e.includes("cobre")), "acusa o hover por cima do nome");
+	assert.ok(covered.some(e => e.startsWith("estado pressed:") && e.includes("cobre")), "acusa o pressed por cima do nome");
+	// Nome só no estado parado (some no hover).
+	const onlyDefault = run(tile(undefined, [{ default: { type: "panel", controls: [{ label: nameLabel }] } }, { hover: frame(26) }, { pressed: frame(26) }]));
+	assert.ok(onlyDefault.some(e => e.startsWith("estado hover: some")), "acusa o nome que some no hover");
+	assert.ok(onlyDefault.some(e => e.startsWith("estado locked: some")), "acusa o nome que some no locked");
+	// Ações da batalha: nome só no hover (parado, sem nome).
+	const onlyHover = run(tile(undefined, [{ default: frame(0) }, { hover: { type: "panel", controls: [{ label: nameLabel }] } }]));
+	assert.ok(onlyHover.some(e => e.startsWith("estado hover: só neste estado")), "acusa o nome que só aparece no hover");
+	// Correto: o estado só troca o fundo, sob o conteúdo.
+	const ok = run({
+		type: "collection_panel", collection_name: "form_buttons", size: [100, 30], anchor_from: "top_left", anchor_to: "top_left",
+		controls: [{
+			cell_0: {
+				type: "panel", collection_index: 0, size: [90, 26], anchor_from: "top_left", anchor_to: "top_left", layer: 5,
+				controls: [{ bg: frame(0) }, { label: nameLabel }, button([{ default: { type: "panel" } }, { hover: { ...frame(26), layer: 0 } }, { pressed: { ...frame(26), layer: 0 } }], 3)],
+			},
+		}],
+	});
+	assert.deepEqual(ok, [], "estado sob o conteúdo: nada a acusar");
+}
 
 // 3. Campos do Java.
 const content = (scene: ReturnType<typeof buildScene>, path: string) => scene.nodes.some(n => (n.path === path || n.path.startsWith(`${path}/`))
@@ -112,5 +165,5 @@ for (const fx of fixtures) {
 	assert.ok(issues.some(e => e.includes("não cabe")), "acusa glifo mais alto que a linha");
 }
 
-console.log(`ui-layout: ok (${checked} telas, ${Object.values(JAVA_FIELDS).reduce((n, s) => n + s.fields.length, 0)} campos do Java)`);
+console.log(`ui-layout: ok (${checked} telas, ${stateChecked} nos 4 estados de botão, ${Object.values(JAVA_FIELDS).reduce((n, s) => n + s.fields.length, 0)} campos do Java)`);
 process.exit(0);

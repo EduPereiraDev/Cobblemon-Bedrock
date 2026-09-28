@@ -16,6 +16,7 @@ import { alphaEyesAnimations, emitAlphaEyes } from "./visualFinal.ts"; // frente
 import { walkMovementValue } from "../../scripts/entity/RideSprint.ts"; // review-fixes rodada 2: andar montado
 import { DYNAMAX_GROW_SECONDS, DYNAMAX_SCALE_FACTOR, GIMMICK_DYNAMAX, GIMMICK_MAX, GIMMICK_PROPERTY, gimmickTints } from "../../scripts/entity/GimmickProperty.ts"; // frente msd-fase1
 import { TYPE_HUES } from "../../scripts/GUI/layoutSpec.ts"; // frente msd-fase1: cor do tipo (ElementalType.hue) na tinta Tera
+import { POKEMON_MATERIALS } from "./zfightEntities.ts"; // frente zfight2: materiais das client entities de Pokémon
 
 export interface ComboOut {
 	poser: string;
@@ -290,7 +291,9 @@ export function emitClientEntity(s: SpeciesRender): void {
 
 	const description: any = {
 		identifier: `cobblemon:${s.id}`,
-		materials: { default: "entity_alphatest", layer: "entity_alphatest", layer_translucent: "entity_alphablend" },
+		// Frente zfight2: base de um lado (= entityCutout do Java) e camadas que passam no empate de profundidade com a
+		// base (zfightEntities.ts; materials/entity.material gerado no index.ts).
+		materials: { ...POKEMON_MATERIALS },
 		textures: { ...Object.fromEntries(s.textures), ...(s.channels.length ? { blank: "textures/blank" } : {}) },
 		geometry: Object.fromEntries(s.geometries),
 		animations,

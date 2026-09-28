@@ -18,7 +18,10 @@ import {
 	BATTLE_ACTION, BATTLE_MOVES, BATTLE_SWITCH, BATTLE_TARGET, CATEGORY_MARKERS, EXP_STEPS, GIMMICK_ON_MARKER, GUI, PC, PC_DIM_MARKER, POKEDEX_ENTRY,
 	POKEDEX_LIST, SELECTED_MARKER, STARTER, SUB, SUMMARY, SUMMARY_INFO, SUMMARY_INFO_LABELS, SUMMARY_MARKS, SUMMARY_MOVES, TYPE_DOUBLE, TYPE_HUES,
 	MOVE_TILE_LINES, TYPE_SINGLE, expStepText, typeKeyTexture,
+	RADAR_COLORS, RADAR_HEXAGON, RADAR_PENTAGON, STAT_BAR_LINES, STAT_FILL_COLORS, STAT_FILL_MARKERS, radarSectorBox,
+	BATTLE_FORFEIT, DIALOGUE, DIALOGUE_DISABLED_MARKER, DIALOGUE_MAX_HORIZONTAL,
 } from "../../scripts/GUI/layoutSpec.ts";
+import type { RadarShape } from "../../scripts/GUI/layoutSpec.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 export const UI_DIR = join(ROOT, "resource_packs", "CobblemonBedrock", "ui");
@@ -56,7 +59,7 @@ function img(texture: string, offset: Vec, size: Vec, extra: Json = {}): Json {
 function icon(offset: Vec, size: Vec, extra: Json = {}): Json {
 	return {
 		type: "image",
-		layer: 3,
+		layer: CONTENT_LAYER,
 		...at(offset, size),
 		...extra,
 		bindings: [
@@ -100,20 +103,33 @@ function globalLabel(binding: "#title_text" | "#form_text", offset: Vec, size: V
 }
 
 /**
- * Área clicável da célula (herda `common.button`). `hover`/`pressed`: controles do estado; padrão = realce branco.
+ * Frente ui-polish (4º teste em cliente real): camadas dentro de uma célula clicável.
+ *  - fundo (textura do tile, realce de escolhido): camadas 1 e 2;
+ *  - o botão (`hit`) na camada HIT_LAYER, com os controles de estado (hover/pressed) na camada 0 dele;
+ *  - conteúdo (rótulos, ícones, retratos): CONTENT_LAYER ou acima.
+ * Antes o botão ficava na camada 20: a imagem do hover (quadro opaco do `battle_menu_*`/`party_select`) era desenhada
+ * POR CIMA do nome, do retrato e da barra, e o rótulo só existia num estado do botão. Agora o estado só troca o fundo.
+ */
+const HIT_LAYER = 3;
+const CONTENT_LAYER = 4;
+
+/**
+ * Área clicável da célula (herda `common.button`). `hover`/`pressed`: controles do estado (trocam o FUNDO, sob o
+ * conteúdo); padrão = realce branco.
  */
 function hit(hover?: Json, pressed?: Json): Json {
-	const highlight = img(HIGHLIGHT, [0, 0], ["100%", "100%"], { alpha: 0.28, layer: 1 });
+	const highlight = img(HIGHLIGHT, [0, 0], ["100%", "100%"], { alpha: 0.28 });
+	const state = (control: Json): Json => ({ ...control, layer: 0 });
 	return {
 		"hit@common.button": {
 			$pressed_button_name: "button.form_button_click",
 			...at([0, 0], ["100%", "100%"]),
-			layer: 20,
+			layer: HIT_LAYER,
 			bindings: [{ binding_type: "collection_details", binding_collection_name: "form_buttons" }],
 			controls: [
 				{ default: { type: "panel" } },
-				{ hover: hover ?? highlight },
-				{ pressed: pressed ?? hover ?? highlight },
+				{ hover: state(hover ?? highlight) },
+				{ pressed: state(pressed ?? hover ?? highlight) },
 			],
 		},
 	};
@@ -248,7 +264,7 @@ function typeSpacerCell(index: number, offset: [number, number], size: [number, 
 /** Ícone de categoria (MoveCategoryIcon: `categories.png` 24×16 por linha) pelo prefixo invisível do texto. */
 function categoryIcons(offset: Vec, size: Vec): Json[] {
 	return Object.entries(CATEGORY_MARKERS).map(([category, marker], i) => ({
-		[`icon_category_${category.toLowerCase()}`]: img(`${GUI}/categories`, offset, size, { uv: [0, i * 16], uv_size: [24, 16], layer: 3, bindings: whenMarker(marker) }),
+		[`icon_category_${category.toLowerCase()}`]: img(`${GUI}/categories`, offset, size, { uv: [0, i * 16], uv_size: [24, 16], layer: CONTENT_LAYER, bindings: whenMarker(marker) }),
 	}));
 }
 
@@ -296,9 +312,11 @@ function framedTexture(name: string, texture: string, size: [number, number], wi
 function battleFile(): Json {
 	const tileOffsets: Vec[] = [[0, 0], [93, 0], [0, 29], [93, 29]];
 	const actionTiles = tileOffsets.map((o, i) => cell(BATTLE_ACTION.TILES + i, o, [90, 26], [
-		icon([0, 0], [90, 26], { uv: [0, 0], uv_size: [90, 26], layer: 2 }),
+		// BattleOptionTile: quadro de cima (cinza com o filete da cor) parado, o de baixo (colorido) no hover; o nome
+		// é desenhado nos dois (texto por cima do fundo, em qualquer estado).
+		{ bg: icon([0, 0], [90, 26], { uv: [0, 0], uv_size: [90, 26], layer: 2 }) },
 		text([6, 8], [80, 10], {}),
-		hit(icon([0, 0], [90, 26], { uv: [0, 26], uv_size: [90, 26], layer: 2 })),
+		hit(icon([0, 0], [90, 26], { uv: [0, 26], uv_size: [90, 26] })),
 	]));
 	// BattleMoveSelection (x 20, y = altura − 84): tiles 92×24 com 13 px entre colunas e 5 entre linhas. MoveTile: ícone do
 	// tipo em x − 9, nome em x 17, categoria em x 48 / y 14,5, PP centrado em x 75 / y 14.
@@ -334,9 +352,9 @@ function battleFile(): Json {
 	});
 	const toggledOn = `(not ((#form_button_text - '${GIMMICK_ON_MARKER}') = #form_button_text))`;
 	const gimmickButtons = Array.from({ length: BATTLE_MOVES.GIMMICK_SLOTS }, (_, i) => cell(BATTLE_MOVES.GIMMICKS + i, [-11 + 58 * 0.65 + 26 * i, 62], [18, 17], [
-		gimmickFrame(0, undefined, 2),
-		gimmickFrame(34, toggledOn, 3),
-		hit(gimmickFrame(34, undefined, 2)),
+		{ bg: gimmickFrame(0, undefined, 2) },
+		{ toggled: gimmickFrame(34, toggledOn, CONTENT_LAYER) },
+		hit(gimmickFrame(34, undefined, 0)),
 	]));
 	const targetOffsets: Vec[] = [[0, 0], [98, 0], [196, 0], [0, 37], [98, 37], [196, 37]];
 	const targets = targetOffsets.map((o, i) => cell(BATTLE_TARGET.FOES + i, o, [93, 33], [
@@ -361,12 +379,23 @@ function battleFile(): Json {
 		size: [96, 31],
 		controls: [
 			img(`${GUI}/battle/party_select`, [1, 1], [94, 29], { uv: [0, 0], uv_size: [94, 29] }),
-			text([6, 6], [84, 20], { scale: 0.7 }),
+			// Frente ui-polish: ícone do item (textura do item no ícone do botão) à esquerda; sem ícone, o texto começa em x 6.
+			icon([5, 6], [16, 16]),
+			{ text_icon: { ...text([24, 6], [68, 20], { scale: 0.7 }), bindings: [collection("#form_button_text"), collection("#form_button_texture"), view("(not (#form_button_texture = ''))", "#visible")] } },
+			{ text_plain: { ...text([6, 6], [84, 20], { scale: 0.7 }), bindings: [collection("#form_button_text"), collection("#form_button_texture"), view("(#form_button_texture = '')", "#visible")] } },
 			hit(img(`${GUI}/battle/party_select`, [1, 1], [94, 29], { uv: [0, 29], uv_size: [94, 29] })),
 		],
 		bindings: [collection("#form_button_text"), view("(not (#form_button_text = ''))", "#visible")],
 	};
 	const prompt = globalLabel("#title_text", [0, -12], [220, 10], {});
+	// Frente ui-polish: ForfeitConfirmationSelection (113×45 no centro): "Desistir" centrado em x 42, y 2 e os botões
+	// BattleResponseButton (34×19, 2 quadros) em x 22 e 57, y 18, com o ícone (21×26 a 0,5) em x + 12, y + 3,5.
+	const REQUEST = `${GUI}/interact/request`;
+	const response = (index: number, x: number, kind: "accept" | "decline") => cell(index, [x, 18], [34, 19], [
+		img(`${REQUEST}/button_request_${kind}`, [0, 0], [34, 19], { uv: [0, 0], uv_size: [34, 19] }),
+		{ icon_response: img(`${REQUEST}/icon_${kind}`, [12, 3.5], [10.5, 13], { layer: CONTENT_LAYER }) },
+		hit(img(`${REQUEST}/button_request_${kind}`, [0, 0], [34, 19], { uv: [0, 19], uv_size: [34, 19] })),
+	]);
 	return {
 		namespace: "battle",
 		// Roteado por ui/cobblemon_forms.json (marcador §0§2§r). Tela inteira transparente: o mundo e as caixas de
@@ -381,6 +410,22 @@ function battleFile(): Json {
 				{ "target@battle.target_layout": {} },
 				{ "switch@battle.switch_layout": {} },
 				{ "list@battle.list_layout": {} },
+				{ "forfeit@battle.forfeit_layout": {} },
+			],
+		},
+		"forfeit_layout": {
+			type: "panel",
+			size: ["100%", "100%"],
+			bindings: titleVisibility(hasMarker(SUB.BATTLE_FORFEIT)),
+			controls: [
+				{
+					box: cellPanel([0, 0], [113, 45], [
+						{ background: img(`${REQUEST}/confirmation_request`, [0, 0], [113, 45], { layer: 1 }) },
+						{ title: clipGlobal("#title_text", [2, 2], [80, 10], { align: "center" }) },
+						response(BATTLE_FORFEIT.ACCEPT, 22, "accept"),
+						response(BATTLE_FORFEIT.DECLINE, 57, "decline"),
+					], { anchor_from: "center", anchor_to: "center" }),
+				},
 			],
 		},
 		"action_layout": {
@@ -481,6 +526,79 @@ function battleFile(): Json {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
+// Frente ui-polish: diálogo (DialogueScreen.kt): caixa 196×74 com a borda de cima 67 px acima do centro da tela, o nome
+// (196×17) colado em cima, o retrato (38×36) à esquerda ou à direita do nome e as opções 7 px abaixo da caixa. A tela
+// aqui é um painel de 272 px (retrato + caixa + retrato) com a origem no topo do nome (83 px acima do centro).
+
+function dialogueFile(): Json {
+	const D = `${GUI}/dialogue`;
+	const TEXT = [0x4c / 255, 0x4c / 255, 0x4c / 255].map(v => Math.round(v * 1000) / 1000) as [number, number, number];
+	const BOX_X = 38;
+	const BOX_Y = 16;
+	const OPTIONS_Y = BOX_Y + 74 + 7;
+	const disabled = `(not ((#form_button_text - '${DIALOGUE_DISABLED_MARKER}') = #form_button_text))`;
+	/** DialogueOptionWidget: botão com 3 quadros (normal, hover, apagado) e o texto centrado. */
+	const option = (index: number, offset: Vec, width: number, texture: string) => cell(index, offset, [width, 21], [
+		{ bg: img(texture, [0, 0], [width, 21], { uv: [0, 0], uv_size: [width, 21], bindings: [collection("#form_button_text"), view(`(not ${disabled})`, "#visible")] }) },
+		{ bg_disabled: img(texture, [0, 0], [width, 21], { uv: [0, 42], uv_size: [width, 21], bindings: [collection("#form_button_text"), view(disabled, "#visible")] }) },
+		clipText([3, 6.5], [width - 6, 9], { scale: 0.9, align: "center" }),
+		hit(img(texture, [0, 0], [width, 21], { uv: [0, 21], uv_size: [width, 21] })),
+	]);
+	const panel = (marker: string, controls: Json[]) => cellPanel([0, 0], [272, 200], controls, { layer: 3, bindings: titleVisibility(hasMarker(marker)) });
+	const vertical = Array.from({ length: DIALOGUE.OPTION_SLOTS }, (_, i) => option(DIALOGUE.OPTIONS + i, [BOX_X, OPTIONS_Y + 25 * i], 196, `${D}/dialogue_button_full`));
+	const rows = [SUB.DIALOGUE_H1, SUB.DIALOGUE_H2, SUB.DIALOGUE_H3, SUB.DIALOGUE_H4].slice(0, DIALOGUE_MAX_HORIZONTAL).map((marker, n) => {
+		const count = n + 1;
+		return { [`row_${count}`]: panel(marker, Array.from({ length: count }, (_, i) => option(DIALOGUE.OPTIONS + i, [136 - (count - 1) * 50 + 100 * i - 48, OPTIONS_Y], 96, `${D}/dialogue_button`))) };
+	});
+	// Retrato (DialoguePortraitWidget): fundo, rosto (retrato da espécie ou o rosto 8×8 da skin + chapéu), moldura e a
+	// setinha que aponta para a caixa (quadro do dialogue_box em u 196).
+	const face = (side: "left" | "right"): Json[] => {
+		const x = side === "left" ? 1 : BOX_X + 196 - 1;
+		const when = (kind: string) => [collection("#form_button_text"), view(`(#form_button_text = '${side}_${kind}')`, "#visible")];
+		const whenSide = [collection("#form_button_text"), view(`(not ((#form_button_text - '${side}_') = #form_button_text))`, "#visible")];
+		const bound = (extra: Json, kind: string): Json => ({
+			type: "image", ...extra,
+			bindings: [collection("#form_button_texture", "#texture"), collection("#form_button_texture_file_system", "#texture_file_system"), ...when(kind)],
+		});
+		return [
+			{ [`${side}_background`]: img(`${D}/dialogue_portrait_background`, [x, 0], [38, 36], { layer: 1, bindings: whenSide }) },
+			{ [`icon_${side}_pokemon`]: bound({ layer: 2, ...at([x + 4, 3], [30, 30]) }, "pokemon") },
+			{ [`icon_${side}_skin`]: bound({ layer: 2, ...at([x + 5, 4], [28, 28]), uv: [8, 8], uv_size: [8, 8] }, "skin") },
+			{ [`bg_${side}_hat`]: bound({ layer: 3, ...at([x + 5, 4], [28, 28]), uv: [40, 8], uv_size: [8, 8] }, "skin") },
+			{ [`${side}_frame`]: img(`${D}/dialogue_portrait_${side}`, [x, 0], [38, 36], { layer: 4, bindings: whenSide }) },
+			{ [`${side}_arrow`]: img(`${D}/dialogue_box`, [side === "left" ? x + 32 : x, 30], [6, 11], { layer: 4, uv: [196, side === "left" ? 11 : 0], uv_size: [6, 11], bindings: whenSide }) },
+		];
+	};
+	return {
+		namespace: "dialogue",
+		"dialogue_form": {
+			type: "panel",
+			size: [272, 200],
+			anchor_from: "center",
+			anchor_to: "center",
+			offset: [0, 17],
+			layer: 2,
+			controls: [
+				{ name_bar: img(`${D}/dialogue_name`, [BOX_X, 0], [196, 17], { layer: 1 }) },
+				{ name: clipGlobal("#title_text", [BOX_X + 2, 4.5], [192, 9], { align: "center" }) },
+				{ box: img(`${D}/dialogue_box`, [BOX_X, BOX_Y], [196, 74], { layer: 1, uv: [0, 0], uv_size: [196, 74] }) },
+				{ text: clipGlobal("#form_text", [BOX_X + 9, BOX_Y + 7], [178, 62], { color: TEXT, shadow: false }) },
+				{ portrait: cellPanel([0, 0], [272, 200], [cell(DIALOGUE.PORTRAIT, [0, 0], [272, 41], [...face("left"), ...face("right")])], { layer: 3 }) },
+				// Sem opções: tocar na caixa continua (DialogueBox.mouseClicked → "skip!"); o texto do botão vira a dica.
+				{
+					continue: panel(SUB.DIALOGUE_CONTINUE, [cell(DIALOGUE.OPTIONS, [BOX_X, BOX_Y], [196, 74], [
+						clipText([96, 63], [94, 7], { scale: 0.6, align: "right", color: TEXT, shadow: false }),
+						hit(img(HIGHLIGHT, [0, 0], ["100%", "100%"], { alpha: 0.06 })),
+					])]),
+				},
+				{ vertical: panel(SUB.DIALOGUE_VERTICAL, vertical) },
+				...rows,
+			],
+		},
+	};
+}
+
+// ---------------------------------------------------------------------------------------------------------------
 // Resumo (Summary.kt, 331×161)
 
 const SUMMARY_TAB_MARKERS = [SUB.SUMMARY_INFO, SUB.SUMMARY_MOVES, SUB.SUMMARY_STATS, SUB.SUMMARY_MARKS];
@@ -497,7 +615,12 @@ function summaryCanvas(studio: boolean): Json {
 		controls.push({ portrait_bg: img(`${GUI}/summary/portrait_background`, [6, 32], [66, 66], { layer: 2 }) });
 	}
 	SUMMARY_TAB_MARKERS.forEach((marker, i) => {
-		controls.push({ [`tab_base_${i}`]: img(`${GUI}/summary/${SUMMARY_TAB_BASES[i]}`, [77, 12], [134, 148], { layer: 2, bindings: titleVisibility(hasMarker(marker)) }) });
+		// Frente ui-polish: Atributos usa o fundo do gráfico (summary_stats_chart_base) e o de barras só no modo OTHER.
+		if (marker === SUB.SUMMARY_STATS) {
+			controls.push({ tab_base_chart: img(`${GUI}/summary/summary_stats_chart_base`, [77, 12], [134, 148], { layer: 2, bindings: titleVisibility(`(${hasMarker(marker)} and ${lacksMarker(SUB.SUMMARY_STATS_OTHER)})`) }) });
+			controls.push({ tab_base_other: img(`${GUI}/summary/summary_stats_other_base`, [77, 12], [134, 148], { layer: 2, bindings: titleVisibility(`(${hasMarker(marker)} and ${hasMarker(SUB.SUMMARY_STATS_OTHER)})`) }) });
+		}
+		else controls.push({ [`tab_base_${i}`]: img(`${GUI}/summary/${SUMMARY_TAB_BASES[i]}`, [77, 12], [134, 148], { layer: 2, bindings: titleVisibility(hasMarker(marker)) }) });
 		controls.push({ [`tab_active_${i}`]: img(`${GUI}/summary/summary_tab`, [78 + 31 * i - 5, -1], [39, 13], { layer: 2, bindings: titleVisibility(hasMarker(marker)) }) });
 	});
 	const cells: Json[] = [];
@@ -563,13 +686,7 @@ function summaryCanvas(studio: boolean): Json {
 	// Conteúdo de cada aba (mesmos índices a partir de CONTENT, painéis diferentes).
 	const tabPanel = (marker: string, content: Json[]) => cellPanel([77, 12], [134, 148], content, { layer: 3, bindings: titleVisibility(hasMarker(marker)) });
 	controls.push({ info: tabPanel(SUB.SUMMARY_INFO, summaryInfo()) });
-	const statRows: Json[] = [];
-	for (let i = 0; i < 6; i++) {
-		statRows.push(cell(SUMMARY.STAT_ROWS + i, [6, 11 + i * 16], [122, 6], [clipText([0, 0], [122, 6], { scale: 0.55 })]));
-		statRows.push(cell(SUMMARY.STAT_BARS + i, [6, 18 + i * 16], [97, 3], [icon([0, 0], [97, 3])]));
-	}
-	// Entre as barras e a linha pontilhada de baixo do summary_stats_other_base (y 132): até 5 linhas a 0,5.
-	controls.push({ stats: tabPanel(SUB.SUMMARY_STATS, [...statRows, { body: clipGlobal("#form_text", [6, 105], [122, 26], { scale: 0.5 }) }]) });
+	controls.push({ stats: tabPanel(SUB.SUMMARY_STATS, summaryStats()) });
 	controls.push({ moves: tabPanel(SUB.SUMMARY_MOVES, summaryMoves()) });
 	controls.push({ marks: tabPanel(SUB.SUMMARY_MARKS, summaryMarks()) });
 	// ExitButton do Java: x 302, y 145 (embaixo à direita). No estúdio (sem o painel do time), logo à direita do painel.
@@ -585,6 +702,89 @@ function summaryCanvas(studio: boolean): Json {
 		bindings: titleVisibility(studio ? hasMarker(SUB.STUDIO) : lacksMarker(SUB.STUDIO)),
 		controls,
 	};
+}
+
+/**
+ * Frente ui-polish: aba Atributos como o StatWidget (antes: linhas de texto + barras). Três painéis pelo modo no título:
+ *  - gráfico hexagonal (STATS/IV/EV): summary_stats_chart (x 25,5, y 22, 83×96), os 6 setores do polígono (textura
+ *    por passo, pintada com a cor do modo) e o rótulo + valor em cada vértice (hexagonVerticesOffset, escala 0,5), com a
+ *    seta da natureza (x − 2, y − 4,5) e o rótulo em vermelho/azul;
+ *  - pentágono de montaria (RIDE): summary_stats_chart_pentagon (x 20,5, y 22, 93×88), 5 setores com a cor do estilo e o
+ *    ícone do estilo no centro (x 59, y 62,5; tocar troca o estilo);
+ *  - OTHER: barras de 116×24 em x 9, y 15 + 29·i (underlay, preenchimento pintado, sobreposição, nome centrado em x 58,
+ *    valor em x 9 e % em x 107);
+ * e a barra de modos embaixo (y 143; x 31 + 24·i com 4 modos, x 23 + 22·i com 5), com o marcador em y 140.
+ */
+function summaryStats(): Json[] {
+	const chart = (shape: RadarShape, modes: string[], extra: Json[]): Json[] => {
+		const out: Json[] = [...extra];
+		for (let k = 0; k < shape.sides; k++) {
+			const [x, y, w, h] = radarSectorBox(shape, k);
+			out.push(cell(SUMMARY.STAT_BARS + k, [x, y], [w, h], modes.map(mode => ({
+				[`bg_radar_${mode}`]: {
+					type: "image", layer: 2, ...at([0, 0], [w, h]), color: RADAR_COLORS[mode].map(v => Math.round(v / 255 * 1000) / 1000),
+					bindings: [
+						collection("#form_button_texture", "#texture"),
+						collection("#form_button_texture_file_system", "#texture_file_system"),
+						collection("#form_button_text"),
+						view(`((#form_button_text = '${mode}') and not ((#texture = '') or (#texture = 'loading')))`, "#visible"),
+					],
+				},
+			}))));
+		}
+		shape.labels.forEach(([lx, ly], k) => {
+			const width = lx < 20 || lx > 114 ? 30 : 40;
+			out.push(cell(SUMMARY.STAT_ROWS + k, [lx - width / 2, ly - 4.5], [width, 16], [
+				icon([width / 2 - 2, 0], [4, 3]),
+				clipText([0, 4.5], [width, 11], { scale: 0.5, align: "center" }),
+			]));
+		});
+		return out;
+	};
+	const hex = chart(RADAR_HEXAGON, ["stats", "ivs", "evs"], [
+		{ chart_image: img(`${GUI}/summary/summary_stats_chart`, [25.5, 22], [83, 96], { layer: 1 }) },
+	]);
+	const pent = chart(RADAR_PENTAGON, ["land", "liquid", "air"], [
+		{ chart_image: img(`${GUI}/summary/summary_stats_chart_pentagon`, [20.5, 22], [93, 88], { layer: 1 }) },
+	]);
+	// Ícone do estilo de montaria no centro (a 6ª célula de rótulo, que o pentágono não usa).
+	pent.push(cell(SUMMARY.STAT_ROWS + 5, [59, 62.5], [16, 16], [icon([0, 0], [16, 16]), hit()]));
+	const other: Json[] = [];
+	for (let i = 0; i < 4; i++) {
+		const y = 15 + 29 * i;
+		other.push(cell(SUMMARY.STAT_ROWS + i, [9, y], [116, 24], [
+			img(`${GUI}/summary/summary_stats_other_bar`, [0, 0], [116, 24], { layer: 1 }),
+			...Object.entries(STAT_FILL_MARKERS).map(([color, marker]) => ({
+				[`fill_${color}`]: {
+					type: "image", layer: 2, ...at([3, 13], [110, 10]), color: STAT_FILL_COLORS[color].map(v => Math.round(v / 255 * 1000) / 1000),
+					bindings: [
+						collection("#form_button_texture", "#texture"),
+						collection("#form_button_texture_file_system", "#texture_file_system"),
+						...whenMarker(marker),
+					],
+				},
+			})),
+			clipLine(STAT_BAR_LINES.NAME, [0, 2.5], [116, 8], { scale: 0.75, align: "center" }),
+			clipLine(STAT_BAR_LINES.VALUE, [1, 6], [16, 5], { scale: 0.5, align: "center" }),
+			clipLine(STAT_BAR_LINES.PERCENT, [97, 6], [20, 5], { scale: 0.5, align: "center" }),
+		]));
+		other.push(cell(SUMMARY.STAT_BARS + i, [12, y + 13], [110, 10], [icon([0, 0], [110, 10])]));
+	}
+	const mode = (panel: Json[], visible: string) => cellPanel([0, 0], [134, 148], panel, { layer: 1, bindings: titleVisibility(visible) });
+	// Barra de modos: 4 (sem montaria) ou 5 (com); o título diz qual (SUMMARY_STATS_RIDE_TAB).
+	const tabs = (count: number, start: number, width: number): Json[] => Array.from({ length: count }, (_, i) => cell(SUMMARY.STAT_TABS + i, [start + width * i - width / 2, 139], [width, 9], [
+		{ marker: img(`${GUI}/summary/summary_stats_tab_marker`, [width / 2 - 2, 1], [4, 2], { layer: CONTENT_LAYER, bindings: whenMarker(SELECTED_MARKER) }) },
+		// "Atributos" (pt_BR) é mais largo que o "Stats" do Java: 0,45 cabe nos 22 px da barra de 5.
+		clipText([0, 4], [width, 5], { scale: count > 4 ? 0.45 : 0.5, align: "center" }),
+		hit(),
+	]));
+	return [
+		{ hexagon: mode(hex, `(${lacksMarker(SUB.SUMMARY_STATS_RIDE)} and ${lacksMarker(SUB.SUMMARY_STATS_OTHER)})`) },
+		{ pentagon: mode(pent, hasMarker(SUB.SUMMARY_STATS_RIDE)) },
+		{ other: mode(other, hasMarker(SUB.SUMMARY_STATS_OTHER)) },
+		{ tabs4: mode(tabs(4, 31, 24), lacksMarker(SUB.SUMMARY_STATS_RIDE_TAB)) },
+		{ tabs5: mode(tabs(5, 23, 22), hasMarker(SUB.SUMMARY_STATS_RIDE_TAB)) },
+	];
 }
 
 /**
@@ -795,11 +995,15 @@ function pokedexFile(): Json {
 		clipText([2, 3.5], [size[0] - 4, 7], { scale: 0.55, align: "center" }),
 		hit(),
 	]);
-	const frame = (index: number) => cell(index, [0, 0], [345, 207], [icon([0, 0], [345, 207], { layer: 1 })]);
+	const frame = (index: number) => cell(index, [0, 0], [345, 207], [{ bg: icon([0, 0], [345, 207], { layer: 1 }) }]);
 	// Cabeçalho (PokedexGUI.render): globo + região em x 36, y 14; vistos/capturados em x 262/300 com o ícone (x 252/290).
-	const header = (region: number, seen: number, caught: number): Json[] => [
+	const header = (region: number, seen: number, caught: number, prev: number, next: number): Json[] => [
 		{ globe: img(`${DEX}/globe_icon`, [26, 15], [7, 7], { layer: 3 }) },
-		cell(region, [36, 14], [110, 9], [clipText([0, 0.5], [110, 8], { scale: 0.8 })]),
+		cell(region, [36, 14], [57, 9], [clipText([0, 0.5], [57, 8], { scale: 0.8 })]),
+		// Frente ui-polish: setas da região (PokedexGUI: ScaledButton 8×6 a 0,5 em x 95, y 14,5 e 19,5; a área de toque
+		// tem 8×5 em volta da seta).
+		cell(prev, [93, 13.5], [8, 5], [img(`${DEX}/arrow_up`, [2, 1], [4, 3], { uv: [0, 0], uv_size: [8, 6] }), hit(img(`${DEX}/arrow_up`, [2, 1], [4, 3], { uv: [0, 6], uv_size: [8, 6] }))]),
+		cell(next, [93, 18.5], [8, 5], [img(`${DEX}/arrow_down`, [2, 1], [4, 3], { uv: [0, 0], uv_size: [8, 6] }), hit(img(`${DEX}/arrow_down`, [2, 1], [4, 3], { uv: [0, 6], uv_size: [8, 6] }))]),
 		{ seen_icon: img(`${DEX}/caught_seen_icon`, [252, 15], [7, 7], { uv: [0, 0], uv_size: [14, 14], layer: 3 }) },
 		cell(seen, [262, 14], [26, 9], [clipText([0, 0.5], [26, 8], { scale: 0.8 })]),
 		{ caught_icon: img(`${DEX}/caught_seen_icon`, [290, 15], [7, 7], { uv: [0, 14], uv_size: [14, 14], layer: 3 }) },
@@ -813,7 +1017,7 @@ function pokedexFile(): Json {
 		selectedOverlay(`${DEX}/slot_select`, [0, 0], [25, 25], [0, 25], [25, 25]),
 		{
 			portrait: {
-				type: "image", layer: 3, ...at([2, 1], [21, 17]),
+				type: "image", layer: CONTENT_LAYER, ...at([2, 1], [21, 17]),
 				bindings: [
 					collection("#form_button_texture", "#texture"),
 					collection("#form_button_texture_file_system", "#texture_file_system"),
@@ -821,7 +1025,7 @@ function pokedexFile(): Json {
 				],
 			},
 		},
-		{ icon_unknown: img(unknownSlot, [8.5, 4], [8, 10], { layer: 3, bindings: [collection("#form_button_texture"), view(`(#form_button_texture = '${unknownSlot}')`, "#visible")] }) },
+		{ icon_unknown: img(unknownSlot, [8.5, 4], [8, 10], { layer: CONTENT_LAYER, bindings: [collection("#form_button_texture"), view(`(#form_button_texture = '${unknownSlot}')`, "#visible")] }) },
 		clipText([1, 19], [23, 5], { scale: 0.45, align: "right" }),
 		hit(img(`${DEX}/slot_select`, [0, 0], [25, 25], { uv: [0, 0], uv_size: [25, 25] })),
 	]));
@@ -832,11 +1036,11 @@ function pokedexFile(): Json {
 	];
 	const list = cellPanel([0, 0], [345, 207], [
 		frame(POKEDEX_LIST.FRAME),
-		...header(POKEDEX_LIST.REGION, POKEDEX_LIST.SEEN, POKEDEX_LIST.CAUGHT),
+		...header(POKEDEX_LIST.REGION, POKEDEX_LIST.SEEN, POKEDEX_LIST.CAUGHT, POKEDEX_LIST.REGION_PREV, POKEDEX_LIST.REGION_NEXT),
 		// Barra de busca (x 26, y 28) e de filtro (x 26, y 180), como o SearchWidget e o filtro de categoria.
 		cell(POKEDEX_LIST.SEARCH, [26, 28], [139, 11], [
 			img(`${DEX}/pokedex_screen_bar_search`, [0, 0], [139, 11]),
-			img(`${DEX}/search_icon`, [3, 2], [7, 7], { layer: 3 }),
+			img(`${DEX}/search_icon`, [3, 2], [7, 7], { layer: CONTENT_LAYER }),
 			clipText([13, 2.5], [120, 7], { scale: 0.65 }),
 			hit(),
 		]),
@@ -844,7 +1048,7 @@ function pokedexFile(): Json {
 		...arrows(POKEDEX_LIST.PREVIOUS, POKEDEX_LIST.NEXT),
 		cell(POKEDEX_LIST.FILTER, [26, 180], [139, 11], [
 			img(`${DEX}/pokedex_screen_bar_category`, [0, 0], [139, 11]),
-			img(`${DEX}/filter_icon`, [3, 2], [7, 7], { layer: 3 }),
+			img(`${DEX}/filter_icon`, [3, 2], [7, 7], { layer: CONTENT_LAYER }),
 			clipText([13, 2.5], [122, 7], { scale: 0.65 }),
 			hit(),
 		]),
@@ -859,13 +1063,13 @@ function pokedexFile(): Json {
 	const tabIcons = ["info", "abilities", "size", "stats", "drops"];
 	const tab = (index: number, i: number) => cell(index, [186.5 + 22 * i, 177.5], [16, 16], [
 		icon([4, 4], [8, 8], { uv: [0, 0], uv_size: [16, 16] }),
-		{ active: { ...icon([4, 4], [8, 8], { uv: [0, 16], uv_size: [16, 16], layer: 4 }), bindings: [...whenMarker(SELECTED_MARKER), collection("#form_button_texture", "#texture")] } },
-		{ arrow: img(`${DEX}/select_arrow`, [5, 0], [6, 3], { layer: 4, bindings: whenMarker(SELECTED_MARKER) }) },
+		{ active: { ...icon([4, 4], [8, 8], { uv: [0, 16], uv_size: [16, 16], layer: CONTENT_LAYER + 1 }), bindings: [...whenMarker(SELECTED_MARKER), collection("#form_button_texture", "#texture")] } },
+		{ arrow: img(`${DEX}/select_arrow`, [5, 0], [6, 3], { layer: CONTENT_LAYER + 1, bindings: whenMarker(SELECTED_MARKER) }) },
 		hit(),
 	]);
 	const entry = cellPanel([0, 0], [345, 207], [
 		frame(POKEDEX_ENTRY.FRAME),
-		...header(POKEDEX_ENTRY.REGION, POKEDEX_ENTRY.SEEN, POKEDEX_ENTRY.CAUGHT_COUNT),
+		...header(POKEDEX_ENTRY.REGION, POKEDEX_ENTRY.SEEN, POKEDEX_ENTRY.CAUGHT_COUNT, POKEDEX_ENTRY.REGION_PREV, POKEDEX_ENTRY.REGION_NEXT),
 		{ search_bar: img(`${DEX}/pokedex_screen_bar_search`, [26, 28], [139, 11], { layer: 2 }) },
 		...grid(POKEDEX_ENTRY.SLOTS),
 		...arrows(POKEDEX_ENTRY.PREVIOUS, POKEDEX_ENTRY.NEXT),
@@ -1137,6 +1341,7 @@ export function generate(): Record<string, string> {
 		"starter.json": starterFile(),
 		"pokedex.json": pokedexFile(),
 		"pc.json": pcFile(),
+		"dialogue.json": dialogueFile(),
 		"cobblemon_scanner.json": scannerFile(),
 	};
 	// Um elemento por linha (compacto; o cliente lê ~5× menos texto que com indentação).

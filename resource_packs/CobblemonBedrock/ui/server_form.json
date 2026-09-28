@@ -1,6 +1,6 @@
 // Frente ui-base: forms do servidor sem redeclarar telas vanilla (padrão "Modifying Server Forms" da wiki).
 // Uma segunda fábrica `server_form_factory` cria o roteador do Cobblemon (cobblemon_forms.router) ao lado do
-// `long_form` vanilla, que some quando o título começa com um marcador que tem layout (§0§1§r PC, §0§2§r batalha, §0§3§r resumo, §0§4§r inicial, §0§5§r Pokédex).
+// `long_form` vanilla, que some quando o título começa com um marcador que tem layout (§0§1§r PC, §0§2§r batalha, §0§3§r resumo, §0§4§r inicial, §0§5§r Pokédex, §0§7§r diálogo).
 {
   "namespace": "server_form",
   // Mundo e HUD visíveis atrás dos forms (a batalha mostra as caixas de info por trás do menu, como no Cobblemon).
@@ -37,7 +37,7 @@
           { "binding_name": "#title_text" },
           {
             "binding_type": "view",
-            "source_property_name": "((((((#title_text - '§0§1§r') - '§0§2§r') - '§0§3§r') - '§0§4§r') - '§0§5§r') = #title_text)",
+            "source_property_name": "(((((((#title_text - '§0§1§r') - '§0§2§r') - '§0§3§r') - '§0§4§r') - '§0§5§r') - '§0§7§r') = #title_text)",
             "target_property_name": "#visible"
           }
         ]

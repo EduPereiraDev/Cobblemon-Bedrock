@@ -31,8 +31,30 @@ export interface RenderedOption {
   selectable: boolean;
 }
 
+/**
+ * Frente ui-polish: rosto de quem fala (DialogueFace do Java). `artificial` de Pokémon vira o retrato da espécie;
+ * `q.player.face(lado)`/`q.npc.face(lado)` viram o rosto da skin. O Java desenha o modelo ao vivo; aqui é uma imagem.
+ */
+export type RenderedFace = { kind: "pokemon"; species: string; left: boolean } | { kind: "player" | "npc"; left: boolean };
+
+/** Lê o `face` do falante (objeto `artificial` ou expressão `q.player.face(true)`). */
+export function parseFace(face: unknown): RenderedFace | undefined {
+  if (typeof face === "string") {
+    const m = /q(?:uery)?\.(player|npc)\.face\(\s*(true|false|1|0)?\s*\)/i.exec(face);
+    if (!m) return undefined;
+    return { kind: m[1].toLowerCase() as "player" | "npc", left: m[2] === undefined ? m[1].toLowerCase() === "player" : m[2] === "true" || m[2] === "1" };
+  }
+  if (face && typeof face === "object") {
+    const f = face as { type?: string; modelType?: string; identifier?: string; isLeftSide?: boolean };
+    if (f.modelType === "pokemon" && typeof f.identifier === "string") return { kind: "pokemon", species: f.identifier.replace(/^[a-z0-9_]+:/, ""), left: f.isLeftSide === true };
+  }
+  return undefined;
+}
+
 export interface RenderedPage {
   pageId: string;
+  /** Frente ui-polish: rosto de quem fala (retrato do DialogueScreen). */
+  face?: RenderedFace;
   inputId: number;
   speaker?: RawMessage;
   lines: RawMessage[];
@@ -229,6 +251,7 @@ export class ActiveDialogue {
       pageId: page.id,
       inputId: this.inputId,
       speaker: speaker?.name ? this.renderText(speaker.name) : undefined,
+      face: parseFace(speaker?.face),
       lines: page.lines.map(l => this.renderText(l)),
       input: input.type,
       options,

@@ -19,7 +19,7 @@ import { encodePng } from "./png.ts";
 import { ASSETS, HAND_RP, OUT_RP, OUT_SCRIPTS, copyFile, count, readJson, walk, warn, writeJson, writeText } from "./util.ts";
 import { LEVEL_SOUND_EVENTS, PARTICLE_MAX_COLLISION_RADIUS } from "./clientRules.ts";
 import { rewriteMolang, scanMolang, unquote } from "./molang.ts";
-import { guardParticleVariables } from "./molangVars.ts"; // frente cliente-teste3-log
+import { guardParticleVariables, particlePreInitReads } from "./molangVars.ts"; // frentes cliente-teste3-log e cliente-teste4
 
 const PARTICLES_DIR = `${ASSETS}/bedrock/particles`;
 
@@ -460,6 +460,8 @@ export function clientSafeParticle(json: any, opts: { child?: boolean; soundEven
 	// sem MolangVariableMap e as curvas lidas antes da 1ª avaliação. O `??` mantém o valor que o script passar.
 	// Antes só as filhas e só v.entity_* (3º teste em cliente: 61 mil "unknown variable" em ~495 partículas).
 	void opts.child;
+	// Frente cliente-teste4: o tempo de vida do emissor é avaliado antes do creation_expression; o guarda vai na expressão.
+	if (particlePreInitReads(pe).length) count("partículas: variáveis lidas no tempo de vida do emissor com (v.x ?? padrão) na expressão", 1);
 	const guarded = guardParticleVariables(json);
 	if (guarded.length) count("partículas: variáveis lidas sem definição com padrão no creation_expression", 1);
 	// Sons e filhas por evento.

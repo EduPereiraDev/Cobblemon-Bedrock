@@ -257,7 +257,9 @@ function dimension(value, parent, content) {
  * @param {FormData} data
  * @returns {{ nodes: SceneNode[], issues: string[] }}
  */
-export function buildScene(index, root, data, viewport = [480, 270]) {
+export function buildScene(index, root, data, viewport = [480, 270], opts = {}) {
+	/** Estado de TODOS os botões da vanilla na cena (default/hover/pressed/locked): mostra só o controle daquele estado. */
+	const buttonState = opts.buttonState ?? "default";
 	const nodes = [];
 	const issues = [];
 	let order = 0;
@@ -329,7 +331,10 @@ export function buildScene(index, root, data, viewport = [480, 270]) {
 		const offY = dimension(oy, parent[3]) ?? 0;
 		const rect = [parent[0] + fx * parent[2] - tx * w + offX, parent[1] + fy * parent[3] - ty * h + offY, w, h];
 		const layer = ctx.layer + (typeof def.layer === "number" ? def.layer : 0);
-		const node = { id: `${path}#${order}`, path, name, kind: "panel", rect, layer, order: order++, cell: cellIndex, cellPath, clip: ctx.clip, clipKind: ctx.clipKind, vanilla: def.$vanilla };
+		const node = {
+			id: `${path}#${order}`, path, name, kind: "panel", rect, layer, order: order++, cell: cellIndex, cellPath, clip: ctx.clip, clipKind: ctx.clipKind,
+			vanilla: def.$vanilla, stateOf: ctx.stateOf,
+		};
 		if (def.type === "image") {
 			const bound = typeof props["#texture"] === "string";
 			const texture = bound ? props["#texture"] : def.texture;
@@ -350,9 +355,13 @@ export function buildScene(index, root, data, viewport = [480, 270]) {
 		const childCtx = { ...ctx, path, cell: cellIndex, cellPath, layer };
 		// Painel que corta: o que passa da borda some (truncamento), como no cliente.
 		if (def.clips_children === true) { childCtx.clip = intersect(ctx.clip, rect); childCtx.clipKind = "cut"; }
-		// Botão da vanilla: só o estado "default" aparece parado.
+		// Botão da vanilla: só o controle do estado atual aparece (common.button: default_control/hover_control/
+		// pressed_control = "default"/"hover"/"pressed"; locked_control = "", nenhum). Os nós dele sabem de qual botão são.
 		let controls = Array.isArray(def.controls) ? def.controls : [];
-		if (def.$vanilla === "button") controls = controls.filter((c) => Object.keys(c)[0] === "default");
+		if (def.$vanilla === "button") {
+			controls = controls.filter((c) => buttonState !== "locked" && Object.keys(c)[0] === buttonState);
+			childCtx.stateOf = path;
+		}
 		if (def.$vanilla === "scroll" && typeof def.$scrolling_content === "string") {
 			const [px, py] = def.$scrolling_pane_offset ?? [0, 0];
 			const pane = [rect[0] + px, rect[1] + py, dimension(def.$scrolling_pane_size?.[0] ?? "100%", w) ?? w, dimension(def.$scrolling_pane_size?.[1] ?? "100%", h) ?? h];
@@ -470,7 +479,8 @@ export function checkScene(scene, opts = {}) {
 			const visible = n.clip ? intersect(ink, n.clip) : ink;
 			if (visible[2] > 0 && visible[3] > 0) content.push({ n, r: visible });
 		}
-		else if (n.kind === "image" && (n.bound || /^icon/.test(n.name))) content.push({ n, r: n.clip ? intersect(n.rect, n.clip) : n.rect });
+		// Imagem do botão com nome `bg*` é fundo (tile da ação, setor do gráfico de atributos): pode ficar sob outros.
+		else if (n.kind === "image" && ((n.bound && !/^bg/.test(n.name)) || /^icon/.test(n.name))) content.push({ n, r: n.clip ? intersect(n.rect, n.clip) : n.rect });
 		// O X da vanilla também é conteúdo: não pode cobrir campo nenhum.
 		else if (n.kind === "close") content.push({ n, r: n.rect });
 	}
@@ -491,6 +501,73 @@ export function checkScene(scene, opts = {}) {
 }
 
 const fmt = (r) => `[${r.map((v) => Math.round(v * 10) / 10).join(",")}]`;
+
+/** Estados de um `common.button` da vanilla. */
+export const BUTTON_STATES = ["default", "hover", "pressed", "locked"];
+
+/**
+ * Conteúdo que tem de continuar visível em qualquer estado do botão: rótulos com texto e imagens de conteúdo (ícone
+ * vindo do botão, `icon*`). Fundos (imagem de textura fixa, ou do botão com nome `bg*`) podem trocar com o estado.
+ */
+function stateContent(scene) {
+	const out = [];
+	for (const n of scene.nodes) {
+		let r;
+		if (n.kind === "label") {
+			if (!plain(n.text).trim()) continue;
+			r = inkRect(n);
+		}
+		// Imagem do próprio controle de estado (quadro do hover) é fundo; ícone/retrato fora dele é conteúdo.
+		else if (n.kind === "image" && ((n.bound && !n.stateOf && !/^bg/.test(n.name)) || /^icon/.test(n.name))) r = n.rect;
+		else continue;
+		if (!r) continue;
+		if (n.clip) r = intersect(r, n.clip);
+		if (r[2] <= 0 || r[3] <= 0) continue;
+		out.push({ n, r });
+	}
+	return out;
+}
+
+/**
+ * Frente ui-polish (4º teste em cliente real: o nome do botão só aparecia num estado — ações da batalha sem nome
+ * paradas, golpes/troca sem nome no hover). Monta a tela em cada estado de botão (todos os botões juntos, o caso de
+ * pior sobreposição) e acusa:
+ *  - conteúdo que existe num estado e não em outro (rótulo dentro de um controle de estado);
+ *  - imagem de um controle de estado desenhada POR CIMA de conteúdo (o hover opaco apaga o nome/retrato/barra).
+ * @returns {string[]} problemas ("estado hover: ...")
+ */
+export function checkButtonStates(index, root, data, viewport = [480, 270], opts = {}) {
+	const allowed = (a, b) => (opts.allow ?? []).some(([x, y]) => (a.includes(x) && b.includes(y)) || (a.includes(y) && b.includes(x)));
+	const issues = [];
+	const scenes = Object.fromEntries(BUTTON_STATES.map((state) => [state, buildScene(index, root, data, viewport, { buttonState: state })]));
+	const key = (c) => `${c.n.path}|${plain(c.n.text ?? c.n.texture ?? "")}`;
+	const base = new Set(stateContent(scenes.default).map(key));
+	for (const state of BUTTON_STATES) {
+		const scene = scenes[state];
+		const content = stateContent(scene);
+		const keys = new Set(content.map(key));
+		if (state !== "default") {
+			for (const k of base) if (!keys.has(k)) issues.push(`estado ${state}: some ${k.split("|")[0]} ("${k.split("|")[1].slice(0, 30)}")`);
+			for (const k of keys) if (!base.has(k)) issues.push(`estado ${state}: só neste estado ${k.split("|")[0]} ("${k.split("|")[1].slice(0, 30)}")`);
+		}
+		// Posição na ordem de desenho (os nós já vêm ordenados por camada e ordem).
+		const drawn = new Map(scene.nodes.map((n, i) => [n.id, i]));
+		for (const m of scene.nodes) {
+			if (!m.stateOf || m.kind !== "image" || (m.alpha ?? 1) <= 0) continue;
+			const mr = m.clip ? intersect(m.rect, m.clip) : m.rect;
+			for (const c of content) {
+				if (c.n.stateOf === m.stateOf) continue;
+				if (drawn.get(m.id) < drawn.get(c.n.id)) continue;
+				if (!overlap(mr, c.r)) continue;
+				// Imagem que contém o quadro do estado inteiro é o fundo dele (moldura da Pokédex, papel de parede do PC).
+				if (c.n.kind === "image" && inside(mr, c.r, 0.01)) continue;
+				if (allowed(m.path, c.n.path)) continue;
+				issues.push(`estado ${state}: ${m.path} ${fmt(mr)} cobre ${c.n.path} ("${plain(c.n.text ?? c.n.texture ?? "").slice(0, 30)}")`);
+			}
+		}
+	}
+	return issues;
+}
 
 /** Nós de conteúdo visíveis de uma célula (índice do botão) — para os testes de paridade de campos. */
 export function cellContent(scene, cellIndex, within) {

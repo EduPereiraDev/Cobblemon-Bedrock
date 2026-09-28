@@ -32,10 +32,14 @@ import {
   K, abilityName, getLivePokemon, getPokemonIconTexture, getPokemonProfileTexture, getExpProgress, getForm, getFriendship, getMarks, getMintedNature, getPokemonTypes,
   hpText, itemName, join, natureName, statusLabel, tr, typeName,
 } from "./common";
-import { STAT_LANG, STAT_ORDER } from "./PokemonEdit";
+import { MAX_EV, STAT_LANG, STAT_ORDER } from "./PokemonEdit";
+import {
+  RADAR_HEXAGON, RADAR_PENTAGON, STAT_BAR_LINES, STAT_FILL_MARKERS, STAT_MODES, StatMode, radarTextures, statFillTexture,
+} from "./layoutSpec";
 import { extraSummaryInfo } from "./summaryExtras";
 import { sizeCategoryKey } from "../pokemon/Scale";
 import { RIDE_STYLES, RIDING_STATS, getMaxRideBoost, getRideBoost, getRideStat, rideInfoOf, rideStyleLangKey, statRange } from "../pokemon/RideStats";
+import { Dex as ShowdownDex } from "../showdown";
 import type { RideStyle } from "../entity/EntityData";
 import { cycleMarking, getMarkings, setMarkings } from "../pokemon/Markings";
 
@@ -143,7 +147,10 @@ export type SummaryAction =
   | { kind: "party"; slot: number }
   | { kind: "studio" }
   | { kind: "move"; index: number }
-  | { kind: "mark"; index: number };
+  | { kind: "mark"; index: number }
+  /** Frente ui-polish: barra de modos da aba Atributos e o ícone do estilo de montaria (troca o estilo). */
+  | { kind: "statsMode"; mode: StatMode }
+  | { kind: "rideStyle" };
 
 export interface SummaryView {
   tab: SummaryTab;
@@ -160,6 +167,8 @@ export interface SummaryView {
    * um estilo = atributos de montaria daquele estilo. Tocar na aba Atributos de novo avança a página.
    */
   statsPage?: RideStyle;
+  /** Frente ui-polish: modo da aba Atributos (StatWidget.statOptions); padrão = atributos. */
+  statsMode?: StatMode;
   /** Markings em edição (MarkingsWidget.markingStates; gravadas ao sair/trocar). */
   markings?: number[];
 }
@@ -194,6 +203,89 @@ export function rideStatLines(pokemon: PokemonData, style: RideStyle): { label: 
       max,
       boostPercent: maxBoost > 0 ? Math.floor((boost / maxBoost) * 100) : 0,
     };
+  });
+}
+
+/** Modos da barra de baixo da aba Atributos para o Pokémon (Montar só com montaria). */
+export function statModesOf(pokemon: PokemonData): StatMode[] {
+  return rideStylesOf(pokemon).length ? [...STAT_MODES] : STAT_MODES.filter(mode => mode !== "ride");
+}
+
+const STAT_MODE_LANG: Record<StatMode, string> = {
+  stats: "cobblemon.ui.stats", ivs: "cobblemon.ui.stats.ivs", evs: "cobblemon.ui.stats.evs", ride: "cobblemon.ui.stats.ride", other: "cobblemon.ui.stats.other",
+};
+/** Ordem dos vértices do hexágono (StatWidget.statLabels, horário a partir do topo). */
+const HEXAGON_STATS: (keyof ReturnType<PokemonData["getCurrentStats"]>)[] = ["hp", "atk", "def", "spe", "spd", "spa"];
+const RIDE_ICONS = new Set(["air_bird", "air_hover", "air_jet", "air_rocket", "land_cart", "land_horse", "liquid_boat", "liquid_dolphin", "liquid_submarine"]);
+
+/** Natureza efetiva (Mint): atributo que sobe e o que desce (showdown "atk"...). */
+function natureStats(pokemon: PokemonData): { plus?: string; minus?: string } {
+  const nature = safe(() => ShowdownDex.natures.get(pokemon.getEffectiveNature()), undefined);
+  return nature?.plus && nature.plus !== nature.minus ? { plus: nature.plus, minus: nature.minus } : {};
+}
+
+/**
+ * Aba Atributos como o StatWidget: gráfico hexagonal (atributos / IVs / EVs), pentágono de montaria ou barras de
+ * amizade e saciedade, com a barra de modos embaixo. Cada setor do polígono é uma textura por passo (layoutSpec).
+ */
+function statsCells(form: CellForm<SummaryAction>, pokemon: PokemonData, mode: StatMode, style: RideStyle | undefined) {
+  statModesOf(pokemon).forEach((m, i) => form.cell(SUMMARY.STAT_TABS + i, join(m === mode ? `${SELECTED_MARKER}§f` : "§7", { translate: STAT_MODE_LANG[m] }), undefined, { kind: "statsMode", mode: m }));
+  if (mode === "other") {
+    // FriendshipFeatureRenderer (0..255, rosa; mais forte a partir de 160) e FullnessFeatureRenderer (verde/amarelo/vermelho).
+    const friendship = getFriendship(pokemon);
+    const fullness = safe(() => getFullness(pokemon), 0);
+    const maxFullness = Math.max(1, safe(() => getMaxFullness(pokemon), 1));
+    const bars: { name: RawMessage; value: number; ratio: number; color: string; overlay: string }[] = [
+      { name: { translate: "cobblemon.ui.stats.friendship" }, value: friendship, ratio: friendship / 255, color: friendship >= 160 ? "friendship_high" : "friendship", overlay: "friendship" },
+      { name: { translate: "cobblemon.ui.stats.fullness" }, value: fullness, ratio: fullness / maxFullness, color: fullness / maxFullness <= 0.33 ? "green" : fullness / maxFullness <= 0.66 ? "yellow" : "red", overlay: "fullness" },
+    ];
+    if (safe(() => hasBlocksTraveledRequirement(pokemon), false)) {
+      const steps = safe(() => getBlocksTraveled(pokemon), 0);
+      bars.push({ name: { translate: "cobblemon.ui.stats.blocks_traveled" }, value: steps, ratio: 1, color: "white", overlay: "steps" });
+    }
+    const coins = safe(() => getIntFeature(pokemon, "gimmighoul_coins"), undefined);
+    if (coins !== undefined) bars.push({ name: { translate: "cobblemon.ui.stash.gold" }, value: coins, ratio: Math.min(1, coins / 999), color: "white", overlay: "coin" });
+    bars.slice(0, 4).forEach((bar, i) => {
+      const ratio = Math.max(0, Math.min(1, bar.ratio));
+      const lines: (string | RawMessage)[] = [];
+      lines[STAT_BAR_LINES.VALUE] = `§f${bar.value}`;
+      lines[STAT_BAR_LINES.PERCENT] = `§f${Math.floor(ratio * 100)}%`;
+      lines[STAT_BAR_LINES.NAME] = join("§f§l", bar.name);
+      form.cell(SUMMARY.STAT_ROWS + i, join(STAT_FILL_MARKERS[bar.color], lines[0], "\n", lines[1], "\n", lines[2]), statFillTexture(ratio));
+      form.cell(SUMMARY.STAT_BARS + i, BLANK, `${GUI}/summary/summary_stats_${bar.overlay}_overlay`);
+    });
+    return;
+  }
+  if (mode === "ride" && style) {
+    const info = safe(() => rideInfoOf(pokemon), undefined);
+    const settings = info?.styles[style];
+    const values = RIDING_STATS.map(stat => safe(() => getRideStat(pokemon, style, stat, info), 0));
+    const colorKey = style === "AIR" ? "air" : style === "LIQUID" ? "liquid" : "land";
+    radarTextures(RADAR_PENTAGON, values.map(v => v / 100)).forEach((texture, k) => form.cell(SUMMARY.STAT_BARS + k, colorKey, texture));
+    RIDING_STATS.forEach((stat, k) => form.cell(SUMMARY.STAT_ROWS + k, join("§f§l", { translate: `cobblemon.ui.stats.ride.${stat.toLowerCase()}` }, `\n§r§f${Math.floor(values[k])}`)));
+    const controller = settings?.key?.replace(/^cobblemon:[a-z]+\//, "").replace("minekart", "cart");
+    const iconKey = `${style.toLowerCase()}_${controller ?? ""}`;
+    form.cell(SUMMARY.STAT_ROWS + 5, BLANK, RIDE_ICONS.has(iconKey) ? `${GUI}/summary/icon_ride_${iconKey}` : undefined, { kind: "rideStyle" });
+    form.body(join("§f", { translate: rideStyleLangKey(style, settings?.key) }, "§7 | ", { translate: rideStyleLangKey(style) }));
+    return;
+  }
+  // STATS / IV / EV: razão de cada vértice (StatWidget: atributo/400, IV/31, EV/252) e os valores embaixo do rótulo.
+  const stats = pokemon.getCurrentStats();
+  const nature = mode === "stats" ? natureStats(pokemon) : {};
+  const ratios = HEXAGON_STATS.map(stat => mode === "stats" ? (stat === "hp" ? pokemon.maxHealth : stats[stat] ?? 0) / 400
+    : mode === "ivs" ? safe(() => pokemon.getEffectiveIv(stat), pokemon.ivs[stat] ?? 0) / 31 : (pokemon.evs[stat] ?? 0) / MAX_EV);
+  radarTextures(RADAR_HEXAGON, ratios).forEach((texture, k) => form.cell(SUMMARY.STAT_BARS + k, mode, texture));
+  HEXAGON_STATS.forEach((stat, k) => {
+    let value: string;
+    if (mode === "stats") value = stat === "hp" ? `${pokemon.currentHealth} / ${pokemon.maxHealth}` : String(stats[stat] ?? 0);
+    else if (mode === "ivs") {
+      const raw = pokemon.ivs[stat] ?? 0;
+      value = safe(() => pokemon.isHyperTrained(stat), false) ? `${raw} (${safe(() => pokemon.getEffectiveIv(stat), raw)})` : String(raw);
+    }
+    else value = String(pokemon.evs[stat] ?? 0);
+    const color = nature.plus === stat ? "§c" : nature.minus === stat ? "§9" : "§f";
+    const arrow = nature.plus === stat ? `${GUI}/summary/summary_stats_icon_increase` : nature.minus === stat ? `${GUI}/summary/summary_stats_icon_decrease` : undefined;
+    form.cell(SUMMARY.STAT_ROWS + k, join(`${color}§l`, { translate: STAT_LANG[stat] }, `\n§r§f${value}`), arrow);
   });
 }
 
@@ -266,12 +358,24 @@ function moveNumbers(pokemon: PokemonData, index: number): [string, string, stri
   return [`§l${power}`, `§l${accuracy}`, `§l${chance ? `${chance}%` : "—"}`];
 }
 
+/** Modo da aba Atributos: o pedido (se o Pokémon o tem) ou atributos. Compatível com `statsPage` (página de montaria). */
+function currentStatsMode(pokemon: PokemonData, view: SummaryView): StatMode {
+  const modes = statModesOf(pokemon);
+  if (view.statsMode && modes.includes(view.statsMode)) return view.statsMode;
+  return view.statsPage && modes.includes("ride") ? "ride" : "stats";
+}
+
 /**
  * Monta o form da aba (função pura sobre os dados: testável). Os índices seguem `SUMMARY` de `layoutSpec.ts`.
  * Frente ui-layout: cada campo do Summary.kt na sua célula (nada de texto corrido no corpo).
  */
 export function buildSummaryForm(pokemon: PokemonData, view: SummaryView): CellForm<SummaryAction> {
-  const subs = view.studio ? [tabMarker(view.tab), SUB.STUDIO] : [tabMarker(view.tab)];
+  const subs: (typeof SUB)[keyof typeof SUB][] = [tabMarker(view.tab)];
+  const statsMode = view.tab === "stats" ? currentStatsMode(pokemon, view) : undefined;
+  if (statsMode === "ride") subs.push(SUB.SUMMARY_STATS_RIDE);
+  if (statsMode === "other") subs.push(SUB.SUMMARY_STATS_OTHER);
+  if (view.tab === "stats" && rideStylesOf(pokemon).length) subs.push(SUB.SUMMARY_STATS_RIDE_TAB);
+  if (view.studio) subs.push(SUB.STUDIO);
   const form = new CellForm<SummaryAction>(layoutTitle(SCREEN.SUMMARY, subs, tr("cobblemon.ui.summary.title")), SUMMARY.COUNT);
   SUMMARY_TABS.forEach((tab, i) => form.cell(SUMMARY.TABS + i, tr(TAB_LANG[tab]), `${GUI}/summary/summary_tab_icon_${tab}`, { kind: "tab", tab }));
   // Tocar no retrato toca o grito (ModelWidget.playCryOnClick).
@@ -332,36 +436,8 @@ export function buildSummaryForm(pokemon: PokemonData, view: SummaryView): CellF
       break;
     }
     case "stats": {
-      if (view.statsPage) {
-        const style = view.statsPage;
-        const settings = safe(() => rideInfoOf(pokemon)?.styles[style], undefined);
-        rideStatLines(pokemon, style).forEach((line, i) => {
-          form.cell(SUMMARY.STAT_ROWS + i, join("§f", line.label, `: §l${line.value}§r§7/${line.max}  §a+${line.boostPercent}%`));
-          form.cell(SUMMARY.STAT_BARS + i, BLANK, barTexture(line.value, 100));
-        });
-        form.body(lines([
-          join("§7", { translate: "cobblemon.ui.stats.ride" }, ": §f", { translate: rideStyleLangKey(style, settings?.key) }, "§7 | ", { translate: rideStyleLangKey(style) }),
-          tr("cobblemon.port.summary.ride_next"),
-        ]));
-        break;
-      }
-      const stats = pokemon.getCurrentStats();
-      const top = Math.max(1, ...STAT_ORDER.map(stat => stats[stat] ?? 0));
-      STAT_ORDER.forEach((stat, i) => {
-        const iv = safe(() => pokemon.getEffectiveIv(stat), pokemon.ivs[stat] ?? 0);
-        const trained = safe(() => pokemon.isHyperTrained(stat), false) ? "§6*" : "";
-        form.cell(SUMMARY.STAT_ROWS + i, join("§f", { translate: STAT_LANG[stat] }, `: §l${stats[stat]}§r  §7IV §b${iv}${trained}  §7EV §a${pokemon.evs[stat] ?? 0}`));
-        form.cell(SUMMARY.STAT_BARS + i, BLANK, barTexture(stats[stat] ?? 0, top));
-      });
-      // Abaixo das barras (StatWidget "outros"): PV atual, total de EVs, amizade e saciedade.
-      const statLines = buildSummarySections(pokemon)[1].lines;
-      form.body(lines([
-        label("cobblemon.ui.stats.hp", status ? join(hpText(pokemon), "  §c", statusLabel(pokemon) ?? "") : hpText(pokemon)),
-        statLines[statLines.length - 1],
-        label("cobblemon.ui.stats.friendship", getFriendship(pokemon).toString()),
-        label("cobblemon.ui.stats.fullness", `${safe(() => getFullness(pokemon), 0)}/${safe(() => getMaxFullness(pokemon), 0)}`),
-        ...(rideStylesOf(pokemon).length ? [tr("cobblemon.port.summary.ride_next")] : []),
-      ]));
+      const mode = statsMode ?? "stats";
+      statsCells(form, pokemon, mode, mode === "ride" ? view.statsPage ?? rideStylesOf(pokemon)[0] : undefined);
       break;
     }
     case "moves": {
@@ -409,6 +485,7 @@ export async function showSummary(player: Player, pokemon: PokemonData, options:
   let tab: SummaryTab = options.tab ?? "info";
   let selected: number | undefined;
   let statsPage: RideStyle | undefined;
+  let statsMode: StatMode | undefined;
   let markings = getMarkings(current);
   /** MarkingsWidget.saveMarkingsToPokemon: grava só se mudou (SetMarkingsPacket). */
   const saveMarkings = () => {
@@ -426,7 +503,7 @@ export async function showSummary(player: Player, pokemon: PokemonData, options:
       else if (hasStudio(player)) closeStudio(player);
       // Fora do time (PC): a lista do painel é só este Pokémon (Summary.open(listOf(pokemon)) do Java).
       const shownParty = inParty ? team : [current];
-      const form = buildSummaryForm(current, { tab, studio, studioToggle: toggle, party: shownParty, selected, statsPage, markings });
+      const form = buildSummaryForm(current, { tab, studio, studioToggle: toggle, party: shownParty, selected, statsPage, statsMode, markings });
       const result = await form.show(player);
       if (!result?.action) {
         if (!result) { saveMarkings(); return; }
@@ -435,7 +512,7 @@ export async function showSummary(player: Player, pokemon: PokemonData, options:
       const action = result.action;
       switch (action.kind) {
         case "tab":
-          statsPage = action.tab === "stats" && tab === "stats" ? nextStatsPage(current, statsPage) : undefined;
+          if (action.tab !== tab) { statsPage = undefined; statsMode = undefined; }
           tab = action.tab; selected = undefined;
           try { player.playSound("cobblemon.gui.click"); } catch { }
           break;
@@ -453,11 +530,27 @@ export async function showSummary(player: Player, pokemon: PokemonData, options:
           if (member) {
             saveMarkings();
             current = getLivePokemon(member); selected = undefined; statsPage = undefined;
+            if (statsMode === "ride" && !rideStylesOf(current).length) statsMode = undefined;
             markings = getMarkings(current);
           }
           break;
         }
         case "move": case "mark": selected = action.index; break;
+        case "statsMode":
+          statsMode = action.mode;
+          if (action.mode === "ride") statsPage ??= rideStylesOf(current)[0];
+          try { player.playSound("cobblemon.gui.click"); } catch { }
+          break;
+        // Ícone do centro do pentágono: próximo estilo (StatWidget.mouseClicked: rideBehaviourIndex + 1).
+        case "rideStyle": {
+          const styles = rideStylesOf(current);
+          if (styles.length > 1) {
+            const i = statsPage ? styles.indexOf(statsPage) : 0;
+            statsPage = styles[(i + 1) % styles.length];
+            try { player.playSound("cobblemon.gui.click"); } catch { }
+          }
+          break;
+        }
       }
     }
   }

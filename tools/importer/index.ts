@@ -14,6 +14,7 @@ import { emitBiomeTagsModule, emitSpawnsModule, emitSpeciesModule, emitVariantsM
 import { emitStudioFramingModule } from "./studioFraming.ts"; // frente fix3
 import { fixArmorNeckCollisions } from "./headLocator.ts"; // frente fix3
 import { fixBlockZFighting, fixEntityFlatPlanes } from "./zfight.ts"; // frente fix3; cliente-teste3-log (planos de entidade)
+import { entityMaterialFile } from "./zfightEntities.ts"; // frente zfight2: materiais das camadas (depthFunc LessEqual)
 import { ensureEntityVariables } from "./molangVars.ts"; // frente cliente-teste3-log
 import type { VariantsEntry } from "./scriptsOut.ts";
 import { SoundIndex } from "./sounds.ts";
@@ -405,6 +406,9 @@ await portraitsDone;
 	const flat = fixEntityFlatPlanes();
 	report.counts["z-fighting: cubos planos de entidade com espessura (inflate)"] = flat.cubes;
 	report.counts["z-fighting: geometrias de entidade com planos"] = flat.geometries;
+	// Frente zfight2: cubos que a espessura deixou coplanares (inclusive entre ossos) e os materiais das camadas.
+	report.counts["z-fighting: cubos separados depois da espessura (Pokémon, entre ossos)"] = flat.separated;
+	writeJson(`${OUT_RP}/materials/entity.material`, entityMaterialFile());
 	const vars = ensureEntityVariables(OUT_RP, HAND_RP);
 	report.counts["client entities com variáveis inicializadas no pre_animation"] = vars.entities;
 	report.counts["variáveis inicializadas no pre_animation (v.x ?? 0)"] = vars.variables;

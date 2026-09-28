@@ -36,6 +36,32 @@ export interface StudioSubject {
   variant?: number;
   aspects?: string[];
   entityStates?: Record<string, string | number | boolean>;
+  /**
+   * Frente ui-polish: plataforma do tipo sob o modelo (StarterSelectionScreen: `starter_platform_base_<tipo>`). No 3D ela
+   * é uma entidade plana no mundo, debaixo dos pés: uma imagem do form ficaria por cima do modelo (a UI é desenhada
+   * depois do mundo; 4º teste em cliente real, o disco de lava cobria o Charmander).
+   */
+  platformType?: string;
+}
+
+/** Tipos na ordem das texturas da entidade `cobblemon:studio_platform` (propriedade `cobblemon:platform`). */
+export const PLATFORM_TYPES = [
+  "normal", "fire", "water", "grass", "electric", "ice", "fighting", "poison", "ground", "flying", "psychic", "bug", "rock", "ghost", "dragon", "dark",
+  "steel", "fairy",
+] as const;
+/** Largura da plataforma do Java (113 px da GUI, StarterSelectionScreen) e a da geometria (1 bloco). */
+export const PLATFORM_WIDTH_PX = 113;
+const PLATFORM_ENTITY = "cobblemon:studio_platform";
+
+/** Escala da plataforma: 113 px da UI na distância do modelo (`perBlock` = px da UI por bloco), no limite da propriedade. */
+export function platformScale(perBlock: number): number {
+  return Math.max(0.05, Math.min(64, PLATFORM_WIDTH_PX / Math.max(0.01, perBlock)));
+}
+
+/** Índice da textura da plataforma (tipo desconhecido = normal). */
+export function platformIndex(type: string | undefined): number {
+  const i = PLATFORM_TYPES.indexOf(String(type ?? "").toLowerCase() as (typeof PLATFORM_TYPES)[number]);
+  return i >= 0 ? i : 0;
 }
 
 /**
@@ -98,6 +124,8 @@ interface Session {
   stage: Vector3;
   floor?: Vector3;
   entityId?: string;
+  /** Frente ui-polish: plataforma do tipo sob o modelo. */
+  platformId?: string;
   subjectKey?: string;
   /** Frente fix3: o que está sendo exibido (poser do Java para o enquadramento). */
   subject?: StudioSubject;
@@ -175,7 +203,7 @@ function otherStages(playerId: string, dimensionId: string): Vector3[] {
  * na altura de referência (STUDIO_UI_HEIGHT), corrigida pela escala da entidade no mundo, e depois limitada para o
  * modelo (altura/largura medidas) caber na janela até STUDIO_UI_HEIGHT_MAX. `metrics` como número = só a altura.
  */
-export function cameraFor(stage: Vector3, metrics: StudioMetrics | number, framing: StudioFraming, fov = STUDIO_FOV): { location: Vector3; facing: Vector3; distance: number } {
+export function cameraFor(stage: Vector3, metrics: StudioMetrics | number, framing: StudioFraming, fov = STUDIO_FOV): { location: Vector3; facing: Vector3; distance: number; perBlock: number } {
   const m: StudioMetrics = typeof metrics === "number" ? { height: metrics } : metrics;
   const [ps, tx, ty] = m.profile ?? [1, 0, 0];
   const scale = m.scale && m.scale > 0 ? m.scale : 1;
@@ -210,6 +238,8 @@ export function cameraFor(stage: Vector3, metrics: StudioMetrics | number, frami
     location: { x: target.x, y: target.y + distance * Math.sin(pitch), z: target.z + distance * Math.cos(pitch) },
     facing: target,
     distance,
+    // px da UI por bloco que a câmera usa (a distância pode ter sido limitada: vale o efetivo).
+    perBlock: STUDIO_UI_HEIGHT / (2 * distance * tan),
   };
 }
 
@@ -230,6 +260,32 @@ function restoreFloor(dimension: Dimension, loc: Vector3) {
     if (block?.typeId === BARRIER) block.setType("minecraft:air");
   } catch { }
   writeFloors(readFloors().filter(f => !(f.d === dimension.id && f.x === loc.x && f.y === loc.y && f.z === loc.z)));
+}
+
+function removePlatform(session: Session) {
+  if (!session.platformId) return;
+  try { world.getEntity(session.platformId)?.remove(); } catch { }
+  session.platformId = undefined;
+}
+
+/** Põe/atualiza/tira a plataforma do tipo debaixo do modelo (ver StudioSubject.platformType). */
+function syncPlatform(session: Session, perBlock: number) {
+  const type = session.subject?.platformType;
+  if (!type) { removePlatform(session); return; }
+  let platform = session.platformId ? world.getEntity(session.platformId) : undefined;
+  if (!platform?.isValid) {
+    try {
+      // 1/100 de bloco acima do chão de barreira (os pés do modelo): a plataforma fica por baixo dele no mundo.
+      platform = session.dimension.spawnEntity(PLATFORM_ENTITY, { x: session.stage.x, y: session.stage.y + 0.01, z: session.stage.z }, { initialPersistence: false });
+    } catch (e) {
+      console.warn(`Estúdio: plataforma: ${e}`);
+      return;
+    }
+    platform.addTag(STUDIO_TAG);
+    session.platformId = platform.id;
+  }
+  try { platform.setProperty("cobblemon:platform", platformIndex(type)); } catch { }
+  try { platform.setProperty("cobblemon:platform_scale", platformScale(perBlock)); } catch { }
 }
 
 function removeEntity(session: Session) {
@@ -286,7 +342,8 @@ function metricsOf(entity: Entity | undefined, subject: StudioSubject | undefine
 }
 
 function aimCamera(player: Player, session: Session, entity: Entity | undefined, ease: boolean) {
-  const { location, facing } = cameraFor(session.stage, metricsOf(entity, session.subject), session.framing);
+  const { location, facing, perBlock } = cameraFor(session.stage, metricsOf(entity, session.subject), session.framing);
+  syncPlatform(session, perBlock);
   try {
     player.camera.setCamera("minecraft:free", {
       location,
@@ -397,6 +454,7 @@ export function closeStudio(player: Player) {
 
 function cleanupSession(session: Session) {
   removeEntity(session);
+  removePlatform(session);
   if (session.floor) restoreFloor(session.dimension, session.floor);
   session.floor = undefined;
 }
@@ -407,7 +465,7 @@ export function sweepStudioLeftovers() {
     try {
       const dimension = world.getDimension(id);
       for (const entity of dimension.getEntities({ tags: [STUDIO_TAG] })) {
-        if ([...sessions.values()].some(s => s.entityId === entity.id)) continue;
+        if ([...sessions.values()].some(s => s.entityId === entity.id || s.platformId === entity.id)) continue;
         entity.remove();
       }
     } catch { }
@@ -443,7 +501,7 @@ export function isOrphanStudioEntity(entity: Entity): boolean {
     // viva o followMock percebe a entidade inválida e mostra o Pokémon real.
     if (entity.hasTag(BATTLE_MOCK_TAG)) return true;
     if (!entity.hasTag(STUDIO_TAG)) return false;
-    return ![...sessions.values()].some(s => s.entityId === entity.id);
+    return ![...sessions.values()].some(s => s.entityId === entity.id || s.platformId === entity.id);
   } catch { return false; }
 }
 

@@ -10,6 +10,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { entityUndefinedVars, entityVarDocs, particleVariableProblems } from "./molangVars.ts";
 import { flatEntityCubes } from "./zfight.ts";
+import { oneSidedGeometries } from "./zfightEntities.ts"; // frente zfight2
+import { rpMaterialFiles } from "./validateZFight.ts"; // frente zfight2
 import { HAND_RP, OUT_RP, parseLenient, walk } from "./util.ts";
 
 export interface VariableStats {
@@ -57,12 +59,16 @@ export function validateMolangVariables(docs: Map<string, any>, err: (m: string)
 		}
 	}
 
-	// 3. Planos de espessura zero em geometrias de entidade (material de dois lados).
+	// 3. Planos de espessura zero em geometrias de entidade (material de dois lados). Frente zfight2: geometria
+	// desenhada só com material de um lado (Pokémon: entity_alphatest_one_sided/cobblemon_layer*) aceita o plano com
+	// inflate negativo do Java (plano "de fundo"; com descarte de face de trás ele não briga).
+	for (const [key, j] of rpMaterialFiles()) rp.set(key, j);
+	const oneSided = oneSidedGeometries(rp);
 	for (const [key, j] of rp) {
 		if (!key.startsWith("/models/entity/")) continue;
 		for (const g of j?.["minecraft:geometry"] ?? []) {
 			stats.geometries++;
-			const flat = flatEntityCubes(g);
+			const flat = flatEntityCubes(g, oneSided.has(g?.description?.identifier));
 			if (flat.length) err(`${where(key)}: ${g?.description?.identifier} tem ${flat.length} cubo(s) de espessura zero (as duas faces no mesmo plano piscam com o material de entidade de dois lados): ${flat.slice(0, 3).join(", ")}`);
 		}
 	}

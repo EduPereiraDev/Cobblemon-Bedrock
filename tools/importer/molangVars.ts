@@ -108,6 +108,106 @@ function curveStart(curve: any): number {
 	return typeof v === "number" && Number.isFinite(v) ? v : 0;
 }
 
+/** Curvas da partícula por nome de variável (sem prefixo, minúsculas). */
+function particleCurves(pe: any): Record<string, any> {
+	const curves: Record<string, any> = {};
+	for (const [k, c] of Object.entries<any>(pe?.curves ?? {})) {
+		const m = VAR.exec(k);
+		if (m) curves[m[1].toLowerCase()] = c;
+	}
+	return curves;
+}
+
+/** Padrão de uma variável lida sem definição: o do Cobblemon (entity_*), o começo da curva ou 0 (o do Java). */
+function particleVarDefault(name: string, curves: Record<string, any>): number {
+	return PARTICLE_VAR_DEFAULTS[name] ?? (curves[name] ? curveStart(curves[name]) : 0);
+}
+
+/**
+ * Frente cliente-teste4 (docs/pendencias/cliente-teste4.md): componentes do emissor que o cliente avalia ANTES do
+ * creation_expression. Medido no 4º teste em cliente: evo_sparkleburst tinha `v.entity_size = v.entity_size ?? 1;` no
+ * creation_expression e mesmo assim o cliente acusou "unknown variable 'variable.entity_size'" na expressão
+ * `0.5 * math.clamp(v.entity_size,1,2)` — a do `emitter_lifetime_once.active_time`, e só ela: a mesma variável no
+ * `emitter_rate_instant.num_particles`, no `emitter_shape_sphere.radius` e na aparência não acusou, nem as ~494
+ * partículas que leem v.* nos emitter_rate_*, emitter_shape_* e particle_* com o mesmo guarda. O tempo de vida do emissor
+ * é calculado quando o emissor nasce, antes da inicialização (erro tanto na chamada direta do selftest quanto como
+ * filha de evo_particles). Os três componentes de tempo de vida pela mesma razão (o looping recalcula a cada ciclo; o
+ * expression, a cada quadro, a partir do 1º). Aqui o guarda vai na própria expressão: `(v.x ?? padrão)`.
+ */
+export const PARTICLE_PRE_INIT_COMPONENTS: ReadonlySet<string> = new Set([
+	"minecraft:emitter_lifetime_once", "minecraft:emitter_lifetime_looping", "minecraft:emitter_lifetime_expression",
+]);
+
+/** Leitura sem `??` de uma variável que não é do motor (o que o cliente acusa antes do creation_expression). */
+function preInitUnguarded(u: VarUse): boolean {
+	return !u.write && !u.guarded && !u.member && !PARTICLE_ENGINE_VARS.has(u.name);
+}
+
+/** Variáveis lidas sem guarda na própria expressão nos componentes avaliados antes do creation_expression. */
+export function particlePreInitReads(pe: any): string[] {
+	const out = new Set<string>();
+	for (const [component, value] of Object.entries<any>(pe?.components ?? {})) {
+		if (!PARTICLE_PRE_INIT_COMPONENTS.has(component)) continue;
+		for (const { expr } of molangStrings(value, PARTICLE_NAME_KEYS)) {
+			if (!isMolangLike(expr)) continue;
+			// Escrita antes na mesma expressão (`v.t = 1; return v.t;`) define.
+			const written = new Set<string>();
+			for (const u of molangVarUses(expr)) {
+				if (u.write) written.add(u.name);
+				else if (preInitUnguarded(u) && !written.has(u.name)) out.add(u.name);
+			}
+		}
+	}
+	return [...out];
+}
+
+/** Troca cada leitura sem guarda `v.x` de uma expressão por `(v.x ?? padrão)`. */
+export function inlineGuardReads(expr: string, defaultOf: (name: string) => number): string {
+	if (!/\b(?:v|variable)\./i.test(expr)) return expr;
+	const toks = tokenizeMolang(expr);
+	const reads: Array<{ pos: number; text: string; name: string }> = [];
+	const written = new Set<string>();
+	for (let i = 0; i < toks.length; i++) {
+		const t = toks[i];
+		if (t.type !== "name") continue;
+		const m = VAR.exec(t.text);
+		if (!m) continue;
+		const next = toks[i + 1];
+		const use: VarUse = {
+			name: m[1].toLowerCase(), member: m[2]?.toLowerCase(),
+			write: next?.type === "op" && next.text === "=", guarded: next?.type === "op" && next.text === "??",
+		};
+		if (use.write) written.add(use.name);
+		else if (preInitUnguarded(use) && !written.has(use.name)) reads.push({ pos: t.pos, text: t.text, name: use.name });
+	}
+	let out = expr;
+	// De trás para frente: as posições dos tokens anteriores continuam valendo.
+	for (const r of reads.reverse()) out = `${out.slice(0, r.pos)}(${r.text} ?? ${defaultOf(r.name)})${out.slice(r.pos + r.text.length)}`;
+	return out;
+}
+
+/**
+ * Guarda na própria expressão (`(v.x ?? padrão)`) as leituras dos componentes avaliados antes do creation_expression
+ * (PARTICLE_PRE_INIT_COMPONENTS). Mesmo valor do guarda do creation_expression (o `??` mantém o que o script passar).
+ * Devolve as variáveis protegidas.
+ */
+export function guardPreInitReads(json: any): string[] {
+	const pe = json?.particle_effect;
+	const names = particlePreInitReads(pe);
+	if (!names.length) return [];
+	const curves = particleCurves(pe);
+	const rewrite = (v: unknown): unknown => {
+		if (typeof v === "string") return isMolangLike(v) ? inlineGuardReads(v, (n) => particleVarDefault(n, curves)) : v;
+		if (Array.isArray(v)) return v.map(rewrite);
+		if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, PARTICLE_NAME_KEYS.has(k) ? x : rewrite(x)]));
+		return v;
+	};
+	for (const component of Object.keys(pe.components)) {
+		if (PARTICLE_PRE_INIT_COMPONENTS.has(component)) pe.components[component] = rewrite(pe.components[component]);
+	}
+	return names;
+}
+
 /**
  * Variáveis que a partícula lê e não define antes (nem são do motor), com o padrão de cada uma. As escritas no
  * creation_expression antes de qualquer leitura sem guarda contam como definidas.
@@ -116,14 +216,10 @@ export function particleUndefinedVars(pe: any): Map<string, number> {
 	const init = pe?.components?.["minecraft:emitter_initialization"]?.creation_expression;
 	const defined = new Set<string>();
 	const missing = new Map<string, number>();
-	const curves: Record<string, any> = {};
-	for (const [k, c] of Object.entries<any>(pe?.curves ?? {})) {
-		const m = VAR.exec(k);
-		if (m) curves[m[1].toLowerCase()] = c;
-	}
+	const curves = particleCurves(pe);
 	const need = (name: string) => {
 		if (PARTICLE_ENGINE_VARS.has(name) || defined.has(name) || missing.has(name)) return;
-		missing.set(name, PARTICLE_VAR_DEFAULTS[name] ?? (curves[name] ? curveStart(curves[name]) : 0));
+		missing.set(name, particleVarDefault(name, curves));
 	};
 	// creation_expression em ordem: escrita antes de leitura define; leitura antes, não.
 	for (const u of molangVarUses(init)) {
@@ -160,14 +256,16 @@ export function particleStructReads(pe: any): string[] {
 export function guardParticleVariables(json: any): string[] {
 	const pe = json?.particle_effect;
 	if (!pe) return [];
+	// Frente cliente-teste4: primeiro as leituras avaliadas antes do creation_expression (guarda na própria expressão).
+	const early = guardPreInitReads(json);
 	const missing = particleUndefinedVars(pe);
-	if (!missing.size) return [];
+	if (!missing.size) return early;
 	const comps = (pe.components ??= {});
 	const init = (comps["minecraft:emitter_initialization"] ??= {});
 	const guard = [...missing].map(([name, def]) => `v.${name} = v.${name} ?? ${def};`).join(" ");
 	const prev = typeof init.creation_expression === "string" ? init.creation_expression.trim() : "";
 	init.creation_expression = prev ? `${guard} ${prev}${prev.endsWith(";") ? "" : ";"}` : guard;
-	return [...missing.keys()];
+	return [...new Set([...early, ...missing.keys()])];
 }
 
 /** Problemas de variável numa partícula (validate). */
@@ -177,6 +275,8 @@ export function particleVariableProblems(json: any): string[] {
 	const problems: string[] = [];
 	const missing = particleUndefinedVars(pe);
 	if (missing.size) problems.push(`lê variável sem definir (o cliente acusa "unknown variable"; ponha v.x = v.x ?? 0 no creation_expression): ${[...missing.keys()].map((n) => `v.${n}`).join(", ")}`);
+	const early = particlePreInitReads(pe);
+	if (early.length) problems.push(`lê variável sem guarda no tempo de vida do emissor (${[...PARTICLE_PRE_INIT_COMPONENTS].filter((c) => pe.components?.[c]).join(", ")}), avaliado antes do creation_expression: o cliente acusa "unknown variable" mesmo com o padrão lá; use (v.x ?? padrão) na própria expressão: ${early.map((n) => `v.${n}`).join(", ")}`);
 	const structs = particleStructReads(pe);
 	if (structs.length) problems.push(`struct em variável de partícula (o cliente acusa "unable to find member variable"; use variáveis escalares): ${structs.join(", ")}`);
 	return problems;

@@ -307,6 +307,14 @@
          62,
          30
         ],
+        "bindings": [
+         {
+          "binding_type": "view",
+          "source_control_name": "cbhud_ps0",
+          "source_property_name": "(not (#k = 'e'))",
+          "target_property_name": "#visible"
+         }
+        ],
         "controls": [
          {
           "portrait_bg": {
@@ -1061,6 +1069,14 @@
         "size": [
          62,
          30
+        ],
+        "bindings": [
+         {
+          "binding_type": "view",
+          "source_control_name": "cbhud_ps1",
+          "source_property_name": "(not (#k = 'e'))",
+          "target_property_name": "#visible"
+         }
         ],
         "controls": [
          {
@@ -1817,6 +1833,14 @@
          62,
          30
         ],
+        "bindings": [
+         {
+          "binding_type": "view",
+          "source_control_name": "cbhud_ps2",
+          "source_property_name": "(not (#k = 'e'))",
+          "target_property_name": "#visible"
+         }
+        ],
         "controls": [
          {
           "portrait_bg": {
@@ -2571,6 +2595,14 @@
         "size": [
          62,
          30
+        ],
+        "bindings": [
+         {
+          "binding_type": "view",
+          "source_control_name": "cbhud_ps3",
+          "source_property_name": "(not (#k = 'e'))",
+          "target_property_name": "#visible"
+         }
         ],
         "controls": [
          {
@@ -3327,6 +3359,14 @@
          62,
          30
         ],
+        "bindings": [
+         {
+          "binding_type": "view",
+          "source_control_name": "cbhud_ps4",
+          "source_property_name": "(not (#k = 'e'))",
+          "target_property_name": "#visible"
+         }
+        ],
         "controls": [
          {
           "portrait_bg": {
@@ -4081,6 +4121,14 @@
         "size": [
          62,
          30
+        ],
+        "bindings": [
+         {
+          "binding_type": "view",
+          "source_control_name": "cbhud_ps5",
+          "source_property_name": "(not (#k = 'e'))",
+          "target_property_name": "#visible"
+         }
         ],
         "controls": [
          {

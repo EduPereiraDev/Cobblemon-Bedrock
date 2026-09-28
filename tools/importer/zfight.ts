@@ -53,6 +53,22 @@ export interface Face {
 	look: string;
 	/** A face é de um cubo com espessura zero neste eixo. */
 	flat: boolean;
+	/** Frente zfight2: o cubo da face (transformação para o espaço da geometria e limites no espaço do cubo). */
+	box?: CubeBox;
+}
+
+/** Cubo no espaço da geometria: ponto do cubo p → m·p + t; limites (com inflate) no espaço do cubo. */
+export interface CubeBox { m: M3; t: V3; lo: number[]; hi: number[] }
+
+/** O ponto (espaço da geometria) está dentro do cubo, a mais de `margin` px de toda face. */
+function insideBox(b: CubeBox, p: V3, margin: number): boolean {
+	const d = [p[0] - b.t[0], p[1] - b.t[1], p[2] - b.t[2]];
+	for (let i = 0; i < 3; i++) {
+		// m é ortonormal (só rotações): a inversa é a transposta.
+		const local = b.m[i] * d[0] + b.m[3 + i] * d[1] + b.m[6 + i] * d[2];
+		if (local <= b.lo[i] + margin || local >= b.hi[i] - margin) return false;
+	}
+	return true;
 }
 
 const DIRS: Array<[string, V3, number]> = [
@@ -86,6 +102,7 @@ export function geometryFaces(geo: any): Face[] {
 			const g = c.inflate ?? 0;
 			const lo = c.origin.map((v: number) => v - g), hi = c.origin.map((v: number, i: number) => v + c.size[i] + g);
 			const t = rotateAbout(bt, rotation(c.rotation), c.pivot ?? bone.pivot ?? [0, 0, 0]);
+			const box: CubeBox = { m: t.m, t: t.t, lo, hi };
 			const perFace = c.uv && !Array.isArray(c.uv) ? c.uv : undefined;
 			for (const [dir, n, axis] of DIRS) {
 				let look: string;
@@ -107,7 +124,7 @@ export function geometryFaces(geo: any): Face[] {
 					p[other[1]] = b ? hi[other[1]] : lo[other[1]];
 					corners.push(apply(t, p));
 				}
-				faces.push({ bone: bone.name, cube: ci, dir, v: corners, n: apply({ m: t.m, t: [0, 0, 0] }, n), look, flat: hi[axis] - lo[axis] <= 1e-6 });
+				faces.push({ bone: bone.name, cube: ci, dir, v: corners, n: apply({ m: t.m, t: [0, 0, 0] }, n), look, flat: hi[axis] - lo[axis] <= 1e-6, box });
 			}
 		});
 	}
@@ -120,6 +137,15 @@ const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[
 
 /** Área da interseção de dois polígonos convexos (2D). */
 function clipArea(a: Array<[number, number]>, b: Array<[number, number]>): number {
+	return polygonArea(clipPolygon(a, b));
+}
+function polygonArea(out: Array<[number, number]>): number {
+	let area = 0;
+	for (let i = 0; i < out.length; i++) { const p = out[i], q = out[(i + 1) % out.length]; area += p[0] * q[1] - q[0] * p[1]; }
+	return Math.abs(area) / 2;
+}
+/** Interseção de dois polígonos convexos (2D). */
+function clipPolygon(a: Array<[number, number]>, b: Array<[number, number]>): Array<[number, number]> {
 	let out = a;
 	const orient = (poly: Array<[number, number]>) => {
 		let s = 0;
@@ -144,9 +170,7 @@ function clipArea(a: Array<[number, number]>, b: Array<[number, number]>): numbe
 			if (ci) out.push(cur);
 		}
 	}
-	let area = 0;
-	for (let i = 0; i < out.length; i++) { const p = out[i], q = out[(i + 1) % out.length]; area += p[0] * q[1] - q[0] * p[1]; }
-	return Math.abs(area) / 2;
+	return out;
 }
 
 export interface ZFight {
@@ -156,47 +180,81 @@ export interface ZFight {
 	area: number;
 	/** Faces viradas para lados opostos (só aparece com material sem descarte de face de trás). */
 	opposite: boolean;
+	/** Frente zfight2: distância entre os dois planos (px; 0 = coplanares). */
+	gap?: number;
 }
 
 /**
  * Pares de faces coplanares sobrepostas com aparência diferente. Faces opostas com a mesma região da textura também
  * contam (a de trás aparece espelhada) quando `doubleSided`.
  */
-export function coplanarConflicts(faces: Face[], options: { doubleSided: boolean; minArea?: number; eps?: number } = { doubleSided: true }): ZFight[] {
+/** Distância do plano da face ao longo da própria normal (maior = mais para fora, na frente). */
+export function faceDistance(f: Face): number {
+	const l = Math.hypot(...f.n);
+	return (f.n[0] * f.v[0][0] + f.n[1] * f.v[0][1] + f.n[2] * f.v[0][2]) / l;
+}
+
+export function coplanarConflicts(faces: Face[], options: { doubleSided: boolean; minArea?: number; eps?: number; skipHidden?: boolean } = { doubleSided: true }): ZFight[] {
 	const eps = options.eps ?? 1e-3;
 	const minArea = options.minArea ?? 0.05;
-	// Agrupa por plano: normal (com sinal normalizado) + distância.
-	const groups = new Map<string, Face[]>();
+	// Frente zfight2 (`skipHidden`): par cuja região sobreposta fica inteira DENTRO do volume de outros cubos não aparece
+	// na pose de repouso — as pálpebras/bocas de expressão do Cobblemon ficam guardadas dentro da cabeça e a animação traz
+	// a ativa para fora (Mamoswine, Zebstrika, Graveler). Separar essas pilhas não muda nada na tela e empurraria a face
+	// para fora da cabeça.
+	const boxes = options.skipHidden ? [...new Map(faces.filter((f) => f.box).map((f) => [`${f.bone}#${f.cube}`, { key: `${f.bone}#${f.cube}`, box: f.box! }])).values()] : [];
+	const hidden = (a: Face, b: Face, poly: Array<[number, number]>, from2: (p: [number, number]) => V3) => {
+		if (!poly.length) return false;
+		const c: [number, number] = [poly.reduce((x, p) => x + p[0], 0) / poly.length, poly.reduce((x, p) => x + p[1], 0) / poly.length];
+		const samples = [c, ...poly.map((p): [number, number] => [p[0] + (c[0] - p[0]) * 0.05, p[1] + (c[1] - p[1]) * 0.05])];
+		const own = new Set([`${a.bone}#${a.cube}`, `${b.bone}#${b.cube}`]);
+		return samples.every((s) => { const p = from2(s); return boxes.some((o) => !own.has(o.key) && insideBox(o.box, p, 1e-3)); });
+	};
+	// Agrupa por normal (com sinal normalizado); dentro do grupo, ordena pela distância do plano e compara só as faces a
+	// até `eps` (px) uma da outra. Frente zfight2: antes a distância era arredondada em baldes de 0,01 px — faces a
+	// 0,01 px caíam às vezes no mesmo balde (falso empate) e faces a 0,001 px às vezes em baldes vizinhos (par perdido).
+	const groups = new Map<string, Array<{ f: Face; d: number }>>();
 	for (const f of faces) {
 		let n = f.n;
 		const len = Math.hypot(...n);
 		n = [n[0] / len, n[1] / len, n[2] / len];
-		const k = Math.abs(n[0]) > eps ? 0 : Math.abs(n[1]) > eps ? 1 : 2;
+		// Normal com resolução fixa de 0,001 (independente do `eps` da distância).
+		const k = Math.abs(n[0]) > 1e-3 ? 0 : Math.abs(n[1]) > 1e-3 ? 1 : 2;
 		const s = n[k] < 0 ? -1 : 1;
 		const nn: V3 = [n[0] * s, n[1] * s, n[2] * s];
-		const d = dot(nn, f.v[0]);
-		const key = `${nn.map((x) => Math.round(x / eps)).join(",")}|${Math.round(d / (eps * 10))}`;
+		const key = nn.map((x) => Math.round(x / 1e-3)).join(",");
 		let g = groups.get(key);
 		if (!g) groups.set(key, g = []);
-		g.push(f);
+		g.push({ f, d: dot(nn, f.v[0]) });
 	}
 	const out: ZFight[] = [];
 	for (const g of groups.values()) {
 		if (g.length < 2) continue;
-		// Base 2D do plano.
-		const n = g[0].n;
-		const u = Math.abs(n[0]) < 0.9 ? cross(n, [1, 0, 0]) : cross(n, [0, 1, 0]);
+		g.sort((x, y) => x.d - y.d);
+		// Base 2D ortonormal do plano (área em px² de verdade, e volta para 3D).
+		const len = Math.hypot(...g[0].f.n);
+		const n: V3 = [g[0].f.n[0] / len, g[0].f.n[1] / len, g[0].f.n[2] / len];
+		const unit = (v: V3): V3 => { const l = Math.hypot(...v); return [v[0] / l, v[1] / l, v[2] / l]; };
+		const u = unit(Math.abs(n[0]) < 0.9 ? cross(n, [1, 0, 0]) : cross(n, [0, 1, 0]));
 		const w = cross(n, u);
 		const to2 = (p: V3): [number, number] => [dot(p, u), dot(p, w)];
 		for (let i = 0; i < g.length; i++) {
-			for (let j = i + 1; j < g.length; j++) {
-				const a = g[i], b = g[j];
+			for (let j = i + 1; j < g.length && g[j].d - g[i].d <= eps; j++) {
+				const a = g[i].f, b = g[j].f;
 				const opposite = dot(a.n, b.n) < 0;
 				if (opposite && !options.doubleSided) continue;
 				// Mesma aparência virada para o mesmo lado: não pisca.
 				if (!opposite && a.look === b.look) continue;
-				const area = clipArea(a.v.map(to2), b.v.map(to2));
-				if (area >= minArea) out.push({ a, b, area, opposite });
+				const poly = clipPolygon(a.v.map(to2), b.v.map(to2));
+				const area = polygonArea(poly);
+				if (area < minArea) continue;
+				if (options.skipHidden) {
+					// A região vista é a da face da frente (a outra fica atrás dela): se ela está dentro de outros cubos,
+					// as duas estão escondidas.
+					const front = opposite ? a : faceDistance(a) >= faceDistance(b) ? a : b;
+					const dn = dot(n, front.v[0]);
+					if (hidden(a, b, poly, (p) => [u[0] * p[0] + w[0] * p[1] + n[0] * dn, u[1] * p[0] + w[1] * p[1] + n[1] * dn, u[2] * p[0] + w[2] * p[1] + n[2] * dn])) continue;
+				}
+				out.push({ a, b, area, opposite, gap: g[j].d - g[i].d });
 			}
 		}
 	}
@@ -358,6 +416,44 @@ export function fixBlockDoubleSidedPlanes(blockFiles: string[], geometryById: (i
 export const COPLANAR_SEPARATION = 0.01;
 
 /**
+ * Frente zfight2: vão mínimo entre faces visíveis do mesmo lado nas entidades (px) = o passo do Java (0,01). Havia 2.431
+ * pares visíveis entre 0,001 e 0,01 px em 437 geometrias (ex. 0,005 nas sobrancelhas do Charizard, na boca do
+ * Wartortle) — mais apertados que a convenção do próprio Cobblemon. Medido nas 1.439 geometrias (base + MSD): com 0,01
+ * o maior deslocamento de face é 0,11 px (48 cubos acima de 0,06); exigir 0,02/0,03/0,05 faz cascatas (cadeias de
+ * caudas, coroas, expressões que se sobrepõem em repouso com passos de 0,01) que movem faces até 0,22/0,37/0,70 px em
+ * 947/3.793/20.501 cubos — muda a forma dos modelos (ver docs/pendencias/zfight2.md, "Hipótese não provada").
+ */
+export const MIN_ENTITY_FACE_GAP = 0.01;
+
+/**
+ * Ordem de desenho do Java (ModelPart: o osso desenha os cubos dele e depois os filhos, na ordem do JSON): índice de
+ * cada osso numa busca em profundidade a partir das raízes. Frente zfight2 (cubos coplanares entre ossos diferentes).
+ */
+export function boneDrawOrder(geo: any): Map<string, number> {
+	const bones: any[] = geo?.bones ?? [];
+	const children = new Map<string, any[]>();
+	const names = new Set(bones.map((b) => b.name));
+	const roots: any[] = [];
+	for (const b of bones) {
+		if (b.parent && names.has(b.parent)) {
+			let list = children.get(b.parent);
+			if (!list) children.set(b.parent, list = []);
+			list.push(b);
+		}
+		else roots.push(b);
+	}
+	const order = new Map<string, number>();
+	const visit = (b: any) => {
+		if (order.has(b.name)) return;
+		order.set(b.name, order.size);
+		for (const c of children.get(b.name) ?? []) visit(c);
+	};
+	for (const r of roots) visit(r);
+	for (const b of bones) visit(b); // ciclos/pais inexistentes: no fim
+	return order;
+}
+
+/**
  * No Java o ModelPart desenha os cubos na ordem e o teste de profundidade LEQUAL deixa o último por cima quando a
  * profundidade empata; na prática a profundidade de dois triângulos diferentes no mesmo plano só empata em parte dos
  * pixels e a face "treme" (pior no Bedrock, com o plano de corte mais perto). Aqui, para cada par de faces coplanares
@@ -386,6 +482,58 @@ export function separateCoplanarCubes(geo: any): number {
 			moved = true;
 		}
 		if (!moved) break;
+	}
+	return changed.size;
+}
+
+/**
+ * Frente zfight2: faces VISÍVEIS do mesmo lado sobrepostas a menos de `minGap` (MIN_ENTITY_FACE_GAP) uma da outra, na
+ * pose de repouso (pivôs e rotações aplicados), no mesmo osso ou entre OSSOS DIFERENTES (o separador antigo só olhava o
+ * mesmo osso) — ex. as velas da frente/de trás do Chandelure, os olhos 0,01 px sobre os óculos do Mamoswine, as faces
+ * que a espessura dos planos deixou empatadas. Fica por cima quem já estava na frente; no mesmo plano, o cubo que o
+ * Java desenha depois (boneDrawOrder; mesmo osso: índice maior). Só a face de cima anda para fora, no espaço do cubo
+ * (com rotação do cubo ela anda no eixo girado): `size` do eixo cresce o que falta para o vão e a origem recua quando a
+ * face é a do lado mínimo; as outras cinco faces ficam onde estão. (Com inflate as seis andavam e pilhas chegavam a
+ * +0,3 px no tamanho; transladando, a face oposta entrava e empatava do outro lado — a "pattern" do Bulbasaur, as
+ * membranas das asas do Charizard iam e voltavam.) Um plano vira uma lâmina fina (continua com a espessura do
+ * inflate). A face só anda para fora: o processo termina. A UV por face não muda; na UV de caixa a faixa cresce o mesmo
+ * tanto em texels (≤ 0,15). Pares guardados dentro de outros cubos (expressões alternativas) ficam como no Java
+ * (coplanarConflicts `skipHidden`). Devolve quantos cubos mudaram.
+ */
+export function shiftCoplanarCubes(geo: any, maxPasses = 40, minGap = MIN_ENTITY_FACE_GAP): number {
+	const changed = new Set<string>();
+	const order = boneDrawOrder(geo);
+	const byName = new Map<string, any>((geo?.bones ?? []).map((b: any) => [b.name, b]));
+	const normalOf = new Map(DIRS.map(([name, n, axis]) => [name, { axis, sign: n[axis] }]));
+	const round = (v: number) => Math.round(v * 10000) / 10000;
+	for (let pass = 0; pass < maxPasses; pass++) {
+		// eps um pouco abaixo do vão: faces já a minGap não entram.
+		const pairs = coplanarConflicts(geometryFaces(geo), { doubleSided: false, minArea: 0.05, eps: Math.max(1e-3, minGap - 1e-4), skipHidden: true }).filter((z) => z.a.bone !== z.b.bone || z.a.cube !== z.b.cube);
+		if (!pairs.length) break;
+		const moved = new Set<string>();
+		for (const z of pairs) {
+			const da = faceDistance(z.a), db = faceDistance(z.b);
+			// No mesmo plano decide a ordem de desenho do Java; com vão, fica por cima quem já estava na frente.
+			const aTop = Math.abs(da - db) < 1e-3
+				? (z.a.bone === z.b.bone ? z.a.cube > z.b.cube : (order.get(z.a.bone) ?? 0) > (order.get(z.b.bone) ?? 0))
+				: da > db;
+			const top = aTop ? z.a : z.b, low = aTop ? z.b : z.a;
+			const key = `${top.bone}#${top.cube}`;
+			// Um passo por cubo e por passada; se o de baixo já andou nesta passada, o par é revisto na próxima.
+			if (moved.has(key) || moved.has(`${low.bone}#${low.cube}`)) continue;
+			const cube = byName.get(top.bone)?.cubes?.[top.cube];
+			const n = normalOf.get(top.dir);
+			if (!cube || !n || !Array.isArray(cube.origin) || !Array.isArray(cube.size)) continue;
+			// Quanto falta para o vão mínimo (ao menos 0,01 px por passo).
+			const step = round(Math.max(COPLANAR_SEPARATION, minGap - Math.abs(da - db)));
+			cube.origin = [...cube.origin];
+			cube.size = [...cube.size];
+			cube.size[n.axis] = round(cube.size[n.axis] + step);
+			if (n.sign < 0) cube.origin[n.axis] = round(cube.origin[n.axis] - step);
+			moved.add(key);
+			changed.add(key);
+		}
+		if (!moved.size) break;
 	}
 	return changed.size;
 }
@@ -434,48 +582,71 @@ export const FLAT_ENTITY_INFLATE = 0.025;
  * (2 × inflate) abaixo de 2 × FLAT_ENTITY_INFLATE. Os que só tinham o inflate de 0,01 do separateCoplanarCubes
  * (0,02 px entre as faces) também entram: de longe a profundidade não separa 0,02 px.
  */
-export function isFlatEntityCube(c: any): boolean {
+export function isFlatEntityCube(c: any, oneSided = false): boolean {
 	if (!Array.isArray(c?.size) || c.size.length !== 3) return false;
 	const zero = c.size.filter((s: number) => Math.abs(s) < 1e-6).length;
 	if (zero !== 1) return false;
+	// Frente zfight2: plano com inflate negativo = plano "de fundo" do Java (as faces ficam |inflate| para dentro, atrás
+	// do plano vizinho dos DOIS lados — ex. costelas do Eternatus). Com material de um lado (descarte de face de trás,
+	// como o entityCutout do Java) ele já não briga: fica como no Java.
+	if (oneSided && (c.inflate ?? 0) < 0) return false;
 	return 2 * (c.inflate ?? 0) < 2 * FLAT_ENTITY_INFLATE - 1e-9;
 }
 
 /** Cubos planos de uma geometria de entidade ("osso#índice"). */
-export function flatEntityCubes(geo: any): string[] {
+export function flatEntityCubes(geo: any, oneSided = false): string[] {
 	const out: string[] = [];
-	for (const b of geo?.bones ?? []) (b.cubes ?? []).forEach((c: any, i: number) => { if (isFlatEntityCube(c)) out.push(`${b.name}#${i}`); });
+	for (const b of geo?.bones ?? []) (b.cubes ?? []).forEach((c: any, i: number) => { if (isFlatEntityCube(c, oneSided)) out.push(`${b.name}#${i}`); });
 	return out;
 }
 
+const isPlane = (c: any) => Array.isArray(c?.size) && c.size.length === 3 && c.size.filter((s: number) => Math.abs(s) < 1e-6).length === 1;
+
 /**
- * Dá espessura aos cubos planos: inflate + FLAT_ENTITY_INFLATE (todos sobem o mesmo tanto, então a ordem dos planos
- * empilhados continua); inflate negativo vira FLAT_ENTITY_INFLATE.
+ * Dá espessura aos cubos planos. Frente zfight2: TODOS os planos com inflate ≥ 0 da geometria sobem o mesmo
+ * FLAT_ENTITY_INFLATE (antes só os finos subiam e o inflate negativo virava FLAT_ENTITY_INFLATE: um plano de 0 e um de
+ * 0,025, ou um de 0 e um de -0,01, ficavam no MESMO plano — o z-fighting das costelas do Eternatus). Assim a ordem
+ * entre os planos empilhados continua a do Java. Inflate negativo: `oneSided` (material com descarte de face de trás)
+ * mantém o do Java; sem isso todos os planos sobem FLAT − (inflate mais negativo), o mesmo tanto (mantém a ordem).
+ * Nada muda se a geometria já não tem plano fino (idempotente).
  */
-export function thickenFlatEntityCubes(geo: any): number {
+export function thickenFlatEntityCubes(geo: any, oneSided = false): number {
+	const cubes: any[] = [];
+	for (const b of geo?.bones ?? []) for (const c of b.cubes ?? []) if (isPlane(c)) cubes.push(c);
+	if (!cubes.some((c) => isFlatEntityCube(c, oneSided))) return 0;
+	const minNeg = oneSided ? 0 : Math.min(0, ...cubes.map((c) => c.inflate ?? 0));
 	let n = 0;
-	for (const b of geo?.bones ?? []) {
-		for (const c of b.cubes ?? []) {
-			if (!isFlatEntityCube(c)) continue;
-			const g = c.inflate ?? 0;
-			c.inflate = Math.round(Math.max(g + FLAT_ENTITY_INFLATE, FLAT_ENTITY_INFLATE) * 10000) / 10000;
-			n++;
-		}
+	for (const c of cubes) {
+		const g = c.inflate ?? 0;
+		if (g < 0 && oneSided) continue;
+		c.inflate = Math.round((g + FLAT_ENTITY_INFLATE - minNeg) * 10000) / 10000;
+		n++;
 	}
 	return n;
 }
 
-/** Pós-passe do import: todas as geometrias em models/entity do RP gerado. */
-export function fixEntityFlatPlanes(root = `${OUT_RP}/models/entity`): { cubes: number; geometries: number } {
-	let cubes = 0, geometries = 0;
+/**
+ * Pós-passe do import: todas as geometrias em models/entity do RP gerado. Frente zfight2: as de Pokémon
+ * (models/entity/pokemon; só as client entities de Pokémon as desenham, com material de um lado —
+ * zfightEntities.POKEMON_MATERIALS) mantêm os planos negativos do Java e, depois da espessura, as faces coplanares que
+ * aparecem na pose de repouso (mesmo osso ou entre ossos) são separadas movendo só a face em conflito
+ * (shiftCoplanarCubes).
+ */
+export function fixEntityFlatPlanes(root = `${OUT_RP}/models/entity`): { cubes: number; geometries: number; separated: number } {
+	let cubes = 0, geometries = 0, separated = 0;
 	for (const f of walk(root, (n) => n.endsWith(".json"))) {
 		const json = tryReadJson(f);
+		const pokemon = /[\\/]models[\\/]entity[\\/]pokemon[\\/]/.test(f);
 		let changed = 0;
 		for (const g of json?.["minecraft:geometry"] ?? []) {
-			const k = thickenFlatEntityCubes(g);
-			if (k) { changed += k; geometries++; }
+			const k = thickenFlatEntityCubes(g, pokemon);
+			if (k) { changed += k; cubes += k; geometries++; }
+			if (pokemon) {
+				const s = shiftCoplanarCubes(g);
+				if (s) { separated += s; changed += s; }
+			}
 		}
-		if (changed) { writeJson(f, json); cubes += changed; }
+		if (changed) writeJson(f, json);
 	}
-	return { cubes, geometries };
+	return { cubes, geometries, separated };
 }

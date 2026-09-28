@@ -75,7 +75,9 @@ export function buildStarterForm(categories: StarterCategory[], view: StarterVie
   const data = getSpeciesData(species);
   const primary = (data?.primaryType ?? "normal").toLowerCase();
   form.cell(STARTER.MODEL, BLANK, view.studio ? undefined : getPokemonProfileTexture(species));
-  form.cell(STARTER.PLATFORM, BLANK, `${GUI}/starterselection/starter_platform_base_${primary}`);
+  // Frente ui-polish: no 3D a plataforma é uma entidade no mundo, debaixo do modelo (StudioSubject.platformType); a
+  // imagem do form ficaria por cima do Pokémon.
+  form.cell(STARTER.PLATFORM, BLANK, view.studio ? undefined : `${GUI}/starterselection/starter_platform_base_${primary}`);
   form.cell(STARTER.NAME, join("§l§f", { translate: `cobblemon.species.${species}.name` }), undefined, { kind: "choose" });
   // Frente ui-layout: número da Pokédex (#0004) ao lado do nome e os tipos como ícones (TypeIcon), sem glifos.
   form.cell(STARTER.DEX_NUMBER, `§l§f#${data?.nationalPokedexNumber ? String(data.nationalPokedexNumber).padStart(4, "0") : "????"}`);
@@ -94,6 +96,12 @@ export function buildStarterForm(categories: StarterCategory[], view: StarterVie
   return form;
 }
 
+/** O que o estúdio do inicial exibe: a espécie e a plataforma do 1º tipo (StarterSelectionScreen.getPlatformResource). */
+export function starterStudioSubject(entry: string): { species: string; platformType: string } {
+  const species = starterSpecies(entry)!;
+  return { species, platformType: (getSpeciesData(species)?.primaryType ?? "normal").toLowerCase() };
+}
+
 /**
  * Mostra a tela do inicial e a confirmação.
  * @returns a entrada escolhida (PokemonProperties em texto) ou undefined se o jogador desistiu.
@@ -108,7 +116,7 @@ export async function showStarterGUI(player: Player, opts: { busyRetries?: numbe
       const category = categories[view.category];
       const entry = category.pokemon[((view.position % category.pokemon.length) + category.pokemon.length) % category.pokemon.length];
       view.studioToggle = hasStudio(player) || studioAvailable(player);
-      view.studio = wantStudio && view.studioToggle ? openStudio(player, { species: starterSpecies(entry)! }, FRAMING.starter) : false;
+      view.studio = wantStudio && view.studioToggle ? openStudio(player, starterStudioSubject(entry), FRAMING.starter) : false;
       if (!view.studio && hasStudio(player)) closeStudio(player);
       // Só a 1ª tela espera mais: no login o cliente pode passar muito tempo carregando o pacote (UserBusy).
       const first = opts.busyRetries !== undefined;

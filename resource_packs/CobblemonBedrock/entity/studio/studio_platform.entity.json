@@ -1,0 +1,40 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "cobblemon:studio_platform",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "normal": "textures/gui/cobblemon/starterselection/starter_platform_base_normal",
+        "fire": "textures/gui/cobblemon/starterselection/starter_platform_base_fire",
+        "water": "textures/gui/cobblemon/starterselection/starter_platform_base_water",
+        "grass": "textures/gui/cobblemon/starterselection/starter_platform_base_grass",
+        "electric": "textures/gui/cobblemon/starterselection/starter_platform_base_electric",
+        "ice": "textures/gui/cobblemon/starterselection/starter_platform_base_ice",
+        "fighting": "textures/gui/cobblemon/starterselection/starter_platform_base_fighting",
+        "poison": "textures/gui/cobblemon/starterselection/starter_platform_base_poison",
+        "ground": "textures/gui/cobblemon/starterselection/starter_platform_base_ground",
+        "flying": "textures/gui/cobblemon/starterselection/starter_platform_base_flying",
+        "psychic": "textures/gui/cobblemon/starterselection/starter_platform_base_psychic",
+        "bug": "textures/gui/cobblemon/starterselection/starter_platform_base_bug",
+        "rock": "textures/gui/cobblemon/starterselection/starter_platform_base_rock",
+        "ghost": "textures/gui/cobblemon/starterselection/starter_platform_base_ghost",
+        "dragon": "textures/gui/cobblemon/starterselection/starter_platform_base_dragon",
+        "dark": "textures/gui/cobblemon/starterselection/starter_platform_base_dark",
+        "steel": "textures/gui/cobblemon/starterselection/starter_platform_base_steel",
+        "fairy": "textures/gui/cobblemon/starterselection/starter_platform_base_fairy"
+      },
+      "geometry": {
+        "default": "geometry.cobblemon.studio_platform"
+      },
+      "scripts": {
+        "scale": "q.property('cobblemon:platform_scale')"
+      },
+      "render_controllers": [
+        "controller.render.cobblemon.studio_platform"
+      ]
+    }
+  }
+}

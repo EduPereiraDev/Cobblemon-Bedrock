@@ -177,8 +177,10 @@ function expectCells(node: unknown, expected: number[], what: string) {
   const stats = buildSummaryForm(pikachu, { tab: "stats", studio: true, studioToggle: true });
   assert.ok(JSON.stringify(stats.title).includes(SUB.STUDIO));
   assert.equal(stats.icons()[SUMMARY.PORTRAIT], undefined, "estúdio: janela vazada (sem perfil 2D)");
-  for (let i = 0; i < 6; i++) assert.match(stats.icons()[SUMMARY.STAT_BARS + i] ?? "", /hp_h_\d\d$/);
-  assert.ok(stats.icons().filter(x => x?.endsWith("hp_h_97")).length >= 1, "o maior atributo enche a barra");
+  // Frente ui-polish: aba Atributos como o StatWidget — 6 setores do hexágono (textura por passo) e a barra de modos.
+  for (let i = 0; i < 6; i++) assert.match(stats.icons()[SUMMARY.STAT_BARS + i] ?? "", /summary\/radar\/h\d_\d+_\d+$/);
+  assert.equal(stats.texts()[SUMMARY.STAT_BARS], "stats", "setor pintado com a cor do modo");
+  assert.deepEqual(stats.actionAt(SUMMARY.STAT_TABS + 1), { kind: "statsMode", mode: "ivs" });
   assert.deepEqual(stats.actionAt(SUMMARY.STUDIO), { kind: "studio" });
 
   const moves = buildSummaryForm(pikachu, { tab: "moves", studio: false, studioToggle: false });

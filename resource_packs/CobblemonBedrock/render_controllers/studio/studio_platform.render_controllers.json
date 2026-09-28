@@ -1,0 +1,40 @@
+{
+  "format_version": "1.10.0",
+  "render_controllers": {
+    "controller.render.cobblemon.studio_platform": {
+      "arrays": {
+        "textures": {
+          "Array.skins": [
+            "Texture.normal",
+            "Texture.fire",
+            "Texture.water",
+            "Texture.grass",
+            "Texture.electric",
+            "Texture.ice",
+            "Texture.fighting",
+            "Texture.poison",
+            "Texture.ground",
+            "Texture.flying",
+            "Texture.psychic",
+            "Texture.bug",
+            "Texture.rock",
+            "Texture.ghost",
+            "Texture.dragon",
+            "Texture.dark",
+            "Texture.steel",
+            "Texture.fairy"
+          ]
+        }
+      },
+      "geometry": "Geometry.default",
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Array.skins[q.property('cobblemon:platform')]"
+      ]
+    }
+  }
+}

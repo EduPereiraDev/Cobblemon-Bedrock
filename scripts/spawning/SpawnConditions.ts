@@ -83,6 +83,22 @@ export interface SpawnContext {
 /** Raio de busca de `neededNearbyBlocks` (config maxNearbyBlocksHorizontalRange/VerticalRange). */
 export const nearbyRange = { horizontal: 4, vertical: 2 };
 
+/**
+ * Frente cliente-teste4 (docs/pendencias/cliente-teste4.md): consultas ao mundo das condições (containsBlock de blocos
+ * por perto, estruturas) — chamadas nativas indivisíveis — contadas para o aviso/sonda do passe de spawn. O Spawner zera
+ * no começo de cada passe (passes de jogadores diferentes podem se intercalar: é só diagnóstico).
+ */
+export const worldQueryStats = { calls: 0, maxMs: 0 };
+export function timedWorldQuery<T>(query: () => T): T {
+  const t = Date.now();
+  try { return query(); }
+  finally {
+    const ms = Date.now() - t;
+    worldQueryStats.calls++;
+    if (ms > worldQueryStats.maxMs) worldQueryStats.maxMs = ms;
+  }
+}
+
 const nearbyCache = new WeakMap<SpawnContext, Map<string, boolean>>();
 
 function hasNearbyBlock(ctx: SpawnContext, blocks: string[]): boolean {
@@ -102,14 +118,14 @@ function hasNearbyBlock(ctx: SpawnContext, blocks: string[]): boolean {
   const v = ctx.positionType === "fishing" ? 5 : nearbyRange.vertical;
   let found = false;
   try {
-    found = ctx.dimension.containsBlock(
+    found = timedWorldQuery(() => ctx.dimension.containsBlock(
       new BlockVolume(
         { x: Math.floor(x) - h, y: Math.floor(y) - v, z: Math.floor(z) - h },
         { x: Math.floor(x) + h, y: Math.floor(y) + v, z: Math.floor(z) + h },
       ),
       { includeTypes: blocks },
       false,
-    );
+    ));
   }
   catch { found = false; }
   cache.set(key, found);
@@ -186,7 +202,7 @@ export function conditionMatches(c: SpawnCondition, ctx: SpawnContext): boolean 
   if (c.biomes && c.biomes.length && !c.biomes.includes(ctx.biome)) return false;
   // Estruturas: a Script API estável não diz se um ponto está dentro de uma estrutura; a frente "motor" pode registrar
   // uma consulta (`setSpawnStructureLookup`). Sem consulta (ou sem resposta) a condição não é cumprida.
-  if (c.structures && c.structures.length && spawnStructureLookup?.(ctx.dimension, ctx.location, c.structures) !== true) return false;
+  if (c.structures && c.structures.length && (spawnStructureLookup ? timedWorldQuery(() => spawnStructureLookup!(ctx.dimension, ctx.location, c.structures!)) : undefined) !== true) return false;
   if (c.isSlimeChunk && !isSlimeChunk(Math.floor(x) >> 4, Math.floor(z) >> 4)) return false;
 
   const fishing = ctx.positionType === "fishing";

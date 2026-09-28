@@ -23,6 +23,9 @@ import { PCPlace, setPokemonToPCLocation } from "../../scripts/pokemonStorage";
 import { BATTLE_SWITCH, BATTLE_TARGET, CellForm, SUB, layoutTitle } from "../../scripts/GUI/layout";
 import { SCREEN } from "../../scripts/ui/screens";
 import { getPokemonSpriteTexture } from "../../scripts/GUI/common";
+import { forfeitForm } from "../../scripts/GUI/Battle";
+import { buildDialogueForm } from "../../scripts/npc/dialogue/DialogueManager";
+import type { RenderedPage } from "../../scripts/npc/dialogue/ActiveDialogue";
 
 export interface Fixture {
 	/** Nome do arquivo da prévia. */
@@ -145,6 +148,15 @@ export async function buildFixtures(root: string, options: FixtureOptions = {}):
 	}
 	out.push(fromRecorded("summary-info-3d", record(() => buildSummaryForm(pikachu, { tab: "info", studio: true, studioToggle: true, party: [...team, null, null] }).build()), lang));
 	out.push(fromRecorded("summary-pc", record(() => buildSummaryForm(team[2], { tab: "stats", studio: false, studioToggle: false }).build()), lang));
+	// Frente ui-polish: os outros modos da aba Atributos (IVs, EVs, Outro) e o pentágono de montaria.
+	const evs = pikachu.evs;
+	pikachu.evs = { hp: 12, atk: 60, def: 4, spa: 252, spd: 30, spe: 150 };
+	for (const statsMode of ["ivs", "evs", "other"] as const) {
+		out.push(fromRecorded(`summary-stats-${statsMode}`, record(() => buildSummaryForm(pikachu, { tab: "stats", studio: false, studioToggle: true, party: [...team, null, null], statsMode }).build()), lang));
+	}
+	pikachu.evs = evs;
+	const rider = pokemon("aerodactyl", 40, { gender: "m" });
+	out.push(fromRecorded("summary-stats-ride", record(() => buildSummaryForm(rider, { tab: "stats", studio: false, studioToggle: true, statsMode: "ride", statsPage: "AIR" }).build()), lang));
 
 	// PC e Pokédex: jogador do mundo falso com o time.
 	const player = createPlayer("Preview", team as never);
@@ -178,6 +190,29 @@ export async function buildFixtures(root: string, options: FixtureOptions = {}):
 	});
 	target.cell(BATTLE_TARGET.BACK, { translate: "gui.back" });
 	out.push(fromRecorded("battle-target", record(() => target.build()), lang));
+
+	// Frente ui-polish: desistir (ForfeitConfirmationSelection) e o diálogo (DialogueScreen) nas três disposições.
+	out.push(fromRecorded("battle-forfeit", record(() => forfeitForm().build()), lang));
+	const page = (extra: Partial<RenderedPage>): RenderedPage => ({
+		pageId: "p", inputId: 1, lines: [], input: "none", options: [], vertical: false, allowSkip: true, textLength: 10, ...extra,
+	});
+	out.push(fromRecorded("dialogue-continue", record(() => buildDialogueForm(page({
+		speaker: { text: "duduzk1ng" }, face: { kind: "player", left: true }, lines: [{ text: "Hello, I'm duduzk1ng!" }],
+	})).form), lang));
+	out.push(fromRecorded("dialogue-options", record(() => buildDialogueForm(page({
+		speaker: { text: "Mouse Pokémon" }, face: { kind: "pokemon", species: "pikachu", left: false }, input: "option",
+		lines: [{ text: "Do you want to learn more?" }],
+		options: [{ text: { text: "Yes" }, value: "yes", selectable: true }, { text: { text: "No" }, value: "no", selectable: true }],
+	})).form), lang));
+	out.push(fromRecorded("dialogue-vertical", record(() => buildDialogueForm(page({
+		speaker: { text: "Trainer" }, face: { kind: "npc", left: false }, input: "option", vertical: true,
+		lines: [{ text: "Hey there! What would you like to do?" }, { text: "Pick one." }],
+		options: [
+			{ text: { text: "Battle" }, value: "battle", selectable: true },
+			{ text: { text: "Chat" }, value: "chat", selectable: false },
+			{ text: { text: "Cancel" }, value: "cancel", selectable: true },
+		],
+	}), "textures/npcs/standard/trainer").form), lang));
 
 	if (options.battle) out.push(...await battleFixtures(lang));
 	return out;

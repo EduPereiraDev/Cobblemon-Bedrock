@@ -10,6 +10,7 @@ import { BEDROCK_MATH, BEDROCK_QUERIES, scanMolang } from "./molang.ts";
 import { checkParticle, checkSoundDefinitions } from "./clientRules.ts";
 import { validateClientModels } from "./validateClientModels.ts"; // frente cliente-modelos
 import { validateMolangVariables } from "./validateVariables.ts"; // frente cliente-teste3-log
+import { validateEntityZFight } from "./validateZFight.ts"; // frente zfight2
 import { blockZFights, coplanarConflicts, geometryFaces } from "./zfight.ts"; // frente fix3
 import { HAND_BP, HAND_RP, OUT, OUT_BP, OUT_FINAL, OUT_RP, OUT_SCRIPTS, parseLenient, rel, walk } from "./util.ts";
 import { comboKey, loadResolvers, resolveCombo } from "./variants.ts";
@@ -371,6 +372,9 @@ const clientModels = validateClientModels(docs, err, rel);
 // Frente cliente-teste3-log: variáveis lidas sem definição (partículas, client entities) e planos de espessura zero nas
 // geometrias de entidade (z-fighting).
 const molangVariables = validateMolangVariables(docs, err, rel);
+// Frente zfight2: detector de z-fighting nas client entities de Pokémon (camadas, planos/cubos invertidos com material
+// de dois lados, faces coplanares no mesmo osso e entre ossos, geometrias desenhadas juntas).
+const entityZFight = validateEntityZFight(docs, err);
 
 // 8d. Frente fix3: z-fighting em blocos (faces coplanares sobrepostas). Faces opostas com material que desenha as duas
 // (alpha_test) são erro (piscam dos dois lados); faces do mesmo lado entre cubos só entram no resumo (vêm dos modelos do
@@ -421,6 +425,7 @@ console.log(`Validação: ${docs.size} JSON, ${entities} client entities, ${serv
 console.log(`Conteúdo: ${contentSummary}`);
 console.log(`Cliente (modelos): ${Object.entries(clientModels).map(([k, v]) => `${k} ${v}`).join(", ")}`);
 console.log(`Cliente (variáveis e planos): ${molangVariables.particles} partículas, ${molangVariables.entities} client entities e ${molangVariables.geometries} geometrias de entidade conferidas`);
+console.log(`Z-fighting (Pokémon, zfight2): ${entityZFight.entities} client entit${entityZFight.entities === 1 ? "y" : "ies"} com risco${Object.keys(entityZFight.summary).length ? ` ${JSON.stringify(entityZFight.summary)}` : ""}`);
 for (const w of warnings.slice(0, 50)) console.log(`  aviso: ${w}`);
 if (errors.length) {
 	// COBBLEMON_VALIDATE_ALL=1 lista todos (frente cliente-teste3-log).

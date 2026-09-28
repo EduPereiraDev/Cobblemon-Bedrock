@@ -84,7 +84,7 @@ export async function openPCGui(player: Player, boxID?: number): Promise<void> {
     return;
   }
   try { await pcLoop(player, boxID); }
-  finally { boxFilters.delete(player.id); }
+  finally { boxFilters.delete(player.id); previewTargets.delete(player.id); }
 }
 
 async function pcLoop(player: Player, boxID?: number): Promise<void> {
@@ -100,6 +100,8 @@ async function pcLoop(player: Player, boxID?: number): Promise<void> {
       if (selection.location.location === PCPlace.Box) box = selection.location.boxID ?? box;
       continue;
     }
+    // O tocado passa a ser o da prévia (o PCGUI mostra o do cursor; aqui, o último tocado).
+    previewTargets.set(player.id, pokemon.uuid);
     const next = await showSlotActions(player, selection.location, pokemon);
     if (next === "close") return;
     if (typeof next === "number") box = next;
@@ -151,29 +153,8 @@ async function showBoxScreen(player: Player, boxID: number, selecting?: RawMessa
       if (member) form.button(renderPokemonName(member), getPokemonIconTexture(member));
       else form.button({ translate: K.empty });
     }
-    const preview = previewPokemon(player, team);
-    const page = previewPages.get(player.id) ?? 0;
-    if (preview) {
-      form.button(" ", getPokemonProfileTexture(preview));
-      form.button(page === 0 ? "" : previewStatsText(preview, page));
-      // Frente ui-layout: campos do painel da esquerda (PC.PREVIEW_LEVEL..PREVIEW_PAGE), na ordem dos índices.
-      const types = getPokemonTypes(preview);
-      const ball = (preview.pokeball ?? "cobblemon:poke_ball").replace(/^[a-z0-9_]+:/, "");
-      form.button(join("§l", tr("cobblemon.label.lv", preview.level)), `${GUI}/ball/${ball}`);
-      const gender = genderIcon(preview.gender);
-      if (gender) form.button(join("§f§l", preview.getTranslatedName()), gender);
-      else form.button(join("§f§l", preview.getTranslatedName()));
-      if (types.length) form.button(types.length > 1 ? TYPE_DOUBLE : TYPE_SINGLE, typeKeyTexture(types[0]));
-      else form.button("");
-      if (types.length > 1) form.button(BLANK, typeKeyTexture(types[1]));
-      else form.button("");
-      form.button(itemName(preview.minecraftItem));
-      if (preview.shiny) form.button(BLANK, `${GUI}/summary/icon_shiny`);
-      else form.button("");
-      const info = page === 0 ? previewInfo(preview) : undefined;
-      form.button(info?.nature ?? "").button(info?.ability ?? "").button(info?.moves ?? "");
-      form.button(BLANK);
-    }
+    const preview = previewPokemon(player, team, content);
+    if (preview) appendPreviewButtons(form, preview, previewPages.get(player.id) ?? 0);
     const response = await safeShow(player, form);
     if (response?.selection === undefined) return undefined;
     if (response.selection === PC.PREVIEW_PAGE) { previewPages.set(player.id, ((previewPages.get(player.id) ?? 0) + 1) % 3); continue; }
@@ -192,11 +173,50 @@ async function showBoxScreen(player: Player, boxID: number, selecting?: RawMessa
   }
 }
 
-/** Pokémon da prévia (o selecionado do time, ou o primeiro). */
-function previewPokemon(player: Player, team: (PokemonData | null)[]): PokemonData | undefined {
+/**
+ * Frente ui-polish: Pokémon do painel da esquerda. O PCGUI mostra o do cursor (hover) ou o escolhido; o form do servidor
+ * não recebe hover, então vale o último tocado (caixa ou time) enquanto ele estiver no time ou na caixa aberta; sem
+ * nenhum, o selecionado do time (ou o primeiro).
+ */
+const previewTargets = new Map<string, string>();
+
+function previewPokemon(player: Player, team: (PokemonData | null)[], box: (PokemonData | null | undefined)[] = []): PokemonData | undefined {
+  const target = previewTargets.get(player.id);
+  if (target) {
+    const found = [...team, ...box].find(p => p?.uuid === target);
+    if (found) return found;
+  }
   let slot = 0;
   try { slot = getSelectedSlot(player); } catch { }
   return team[slot] ?? team.find((x): x is PokemonData => !!x) ?? undefined;
+}
+
+/**
+ * Células do painel da esquerda do PCGUI (PC.PREVIEW..PREVIEW_PAGE, nesta ordem): perfil, página de IVs/EVs, "Nv." com a
+ * bola, nome com gênero, tipos, item, brilhante, natureza/habilidade/golpes e a área de trocar a página. Exportada para o
+ * selftest montar a mesma prévia (antes ele mandava só o perfil e o nome: o painel ficava com um rótulo solto).
+ */
+export function appendPreviewButtons(form: ActionFormData, preview: PokemonData, page: number): ActionFormData {
+  form.button(" ", getPokemonProfileTexture(preview));
+  form.button(page === 0 ? "" : previewStatsText(preview, page));
+  // Frente ui-layout: campos do painel da esquerda (PC.PREVIEW_LEVEL..PREVIEW_PAGE), na ordem dos índices.
+  const types = getPokemonTypes(preview);
+  const ball = (preview.pokeball ?? "cobblemon:poke_ball").replace(/^[a-z0-9_]+:/, "");
+  form.button(join("§l", tr("cobblemon.label.lv", preview.level)), `${GUI}/ball/${ball}`);
+  const gender = genderIcon(preview.gender);
+  if (gender) form.button(join("§f§l", preview.getTranslatedName()), gender);
+  else form.button(join("§f§l", preview.getTranslatedName()));
+  if (types.length) form.button(types.length > 1 ? TYPE_DOUBLE : TYPE_SINGLE, typeKeyTexture(types[0]));
+  else form.button("");
+  if (types.length > 1) form.button(BLANK, typeKeyTexture(types[1]));
+  else form.button("");
+  form.button(itemName(preview.minecraftItem));
+  if (preview.shiny) form.button(BLANK, `${GUI}/summary/icon_shiny`);
+  else form.button("");
+  const info = page === 0 ? previewInfo(preview) : undefined;
+  form.button(info?.nature ?? "").button(info?.ability ?? "").button(info?.moves ?? "");
+  form.button(BLANK);
+  return form;
 }
 
 /** Página da caixa de informação da prévia por jogador (0 = info, 1 = IVs, 2 = EVs; PCGUI.currentStatIndex). */

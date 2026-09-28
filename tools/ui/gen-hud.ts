@@ -127,7 +127,9 @@ function partySlot(i: number): Json {
 					type: "stack_panel", orientation: "horizontal", size: [68, 30], ...anchor,
 					controls: [
 						{ select_spacer: { type: "panel", size: [6, 30], bindings: [view(oneOf("k", ["a", "x"]), "#visible", name)] } },
-						{ content: { type: "panel", size: [62, 30], controls: partyContent(name, 0) } },
+						// Frente ui-polish: espaço vazio (k = 'e') só mostra o party_slot_collapsed, como o PartyOverlay (o fundo do
+						// retrato e o "Nv." viravam quadrados pretos no HUD do 4º teste em cliente).
+						{ content: { type: "panel", size: [62, 30], bindings: [view("(not (#k = 'e'))", "#visible", name)], controls: partyContent(name, 0) } },
 					],
 				},
 			},

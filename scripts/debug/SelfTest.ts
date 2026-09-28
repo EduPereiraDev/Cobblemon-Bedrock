@@ -33,16 +33,17 @@ import { getSpeciesData } from "../speciesData";
 import { BATTLE_CLONE_TAG, PokemonData } from "../Pokemon";
 import { FRAMING, STUDIO_TAG, closeStudio, openStudio } from "../ui/studio";
 import { openPartyMenu, openPCGui, showSummary } from "../GUI";
-import { buildStarterForm, getStarterCategories, starterSpecies } from "../GUI/StarterGUI";
+import { buildStarterForm, getStarterCategories, starterSpecies, starterStudioSubject } from "../GUI/StarterGUI";
 import {
   BATTLE_ACTION, BATTLE_MOVES, BATTLE_SWITCH, BATTLE_TARGET, BLANK, CellForm, GIMMICK_ON_MARKER, PC, SCREEN, SUB, barTexture,
   battleMenuTexture, layoutTitle, typeKeyTexture,
 } from "../GUI/layout";
 import { getPokemonIconTexture, getPokemonProfileTexture, getPokemonSpriteTexture } from "../GUI/common";
-import { handleMoveRequest, moveTileText } from "../GUI/Battle";
+import { forfeitForm, handleMoveRequest, moveTileText } from "../GUI/Battle";
 import { boxWallpaperTexturePath } from "../GUI/PCWallpapers";
+import { appendPreviewButtons } from "../GUI/PC";
 import { renderPokemonName } from "../language";
-import { openDexList, openDexPage, openPokedex } from "../pokedex/PokedexUI";
+import { openDexPage, openPokedex } from "../pokedex/PokedexUI";
 import { getDexes } from "../pokedex/DexData";
 import { forgetPokedex } from "../pokedex/PokedexStorage";
 import { openDialogueCommand } from "../npc";
@@ -1299,9 +1300,8 @@ async function uiPhase(s: Session) {
   const categories = getStarterCategories();
   if (categories.length) {
     await showFor(s, "starter", () => buildStarterForm(categories, { category: 0, position: 0, page: 0, studio: false, studioToggle: true }).show(player));
-    const species = starterSpecies(categories[0].pokemon[0]) ?? "bulbasaur";
     await showFor(s, "starter-3d", () => {
-      const studio = openStudio(player, { species }, FRAMING.starter);
+      const studio = openStudio(player, starterStudioSubject(categories[0].pokemon[0]), FRAMING.starter);
       return buildStarterForm(categories, { category: 0, position: 0, page: 0, studio, studioToggle: true }).show(player);
     }, () => closeStudio(player));
     try { closeStudio(player); } catch { }
@@ -1318,7 +1318,8 @@ async function uiPhase(s: Session) {
   await showFor(s, "pc", () => openPCGui(player, 0));
   await showFor(s, "pc-sample", () => samplePcForm(player, team).show(player));
   // Pokédex: lista de Pokédex, página de entradas e uma entrada.
-  await showFor(s, "pokedex-list", () => openDexList(player));
+  // Frente ui-polish: a Pokédex abre na grade (sem a lista de regiões da vanilla).
+  await showFor(s, "pokedex-list", () => openPokedex(player));
   const dex = getDexes()[0];
   if (dex) await showFor(s, "pokedex-page", () => openDexPage(player, dex.id, 0, "all"));
   await showFor(s, "pokedex-entry", () => openPokedex(player, "pikachu"));
@@ -1378,10 +1379,8 @@ function samplePcForm(player: Player, team: PokemonData[]): ActionFormData {
     if (p) form.button(renderPokemonName(p), getPokemonIconTexture(p));
     else form.button({ translate: "cobblemon.ui.empty" });
   }
-  if (team[0]) {
-    form.button(" ", getPokemonProfileTexture(team[0]));
-    form.button(renderPokemonName(team[0]));
-  }
+  // Frente ui-polish: a mesma prévia do PC real (nível, nome, tipos, item, natureza, habilidade, golpes).
+  if (team[0]) appendPreviewButtons(form, team[0], 0);
   return form;
 }
 
@@ -1430,9 +1429,8 @@ function sampleBattleForms(team: PokemonData[]): [string, { show(player: Player)
   team.slice(0, 2).forEach((p, i) => target.cell(BATTLE_TARGET.ALLIES + i, renderPokemonName(p), getPokemonSpriteTexture(p)));
   target.cell(BATTLE_TARGET.BACK, { translate: "gui.back" });
   out.push(["battle-target", target]);
-  const forfeit = new MessageFormData().title({ translate: "cobblemon.battle.ui.forfeit" }).body({ translate: "cobblemon.battle.ui.forfeit_confirmation" })
-    .button1({ translate: "cobblemon.battle.ui.forfeit" }).button2({ translate: "gui.back" });
-  out.push(["battle-forfeit", forfeit]);
+  // Frente ui-polish: a mesma confirmação da batalha real (ForfeitConfirmationSelection no layout da batalha).
+  out.push(["battle-forfeit", forfeitForm().build()]);
   return out;
 }
 
@@ -1564,7 +1562,7 @@ function screenRuns(s: Session, team: PokemonData[], hud: { party?: string; batt
     summary_marks_3d: summary("marks", true),
     pc: { open: () => samplePcForm(player, team).show(player) },
     pc_empty: { open: () => sampleEmptyPcForm(player, team).show(player) },
-    pokedex_list: { open: () => openDexList(player) },
+    pokedex_list: { open: () => openPokedex(player) },
     pokedex_page: { open: () => dex && openDexPage(player, dex.id, 0, "all") },
     pokedex_entry: { open: () => openPokedex(player, "pikachu") },
     dialogue: {

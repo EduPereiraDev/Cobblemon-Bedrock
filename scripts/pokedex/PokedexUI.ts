@@ -151,13 +151,25 @@ function isHidden(entry: DexEntry): boolean {
 // ---------------------------------------------------------------------------------------------
 // Lista de Pokédex
 
-/** Abre a Pokédex: sem espécie, a lista de Pokédex; com espécie, direto na entrada nacional. */
+/**
+ * Abre a Pokédex: sem espécie, a grade da 1ª região (PokedexGUI: selectedRegionIndex = 0; a região troca pelas setas do
+ * cabeçalho, sem a lista de regiões do form da vanilla); com espécie, direto na entrada nacional.
+ */
 export async function openPokedex(player: Player, species?: string): Promise<void> {
   if (species) {
     const entry = getNationalEntry(species);
     if (entry) return openEntry(player, entry, "national");
   }
-  return openDexList(player);
+  const first = getDexes()[0];
+  return first ? openDexPage(player, first.id, 0, "all") : openDexList(player);
+}
+
+/** Região vizinha (PokedexGUI.updatePokedexRegion: dá a volta nas pontas). */
+export function neighbourDex(dexId: string, delta: 1 | -1): string | undefined {
+  const dexes = getDexes();
+  if (dexes.length < 2) return undefined;
+  const i = Math.max(0, dexes.findIndex(dex => dex.id === dexId));
+  return dexes[(i + delta + dexes.length) % dexes.length].id;
 }
 
 export async function openDexList(player: Player): Promise<void> {
@@ -231,6 +243,7 @@ export async function openDexPage(player: Player, dexId: string, page: number, f
     .body(join(tr(DEX_KEYS.page, page + 1, pages), entries.length === 0 ? join("\n\n", tr(DEX_KEYS.noResults)) : undefined));
   form.cell(POKEDEX_LIST.FRAME, BLANK, frameTexture(player));
   fillHeader(form, records, dex.id, POKEDEX_LIST.REGION, POKEDEX_LIST.SEEN, POKEDEX_LIST.CAUGHT);
+  fillRegionArrows(form, player, dex.id, POKEDEX_LIST.REGION_PREV, POKEDEX_LIST.REGION_NEXT);
   fillGrid(form, player, records, grid, POKEDEX_LIST.SLOTS, undefined);
   if (page > 0) form.cell(POKEDEX_LIST.PREVIOUS, tr(DEX_KEYS.previous), undefined, () => openDexPage(player, dexId, page - 1, filter, list));
   if (page < pages - 1) form.cell(POKEDEX_LIST.NEXT, tr(DEX_KEYS.next), undefined, () => openDexPage(player, dexId, page + 1, filter, list));
@@ -240,7 +253,8 @@ export async function openDexPage(player: Player, dexId: string, page: number, f
     form.cell(POKEDEX_LIST.SEARCH, join("§7", { translate: "cobblemon.ui.pokedex.search" }), undefined, () => openSearch(player, dexId));
   }
   form.cell(POKEDEX_LIST.PROGRESS, tr(DEX_KEYS.progressTitle), undefined, () => openProgress(player));
-  form.cell(POKEDEX_LIST.BACK, tr(DEX_KEYS.back), undefined, () => list ? openDexPage(player, dexId, 0, "all") : openDexList(player));
+  // Frente ui-polish: sem a lista de regiões (a região troca pelas setas), "Voltar" só existe nos resultados da busca.
+  if (list) form.cell(POKEDEX_LIST.BACK, tr(DEX_KEYS.back), undefined, () => openDexPage(player, dexId, 0, "all"));
 
   const response = await show(player, form.build());
   if (response?.selection === undefined) return;
@@ -262,6 +276,14 @@ function fillHeader(form: CellForm<() => Promise<void>>, records: PokedexRecords
   form.cell(region, join("§l", { translate: dexNameKey(dexId) }));
   form.cell(seen, `§l${counts.seen}`);
   form.cell(caught, `§l${counts.caught}`);
+}
+
+/** Frente ui-polish: setas da região no cabeçalho (trocam a Pokédex e voltam para a 1ª página da grade). */
+function fillRegionArrows(form: CellForm<() => Promise<void>>, player: Player, dexId: string, prev: number, next: number) {
+  const before = neighbourDex(dexId, -1);
+  const after = neighbourDex(dexId, 1);
+  if (before) form.cell(prev, join("§7", { translate: dexNameKey(before) }), undefined, () => openDexPage(player, before, 0, "all"));
+  if (after) form.cell(next, join("§7", { translate: dexNameKey(after) }), undefined, () => openDexPage(player, after, 0, "all"));
 }
 
 const UNKNOWN_SLOT = `${GUI}/pokedex/pokedex_slot_unknown`;
@@ -475,6 +497,7 @@ export async function openEntry(player: Player, entry: DexEntry, dexId: string, 
   const form = new CellForm<() => Promise<void>>(layoutTitle(SCREEN.POKEDEX, SUB.POKEDEX_ENTRY, title), POKEDEX_ENTRY.COUNT);
   form.cell(POKEDEX_ENTRY.FRAME, BLANK, frameTexture(player));
   fillHeader(form, records, grid.dexId, POKEDEX_ENTRY.REGION, POKEDEX_ENTRY.SEEN, POKEDEX_ENTRY.CAUGHT_COUNT);
+  fillRegionArrows(form, player, grid.dexId, POKEDEX_ENTRY.REGION_PREV, POKEDEX_ENTRY.REGION_NEXT);
   fillGrid(form, player, records, grid, POKEDEX_ENTRY.SLOTS, entry.speciesId);
   const pages = Math.max(1, Math.ceil(grid.entries.length / PAGE_SIZE));
   const g = grid;
@@ -586,7 +609,8 @@ export async function openProgress(player: Player): Promise<void> {
   }
   const form = new ActionFormData().title(tr(DEX_KEYS.progressTitle)).body(join(...lines)).button(tr(DEX_KEYS.back));
   const response = await show(player, form);
-  if (response?.selection === 0) return openDexList(player);
+  // Frente ui-polish: volta para a grade da Pokédex (não há mais a lista de regiões).
+  if (response?.selection === 0) return openPokedex(player);
 }
 
 /** Nome traduzido de uma Pokédex (para outras telas). */
