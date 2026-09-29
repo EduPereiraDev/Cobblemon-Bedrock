@@ -519,8 +519,9 @@ cobblemon.port.controle.empty_slot=The selected party slot is empty.
 cobblemon.port.sendout.no_space=No safe spot to send out your Pokémon: aim at the ground nearby.
 
 ## welcome book (given in hand on first join; can be dropped)
-cobblemon.port.livro.p1.titulo=§lCobblemon Bedrock§r
-cobblemon.port.livro.p1.feito_por=Made by: §1github.com/EduPereiraDev§r
-cobblemon.port.livro.p1.frase=Made by a real character, who never denies their legacy.
-cobblemon.port.livro.p2.creditos=Unofficial community port of Cobblemon (cobblemon.com). Not affiliated with the Cobblemon team. Free forever.
-cobblemon.port.livro.p2.repo=Bugs and updates: §1github.com/EduPereiraDev/Cobblemon-Bedrock§r
+cobblemon.livro.titulo=§lCobblemon Bedrock§r
+cobblemon.livro.autor=Made by: §1github.com/EduPereiraDev§r
+cobblemon.livro.frase=Made by a real character, who never denies their legacy.
+cobblemon.livro.memoria=In memory of: Noguti-san
+cobblemon.livro.creditos=Unofficial community port of Cobblemon (cobblemon.com). Not affiliated with the Cobblemon team. Free forever.
+cobblemon.livro.repo=Bugs and updates: §1github.com/EduPereiraDev/Cobblemon-Bedrock§r

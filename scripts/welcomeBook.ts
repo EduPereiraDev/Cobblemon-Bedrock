@@ -8,13 +8,14 @@ export const WELCOME_BOOK_PROPERTY = "cobblemon:livro_recebido";
 export const WELCOME_BOOK_TITLE = "Cobblemon BE"; // máx. 16 caracteres (signBook)
 export const WELCOME_BOOK_AUTHOR = "EduPereiraDev";
 
-const line = (key: string): RawMessage => ({ translate: `cobblemon.port.livro.${key}` });
+// Chaves curtas: a página tem limite de 256 caracteres no JSON da RawMessage (a página 1 fica em ~210).
+const line = (key: string): RawMessage => ({ translate: `cobblemon.livro.${key}` });
 const BREAK: RawMessage = { text: "\n\n" };
 
 /** Páginas (cada uma bem abaixo do limite de 256 caracteres do JSON da RawMessage). */
 export const WELCOME_BOOK_PAGES: RawMessage[] = [
-  { rawtext: [line("p1.titulo"), BREAK, line("p1.feito_por"), BREAK, line("p1.frase")] },
-  { rawtext: [line("p2.creditos"), BREAK, line("p2.repo")] },
+  { rawtext: [line("titulo"), BREAK, line("autor"), BREAK, line("frase"), BREAK, line("memoria")] },
+  { rawtext: [line("creditos"), BREAK, line("repo")] },
 ];
 
 export function createWelcomeBook(): ItemStack {

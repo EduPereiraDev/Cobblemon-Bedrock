@@ -1,6 +1,6 @@
 // Livro de boas-vindas (scripts/welcomeBook.ts) com um cliente de protocolo:
 // - na 1ª entrada o livro escrito chega no espaço da mão e a Poké Ball do time fica em outro espaço;
-// - o livro assinado leva título/autor (NBT) e as páginas com as chaves cobblemon.port.livro.*;
+// - o livro assinado leva título/autor (NBT) e as páginas com as chaves cobblemon.livro.*;
 // - soltar com Q tira o livro do inventário (item comum, sem trava) e ele não volta;
 // - entrar de novo com o mesmo jogador não entrega outro livro.
 import { Bot } from "../lib/bot.mjs";
@@ -50,7 +50,7 @@ export default {
 
 		// 2. NBT do livro assinado.
 		const nbt = JSON.stringify(bot.heldItem(bookSlot).extra ?? {});
-		for (const needle of ["Cobblemon BE", "EduPereiraDev", "cobblemon.port.livro.p1.feito_por", "cobblemon.port.livro.p2.repo"]) {
+		for (const needle of ["Cobblemon BE", "EduPereiraDev", "cobblemon.livro.autor", "cobblemon.livro.memoria", "cobblemon.livro.repo"]) {
 			t.assert(nbt.includes(needle), `NBT do livro contém "${needle}" (${nbt.slice(0, 400)})`);
 		}
 		t.step("livro assinado: título, autor e as 2 páginas traduzíveis");
