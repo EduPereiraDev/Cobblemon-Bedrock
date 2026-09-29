@@ -14,7 +14,7 @@
  * A seleção fica na dynamic property `cobblemon:selected_slot` (índice 0..5) e pode ser lida pela HUD do time
  * (`getSelectedSlot`, pedido da frente ui-base).
  */
-import { isSendOutAnimating, recallAnimated, sendOutAnimated } from "./SendOutAnimation";
+import { isSendOutAnimating, recallAnimated, sendOutAnimated, whenSendOutDone } from "./SendOutAnimation";
 import { Entity, InputButton, ButtonState, Player, RawMessage, system, world } from "@minecraft/server";
 import { getConfig } from "../Config";
 import { PokemonData } from "../Pokemon";
@@ -83,7 +83,7 @@ export interface QuickSendActions {
   inBattle(player: Player): boolean;
   /** Reabre a escolha da batalha em andamento (toggleBattleScreen). */
   reopenBattle(player: Player): void;
-  startWildBattle(player: Player, wild: Entity): void;
+  startWildBattle(player: Player, wild: Entity, lead?: string): void;
   openPlayerMenu(player: Player, target: Player): void;
 }
 
@@ -148,9 +148,14 @@ export function quickSend(player: Player, slot = getSelectedSlot(player), aimed?
     const dx = target.location.x - player.location.x, dy = target.location.y - player.location.y, dz = target.location.z - player.location.z;
     if (dx * dx + dy * dy + dz * dz > config.battleWildMaxDistance ** 2) return "none";
     // BattleChallengePacket com o selecionado: o port põe na frente quem está em campo, então solta o selecionado antes.
-    if (pokemon.currentHealth > 0 && !pokemon.tryGetPokemonOut()) pokemon.sendOut(player);
+    // BattleChallengePacket com o selecionado como líder. Ele sai antes com a bola (SendOutPokemonHandler) no ponto da
+    // mira e a batalha começa quando o envio termina (a entidade em campo é reaproveitada); sem lugar seguro, a batalha
+    // começa na hora e ela mesma o envia.
     const wild = target;
-    system.runTimeout(() => { if (player.isValid && wild.isValid) actions?.startWildBattle(player, wild); }, 2);
+    const lead = pokemon.currentHealth > 0 ? pokemon.uuid : undefined;
+    const start = () => { if (player.isValid && wild.isValid) actions?.startWildBattle(player, wild, lead); };
+    if (lead && !pokemon.tryGetPokemonOut()) void sendOutAnimated(player, pokemon).then(() => whenSendOutDone(pokemon.uuid, start));
+    else system.runTimeout(start, 2);
     return "wild_battle";
   }
   return "none";

@@ -25,6 +25,7 @@ import { showMovesMenu } from "./Moves";
 import { openPCGui } from "./PC";
 import { extraPartyActions } from "./partyActions"; // frente msd-fase2: ações de extensões (Mega fora da batalha)
 import { CobblemonEvents } from "../events/CobblemonEvents"; // frente msd-fase2: HELD_ITEM_POST
+import { setHeldItemOnEntity } from "../pokemon/HeldItemStore";
 
 /** Texto do botão de um Pokémon: nome colorido pelo tipo, nível, HP e status. */
 export function partyButtonText(pokemon: PokemonData, isOut = false): RawMessage {
@@ -117,7 +118,7 @@ export async function showPartyPokemonMenu(player: Player, slot: number): Promis
         // Frente dados-ui: com a bola e o feixe (sendOutWithAnimation/recallWithAnimation).
         if (isOut) await recallAnimated(player, pokemon);
         else if (pokemon.currentHealth <= 0) player.sendMessage(message.error(tr("cobblemon.battle.pokemon_already_fainted", pokemon)));
-        else await sendOutAnimated(player, pokemon);
+        else await sendOutAnimated(player, pokemon, true);
         return;
       case "ride":
         if (outEntity?.isValid) startRiding(player, outEntity);
@@ -335,9 +336,9 @@ export function setHeldItem(pokemon: PokemonData, itemId: string | undefined) {
   const previous = pokemon.minecraftItem;
   pokemon.minecraftItem = itemId;
   pokemon.item = itemId ? (itemId.split(":").pop() ?? "").replace(/[^a-z0-9]+/g, "") : "";
+  // Fora da bola: os dados da entidade também (o item segurado vive só nos dados; pokemon/HeldItemStore).
   const entity = pokemon.tryGetPokemonOut();
-  const container = entity?.getComponent("minecraft:inventory")?.container;
-  if (container) container.setItem(0, itemId ? new ItemStack(itemId, 1) : undefined);
+  if (entity) setHeldItemOnEntity(entity, itemId);
   // Frente msd-fase2: HELD_ITEM_POST (o Mega Showdown desfaz Mega/Ultra/Primal quando a pedra/cristal/orbe sai).
   // Quem chama grava o Pokémon depois; ouvinte com erro não impede a troca.
   if (previous !== itemId) {

@@ -8,12 +8,15 @@
  * - atacante Pokémon (entityAttack): dano × curva(Ataque atual) / dano fixo da espécie — mantém a escala de
  *   dificuldade que o motor já aplicou;
  * - Pokémon atingido: absorção de armadura com a armadura/tenacidade da Defesa (CombatRules.getDamageAfterAbsorb);
- * - jogador → Pokémon com `playerDamagePokemon` desligado: cancelado.
+ * - jogador → Pokémon com `playerDamagePokemon` desligado: cancelado;
+ * - PokemonEntity.isInvulnerableTo: ocupado (busyLocks; aqui cobblemon:busy) ou no feixe de enviar/recolher (beamMode;
+ *   aqui cobblemon:beam_tint) não leva dano nenhum; com dono (ownerUUID) não leva dano de jogador nem de sufocamento.
  * Atributos em cache por entidade (recalcula quando a dynamic property "data" muda).
  */
 import { Entity, EntityHurtBeforeEvent, Player, world } from "@minecraft/server";
 import { getConfig } from "../Config";
 import { PokemonData } from "../Pokemon";
+import { BEAM_TINT_PROPERTY } from "../pokemon/BeamTint";
 
 // ---------------------------------------------------------------------------------------------
 // Lógica pura (fórmulas do Cobblemon/Minecraft)
@@ -49,6 +52,14 @@ export function damageAfterArmour(damage: number, armour: number, toughness: num
 export function scaledPokemonDamage(engineDamage: number, attack: number, baseAttack: number): number {
   const base = speciesMeleeDamage(baseAttack);
   return base > 0 ? engineDamage * (attackToDamageCurve(attack) / base) : engineDamage;
+}
+
+/** PokemonEntity.isInvulnerableTo (Cobblemon 1.8.2), na mesma ordem. */
+export function isPokemonInvulnerable(p: { busy: boolean; beam: boolean; owned: boolean; attackerIsPlayer: boolean; cause: string; playerDamagePokemon: boolean }): boolean {
+  if (p.busy || p.beam) return true;
+  if (p.owned && (p.attackerIsPlayer || p.cause === "suffocation")) return true;
+  if (!p.playerDamagePokemon && p.attackerIsPlayer) return true;
+  return false;
 }
 
 /** Causas que a armadura do Java reduz (as que não estão em BYPASSES_ARMOR). */
@@ -91,7 +102,14 @@ export function onEntityHurtBefore(event: EntityHurtBeforeEvent) {
   const attacker = damageSource.damagingEntity;
   const cause = String(damageSource.cause);
   const hurtIsPokemon = isPokemonEntity(hurtEntity);
-  if (hurtIsPokemon && attacker instanceof Player && !getConfig().playerDamagePokemon) {
+  if (hurtIsPokemon && isPokemonInvulnerable({
+    busy: hurtEntity.getProperty("cobblemon:busy") === true,
+    beam: hurtEntity.getProperty(BEAM_TINT_PROPERTY) === true,
+    owned: hurtEntity.getDynamicProperty("owner_name") !== undefined,
+    attackerIsPlayer: attacker instanceof Player,
+    cause,
+    playerDamagePokemon: getConfig().playerDamagePokemon,
+  })) {
     event.cancel = true;
     return;
   }

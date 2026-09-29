@@ -781,8 +781,9 @@ export function buildServerEntity(e: ServerEntityInput): Json {
 		// Sempre presente: Pokemon.sendOut chama tameable.tame(player) logo depois do spawnEntity, antes de cobblemon:set_owned.
 		"minecraft:tameable": { probability: 0 },
 		"minecraft:follow_range": { value: 32, max: 32 },
-		// Slot 0 = item segurado (PokemonData.applyToCobblemon/loadFromCobblemon leem este inventário).
-		"minecraft:inventory": { container_type: "inventory", inventory_size: 1 },
+		// Sem "minecraft:inventory": o item segurado fica só nos dados (scripts/pokemon/HeldItemStore.ts). Com inventário,
+		// montado o E abria o "baú" do Pokémon (como o do cavalo) e o item posto ali sumia (docs/pendencias/item-segurado.md);
+		// o PokemonEntity do Cobblemon não tem inventário acessível.
 		"minecraft:attack": { damage: meleeDamage(Number(data.baseStats?.attack ?? 50)) },
 		"minecraft:interact": {
 			interactions: [{ interact_text: "cobblemon.ui.interact", on_interact: { event: "cobblemon:interacted", target: "self" } }],
@@ -873,8 +874,8 @@ export function buildServerEntity(e: ServerEntityInput): Json {
 					{ item: "minecraft:is_food", priority: 1, max_amount: 1 },
 				],
 			},
-			// Anda até o item; a coleta em si é do script (scripts/entity/SpeciesBehaviours.ts): com o inventário de
-			// 1 espaço (item segurado) o Bedrock guardaria o item lá e ele se perderia.
+			// Anda até o item; a coleta em si é do script (scripts/entity/SpeciesBehaviours.ts cancela a coleta do motor e
+			// põe o item na boca).
 			"minecraft:behavior.pickup_items": { priority: 6, max_dist: 8, goal_radius: 1.5, speed_multiplier: 1.0, can_pickup_any_item: true },
 		});
 		if (speciesB.fox) {
@@ -940,14 +941,26 @@ export function buildServerEntity(e: ServerEntityInput): Json {
 		// de montaria (que copiam aiMove).
 		const float = components["minecraft:behavior.float"];
 		if (float) delete components["minecraft:behavior.float"];
-		groups["cobblemon:move_ai"] = float ? { ...aiMove, "minecraft:behavior.float": float } : aiMove;
+		// Frente montaria-pulo: a minecraft:navigation.fly religa a gravidade a cada tick e anulava o has_gravity:false do
+		// ride_air (BDS: Dragonite no ride_air caía de 178 a 170; sem a navigation.fly — ou com generic/walk — ficava a 178).
+		// A montaria voava para cima com o pulo duplo e caía de volta. Quem voa montado leva a navegação no move_ai (só
+		// existe solto; montado quem guia é o jogador), fora dos grupos de montaria.
+		const flyNav = rideGroups.includes("AIR") ? components["minecraft:navigation.fly"] : undefined;
+		if (flyNav) delete components["minecraft:navigation.fly"];
+		groups["cobblemon:move_ai"] = { ...aiMove, ...(float ? { "minecraft:behavior.float": float } : {}), ...(flyNav ? { "minecraft:navigation.fly": flyNav } : {}) };
+		// Frente montaria-pulo: na terra o jogador pode desmontar sozinho (InputPermissionCategory.Dismount ligada; no
+		// ar/água ela fica desligada e o servidor manda does_server_auth_only_dismount). Sem ação para o Espaço (os mounts
+		// vanilla têm: cavalo can_power_jump, nautilus dash_action, ghast feliz vertical_movement_action), o cliente usa o
+		// Espaço para desmontar: o jogador "pulava" do Dragonite. canJump=false do Cobblemon (Dragonite, Lapras...) = pulo
+		// de força 0: o Espaço não pula nem derruba, e o pulo duplo continua decolando.
 		const land = styleOf("LAND");
 		if (land) {
 			groups["cobblemon:ride_land"] = {
 				...aiMove,
 				"minecraft:movement": { value: land.speed },
 				"minecraft:input_ground_controlled": {},
-				...(land.jump > 0 ? { "minecraft:can_power_jump": {}, "minecraft:horse.jump_strength": { value: land.jump } } : {}),
+				"minecraft:can_power_jump": {},
+				"minecraft:horse.jump_strength": { value: land.jump },
 			};
 		}
 		const air = styleOf("AIR");

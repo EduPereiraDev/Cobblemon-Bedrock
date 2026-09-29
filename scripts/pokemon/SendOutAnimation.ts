@@ -9,6 +9,7 @@ import type { PokemonData } from "../Pokemon";
 import { animatedRecall, animatedSendOut } from "../battle/SendOut";
 import { SCALE_PROPERTY } from "./Scale";
 import { setBeamTint } from "./BeamTint";
+import { groundInFront, safeSendOutPosition, worldFor } from "./SendOutTarget";
 
 /** Pokémon com envio/recolha animada em andamento (um clique duplo não repete). */
 const sending = new Set<string>();
@@ -23,15 +24,33 @@ export function isSendOutAnimating(uuid: string): boolean {
   return sending.has(uuid) || recalling.has(uuid);
 }
 
-/** Onde o Pokémon aparece (mesma regra de PokemonData.sendOut sem local: bloco olhado até 10 com 2 de ar, senão o jogador). */
-export function sendOutLocation(player: Player): DimensionLocation {
+/** Roda `fn` quando o envio/recolha animada do Pokémon termina (no máximo 3 s: a trava de `lock`). */
+export function whenSendOutDone(uuid: string, fn: () => void) {
+  if (!isSendOutAnimating(uuid)) { system.run(fn); return; }
+  let ticks = 0;
+  const id = system.runInterval(() => {
+    if (!isSendOutAnimating(uuid) || ++ticks >= 60) { system.clearRun(id); fn(); }
+  }, 1);
+}
+
+/**
+ * Onde o Pokémon aparece: raycastSafeSendout do Java (scripts/pokemon/SendOutTarget.ts). Sem lugar seguro na mira,
+ * undefined (o Java não manda; nunca no pé do jogador).
+ */
+export function sendOutLocation(player: Player, pokemon: PokemonData, nearPlayer = false): DimensionLocation | undefined {
   try {
-    const block = player.getBlockFromViewDirection({ maxDistance: 10 })?.block;
-    if (block && block.above(1)?.isAir && block.above(2)?.isAir)
-      return { x: block.x + 0.5, y: block.y + 1, z: block.z + 0.5, dimension: player.dimension };
+    const form = pokemon.getFormData();
+    const species = pokemon.getSpeciesData();
+    const hitbox = form?.hitbox ?? species.hitbox;
+    const scale = form?.baseScale ?? species.baseScale ?? 1;
+    const world = worldFor(player);
+    const eye = player.getHeadLocation(), dir = player.getViewDirection();
+    let at = safeSendOutPosition(world, eye, dir, { width: hitbox?.width ?? 1, height: hitbox?.height ?? 1, scale });
+    // Menu do time (sem mira): o chão à frente; sem chão nenhum, junto ao jogador.
+    if (!at && nearPlayer) at = groundInFront(world, eye, dir) ?? { ...player.location };
+    return at ? { ...at, dimension: player.dimension } : undefined;
   }
-  catch { }
-  return { ...player.location, dimension: player.dimension };
+  catch { return undefined; }
 }
 
 /** Resolve quando `ready()` fica verdadeiro (ou em `maxTicks`). */
@@ -49,13 +68,23 @@ function waitFor(ready: () => boolean, maxTicks = 40): Promise<void> {
  * Manda para fora com a bola (casual). A promessa resolve quando o Pokémon aparece (a tela do time reabre já com o
  * marcador de "fora").
  */
-export function sendOutAnimated(player: Player, pokemon: PokemonData): Promise<void> {
+/**
+ * `fromMenu`: envio pelo menu do time (adaptação do port; o Java só manda pela mira). Sem lugar seguro na mira, vai
+ * para o chão à frente em vez de não sair. O envio rápido (tecla R / Poké Ball do time) segue a regra estrita.
+ */
+export function sendOutAnimated(player: Player, pokemon: PokemonData, fromMenu = false): Promise<void> {
   if (sending.has(pokemon.uuid) || recalling.has(pokemon.uuid)) return Promise.resolve();
   if (pokemon.tryGetPokemonOut()) return Promise.resolve();
+  const location = sendOutLocation(player, pokemon, fromMenu);
+  if (!location) {
+    // SendOutPokemonHandler: sem posição segura na mira, nada acontece. Aqui avisa (o menu não mostra a mira).
+    try { player.onScreenDisplay.setActionBar({ translate: "cobblemon.port.sendout.no_space" }); } catch { }
+    return Promise.resolve();
+  }
   lock(sending, pokemon.uuid);
   try {
     const job = animatedSendOut({
-      thrower: player, owner: player, pokemon, location: sendOutLocation(player), mode: "casual",
+      thrower: player, owner: player, pokemon, location, mode: "casual",
       stillValid: () => player.isValid && !pokemon.tryGetPokemonOut(),
       onDone: () => sending.delete(pokemon.uuid),
     });
@@ -64,7 +93,7 @@ export function sendOutAnimated(player: Player, pokemon: PokemonData): Promise<v
   catch (e) {
     sending.delete(pokemon.uuid);
     console.warn(`Envio animado falhou: ${e}`);
-    pokemon.sendOut(player);
+    pokemon.sendOut(player, location);
     return Promise.resolve();
   }
 }

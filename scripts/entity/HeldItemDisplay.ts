@@ -1,7 +1,7 @@
 /**
  * Item segurado visível no modelo (PokemonServerDelegate.updateShownItem + HeldItemRenderer do Cobblemon 1.8.2).
  *
- * O item segurado mora no slot 0 do inventário da entidade (PokemonData.applyToCobblemon). Uma cópia visual vai
+ * O item segurado mora só nos dados do Pokémon (pokemon/HeldItemStore; a entidade não tem inventário). Uma cópia visual vai
  * para a mão secundária (`slot.weapon.offhand`, chance de drop 0 no BP): o Bedrock desenha itens comuns no osso
  * `leftItem` (posto no locator `item` pelo importador) e os vestíveis pelo attachable, preso à âncora
  * `cobblemon_anchor_hat`/`face`. A mão principal fica livre para o que a raposa pega do chão.
@@ -12,6 +12,7 @@
 import { Entity } from "@minecraft/server";
 import { HELD_ITEM_LOCATORS, HIDDEN_HELD_ITEMS, VISIBILITY_FACE, VISIBILITY_HAT } from "../../generated/scripts/mundoDetalhes";
 import { speciesIdOfType } from "./EntityData";
+import { getHeldItemOnEntity } from "../pokemon/HeldItemStore";
 
 const HIDDEN = new Set(HIDDEN_HELD_ITEMS);
 const HAT = new Set(VISIBILITY_HAT.filter(i => !i.startsWith("#")));
@@ -20,7 +21,7 @@ const FACE = new Set(VISIBILITY_FACE.filter(i => !i.startsWith("#")));
 const SHOWN_PROPERTY = "cobblemon:shown_item";
 
 export interface ShownItemInput {
-  /** Item no slot 0 (id com namespace) ou undefined. */
+  /** Item segurado (id com namespace, dos dados do Pokémon) ou undefined. */
   heldItem?: string;
   /** PokemonData.heldItemVisible (undefined = visível). */
   heldItemVisible?: boolean;
@@ -61,7 +62,7 @@ export function forgetHeldItemDisplay(entityId: string) {
  * `data` = campos do PokemonData usados (heldItemVisible).
  */
 export function syncHeldItemDisplay(entity: Entity, data: { heldItemVisible?: boolean }) {
-  const held = entity.getComponent("minecraft:inventory")?.container?.getItem(0)?.typeId;
+  const held = getHeldItemOnEntity(entity);
   const variant = Number(entity.getProperty("cobblemon:variant") ?? 0);
   const shown = shownHeldItem({
     heldItem: held,

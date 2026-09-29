@@ -14,6 +14,7 @@ import { applyEntitySize } from "./Size";
 import { speciesIdOfType } from "./EntityData";
 import { forgetSleepState, onPokemonHurt, tickSleep } from "./Sleep";
 import { forgetHeldItemDisplay, syncHeldItemDisplay } from "./HeldItemDisplay"; // frente mundo-detalhes
+import { forgetHeldItemCache, getHeldItemOnEntity } from "../pokemon/HeldItemStore";
 import { forgetLightEmitter, hasLightingData, startDynamicLights, trackLightEmitter } from "./DynamicLight"; // frente mundo-detalhes
 import { startSpeciesBehaviours, tickSpeciesBehaviours, forgetSpeciesBehaviours } from "./SpeciesBehaviours"; // frente mundo-detalhes
 import { syncAspectBits } from "./AspectSync"; // frente dados-ia
@@ -68,7 +69,7 @@ export function tryPokemonInteraction(player: Player, pokemon: Entity, heldItem?
     if (!owner) return false;
     if (player.isSneaking) {
       // Roda de interação do Cobblemon: aqui, mão vazia e Pokémon sem item (a troca de item não faria nada).
-      const holdsItem = !!pokemon.getComponent("minecraft:inventory")?.container?.getItem(0);
+      const holdsItem = !!getHeldItemOnEntity(pokemon);
       if (heldItem || holdsItem) return false;
       if (canShoulderMount(player, pokemon, data)) return toggleShoulder(player, pokemon);
       if (canRidePokemon(player, pokemon, data)) return startRiding(player, pokemon);
@@ -205,6 +206,7 @@ export function startEntityBehaviours() {
     forgetMount(removedEntityId);
     forgetShoulder(removedEntityId);
     forgetHeldItemDisplay(removedEntityId);
+    forgetHeldItemCache(removedEntityId);
     forgetLightEmitter(removedEntityId);
     forgetSpeciesBehaviours(removedEntityId);
   });

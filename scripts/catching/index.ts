@@ -18,6 +18,7 @@ import { PokeBall, getPokeBall, getPokeBallOrDefault, pokeBallName } from "./Pok
 import { BattleCaptureAction, beginBattleCapture, isCaptureInProgress, runCaptureSequence } from "./CaptureSequence";
 import { BALL_MAX_FLIGHT_TICKS, missedBallItem, shouldExpireBall } from "./MissedBall";
 import { configureBallFlight, trackBall } from "./BallFlight";
+import { swapToCaptureDummy } from "./CaptureDummy";
 import { DexProgress, getPokedex } from "../pokedex/PokedexStorage";
 import { bindPokedex } from "../pokedex";
 import { bindPCWallpapers } from "../GUI/PCWallpapers";
@@ -173,8 +174,11 @@ function isUncatchable(entity: Entity): boolean {
   return PokemonData.tryGetFromEntity(entity)?.aspects.includes("uncatchable") ?? false;
 }
 
-/** EmptyPokeBallEntity.onHitEntity: valida e começa a captura. */
-function handleBallHit(projectile: Entity, hitEntity: Entity, thrower: Player, hitVector: Vector3, at?: HitPlace) {
+/**
+ * EmptyPokeBallEntity.onHitEntity: valida e começa a captura.
+ * @param ballAt Onde a bola parou, se foi teleportada neste tick (acerto por proximidade no trecho já percorrido).
+ */
+function handleBallHit(projectile: Entity, hitEntity: Entity, thrower: Player, hitVector: Vector3, at?: HitPlace, ballAt?: Vector3) {
   // Acertos duplicados são comuns no Bedrock.
   if (projectile.getDynamicProperty("activated")) return;
   // Illusion/Transform (frente visual-batalha): a bola que acerta a entidade de exibição mira o Pokémon real.
@@ -212,8 +216,12 @@ function handleBallHit(projectile: Entity, hitEntity: Entity, thrower: Player, h
   projectile.setDynamicProperty("activated", true);
   try { projectile.triggerEvent("cobblemon:disable"); } catch { }
   if (battleAction) beginBattleCapture(battleAction, { translate: `item.cobblemon.${ball.name}` });
+  // Afundando no chão (beta 7): a sequência roda na `_dummy` (sem projétil nem física), não no arremessável. A troca
+  // vem depois de tudo que pode lançar erro: com o projétil já removido, o `catch` de quem chama derrubaria um item.
+  const ballEntity = swapToCaptureDummy(projectile, ballAt);
+  if (battleAction) battleAction.ballEntity = ballEntity;
   void runCaptureSequence({
-    thrower, ballEntity: projectile, target, ball, battleAction,
+    thrower, ballEntity, target, ball, battleAction,
     calculate: () => processCapture(thrower, ball, target),
   }, hitVector);
 }
@@ -239,7 +247,7 @@ function onProximityHit(projectile: Entity, target: Entity, point: Vector3, velo
   if (!thrower) { dropPokeball(projectile, undefined, at); return; }
   try { projectile.clearVelocity(); } catch { }
   if (!forward) { try { projectile.teleport(point); } catch { } }
-  try { handleBallHit(projectile, target, thrower, velocity, at); }
+  try { handleBallHit(projectile, target, thrower, velocity, at, forward ? undefined : point); }
   catch (e) {
     console.error(`Erro ao processar acerto da Poké Bola: ${e}`);
     dropPokeball(projectile, thrower, at);

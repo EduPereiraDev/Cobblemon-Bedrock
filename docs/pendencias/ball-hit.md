@@ -114,3 +114,111 @@ Reproduzir:
 COBBLEMON_BDS=ball COBBLEMON_BDS_PORT=19189 COBBLEMON_DIST=dist-ball COBBLEMON_BDS_TRANSPORT=raknet \
 COBBLEMON_BDS_ONLINE_MODE=false node tools/e2e/run.mjs --scenario tests/e2e/experimental/ball-hit.e2e.mjs --deploy --verbose
 ```
+
+## Afundando no chão (beta 7)
+
+Relato do cliente real (Windows, beta 7 / v1.0.7): "A Pokébola, quando acerta o Pokémon, agora está entrando dentro do
+chão, qualquer uma, na animação de captura." Não acontecia na beta 6.
+
+### Causa (medida no BDS, não só no cliente)
+
+Cenário `tests/e2e/experimental/bola-chao.e2e.mjs` (BDS `bola`, porta 19196). O bot acompanha pelos pacotes
+(`add_entity`, `move_entity(_delta)`, `set_entity_motion`, `play_sound`) a entidade que faz a animação, numa plataforma
+de vidro com o topo em y = 170. Linha de base (árvore da beta 7, `BOLA_CHAO_BASELINE=1`, duas rodadas iguais):
+
+| | quique | 1ª/2ª/3ª sacudida | fim | y mínimo |
+| --- | --- | --- | --- | --- |
+| Master Ball × Snorlax (captura) | 160,62 | 154,16 / 132,60 / 99,16 | 55,6 (capture) | 24,0 |
+| Poké Ball × Mewtwo nv. 100 (escape) | 160,62 | 154,16 | 132,60 (break) | 128,4 |
+
+Duas causas somadas:
+
+1. **Principal, nova na beta 7: o projétil com `runtime_identifier: minecraft:snowball` cai sozinho no servidor.** O
+   ator de arremessável aplica a gravidade do `minecraft:projectile` sempre que o script para de teleportá-lo. Do pouso
+   em diante o `CaptureSequence` não move mais a bola, e o servidor manda `set_entity_motion (0; −0,204; 0)`. O
+   `cobblemon:disable` tira o `minecraft:physics`, então não há colisão: a bola atravessa o chão durante as sacudidas
+   (de 160 até 24 no exemplo). Isso vale em qualquer chão, e é o que o jogador viu. Na beta 6 o ator genérico não fazia
+   isso depois do `disable`.
+2. **Antiga, aparece em alguns blocos: o `groundBelow` não achava o chão.** O
+   `getBlockBelow(…, { includeLiquidBlocks: true, includePassableBlocks: false })` devolve `undefined` em vidro, folhas,
+   laje, gelo, terra arada, painel de vidro e água. Ele só acha blocos "sólidos" do Bedrock (pedra, grama, terra),
+   conforme a sonda no BDS. Sem chão, o `fall()` cai o 1,5 s inteiro e para ~9 blocos abaixo do ponto de onde caiu
+   (160,6 com o chão em 170): dentro do chão, ou no ar sobre um vão. No Java o FALL para no primeiro bloco com colisão
+   (`onHit` BLOCK; o clip ignora fluidos) ou desiste em 1,5 s.
+
+### Correção
+
+| Arquivo | O quê |
+| --- | --- |
+| `scripts/catching/CaptureDummy.ts` (novo) | `swapToCaptureDummy`: no acerto que começa a captura, cria a `cobblemon:<bola>_dummy` (a mesma entidade do envio, `SendOut.ts`: sem projétil nem física, só se move por teleporte). Ela nasce na posição do projétil (ou no ponto do acerto por proximidade), com a mesma direção e o evento `cobblemon:capture`. Recebe `player_id`/`activated`. O projétil fica `activated` + `resolved` e é removido com `remove()`, sem item. Se a dummy não puder ser criada, a captura segue no projétil (comportamento da beta 7). |
+| `scripts/catching/index.ts` | `handleBallHit` troca a bola depois de todas as validações e do `beginBattleCapture` (nada que possa lançar erro vem depois da troca, então o `catch` de quem chama nunca derruba item de um projétil já removido). `attempt.ballEntity` e `battleAction.ballEntity` passam a ser a dummy. Por isso o quique, o feixe, a tinta, o encolhimento, a queda, as sacudidas, a crítica, o sucesso/`break`, as partículas, os sons, o `target.teleport(ballEntity.location)` do escape, o `killBall` e o `isCaptureInProgress` (o `entityLoad` do `main.ts` não mata a dummy em captura) acontecem na dummy. O acerto por proximidade passa o ponto para onde teleportou a bola. |
+| `behavior_packs/.../entities/pokeballs/*_dummy.json` (49) | Grupo e evento `cobblemon:capture` com `minecraft:scale` 1,0, a mesma escala do projétil (que não tem `minecraft:scale`). A dummy do envio continua 0,4. O client entity da dummy já era igual ao da bola (geometria, textura, material, animações). |
+| `scripts/catching/CaptureSequence.ts` | `groundBelow` virou um `getBlockFromRay` para baixo, sem fluidos e sem passáveis, com o topo pela `faceLocation`. Medido: 0 no bloco inteiro (vidro, pedra, folhas, gelo), 0,5 na laje, 0,9375 na terra arada. Água e vazio: sem chão, cai o 1,5 s como no Java. |
+| `tests/bola-chao.test.ts` (novo) | Dados das 49 dummies (sem projétil/física/runtime; evento de captura = escala do projétil; envio 0,4; client entity igual ao da bola); a troca (posição, direção, evento, propriedades, sem item, fallback); os handlers de verdade (acerto → dummy anima, projétil removido e não movido, eventos atrasados sem item/2ª dummy; recusas continuam no projétil com item); `groundBelow` com os valores medidos. |
+| `tests/e2e/experimental/bola-chao.e2e.mjs` (novo) | Cenário acima, com as asserções da dummy. |
+
+Não mudam: o voo, a física e o acerto da beta 7 (o projétil continua `snowball`); a bola que erra (bloco, entidade que
+não é Pokémon), as recusas (não selvagem, `uncatchable`, `busy`, em batalha, sem vez) e a bola sem dono. Esses ramos não
+começam a captura e o projétil vira item ou some na hora, como antes.
+
+### Depois (mesmo cenário, build final com `npm run import`)
+
+| | entidade no chão | quique / sacudidas / fim | y mínimo | `set_entity_motion` na dummy | escala (projétil → dummy) | itens no chão | bolas |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Master Ball × Snorlax (captura) | `master_ball_dummy` | 170,000 em todas | 170,000 | 0 | 1 → 1 | 0 | 4 → 3 |
+| Poké Ball × Mewtwo (escape) | `poke_ball_dummy` | 170,000 em todas | 170,000 | 0 | 1 → 1 | 0 (igual à linha de base) | 16 → 15 (igual) |
+
+- O projétil some ~50–75 ms depois do som de acerto (`remove_entity`), no mesmo pacote de tick em que a dummy aparece
+  (`add_entity`). Daí em diante a dummy é a única entidade de bola.
+- O quique agora cai no vidro em ~3,4 s (antes 4,2 s): a bola pousa no bloco, como no Java, em vez de cair o 1,5 s
+  inteiro.
+- Escape: mesma mensagem, o Mewtwo continua no mundo e nenhum item cai, como antes. Na linha de base o Pokémon
+  reaparecia onde estava a bola (`target.teleport(ballEntity.location)`), ou seja, dentro do chão; agora reaparece em
+  cima do bloco.
+
+Outros E2E no mesmo build (BDS `bola`, porta 19196, `dist-e2e-bola`, raknet, online-mode false, `COBBLEMON_MSD=0`, sempre
+`node tools/e2e/run.mjs` direto, nunca `npm run test:e2e`, que fixa o BDS `e2e`):
+
+- Suíte base **10/10** (duas vezes: antes e depois do `npm run import` da frente do item segurado).
+- `04-capture` com `E2E_KNOWN_BUGS=1`: 4/4 capturas (3 delas pela crítica). O contador `hurt_animation` do cenário
+  procura o tipo `master_ball`, não a dummy: o "0" dele não diz nada sobre o E2E-3. Esse bug provavelmente vinha da
+  bola afundando (dano de sufocamento), mas isso não foi provado.
+- `experimental/bola-erra`: OK (chão → item da mesma bola e coletado; recusada → mensagem + item; criativo → só some).
+- `experimental/ball-hit`: port 126/140, Java 130/140, 126/130 do que o Java acerta, 0 a mais, controle 0/28: os
+  mesmos números da beta 7. O voo e o acerto não mudaram.
+- Logs do servidor: só o "No targets matched selector" dos `kill` dos cenários.
+
+### O que só dá para confirmar no cliente real
+
+- **Renderização.** O BDS prova a posição do servidor e os pacotes (dummy parada no topo do bloco, sem velocidade, escala
+  1). Que o cliente Windows desenha a bola em cima do chão, sem piscar na troca projétil → dummy (os pacotes chegam no
+  mesmo tick), é **INCONCLUSIVE** até alguém testar no jogo.
+- O tamanho da bola na captura. A escala é a mesma do projétil (1,0, medida no `add_entity`), mas o tamanho aparente
+  só se confere olhando.
+- Animações (`open`, `shut`, `bounce`, `bob1–6`, `critical`, `capture`, `break`, pulos da ancient) na dummy: mesmo client
+  entity e mesmas chamadas `playAnimation`; os sons chegaram ao bot na ordem certa, mas a animação é só do cliente.
+- Blocos em que a sonda do chão acertou o topo: vidro, pedra, grama, folhas, laje (0,5), gelo, terra arada (0,9375) e
+  painel. Água: o raio passa (a bola cai o 1,5 s, como no Java, que ignora fluidos). Neve em camada e cerca: sonda
+  inconclusiva (o bot não ficou em cima do bloco).
+
+### Status
+
+| Item | Status |
+| --- | --- |
+| Sequência de captura inteira na `_dummy` (quique, feixe, tinta, queda, sacudidas, crítica, sucesso, escape, partículas, sons) | FEITO (E2E `bola-chao`, unitário) |
+| Projétil removido sem item/sem devolução/sem duplicar; eventos atrasados do projétil ignorados | FEITO (unitário; E2E: 0 itens, 1 bola gasta) |
+| Dummy do tamanho do projétil (evento `cobblemon:capture`); envio continua 0,4 | FEITO (E2E: escala 1 → 1; unitário nas 49) |
+| Chão achado em vidro/folhas/laje/gelo/terra arada/painel (`groundBelow` por raio, topo da colisão) | FEITO (sonda no BDS, E2E, unitário) |
+| Captura/escape com o mesmo resultado de antes (mensagem, time, item, Pokémon de volta) | FEITO (E2E) |
+| Ramos que não começam a captura, bola que erra, voo/acerto da beta 7 | SEM MUDANÇA (E2E `bola-erra`, `ball-hit`) |
+| Bola desenhada em cima do chão no cliente Windows | INCONCLUSIVE (só no cliente real) |
+| E2E-3 (bola levando dano depois de pousar) | NÃO PROVADO (provável efeito colateral da correção) |
+
+Reproduzir:
+
+```sh
+COBBLEMON_BDS=bola COBBLEMON_BDS_PORT=19196 COBBLEMON_DIST=dist-e2e-bola COBBLEMON_BDS_TRANSPORT=raknet \
+COBBLEMON_BDS_ONLINE_MODE=false COBBLEMON_MSD=0 node tools/e2e/run.mjs \
+  --scenario tests/e2e/experimental/bola-chao.e2e.mjs --deploy --rm --verbose
+# BOLA_CHAO_BASELINE=1 só mede (sem as asserções da dummy/do chão), para o "antes".
+```

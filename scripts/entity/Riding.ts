@@ -122,6 +122,8 @@ interface MountState {
   maxStamina: number;
   tired: boolean;
   lastTransition: number;
+  /** Frente montaria-pulo: saiu do chão desde a última troca de estilo (o AIR só volta para LAND depois disso). */
+  airborne?: boolean;
   /** Frente motor: condutor com câmera/permissões alteradas, yaw anterior e roll atual. */
   controlledBy?: Player;
   camera?: string;
@@ -183,8 +185,20 @@ function showControls(state: MountState) {
 const mounts = new Map<string, MountState>();
 const lastJump = new Map<string, number>();
 const doubleJumps = new Set<string>();
-/** Janela do pulo duplo (DoubleJump do cliente do Cobblemon). */
+/** Janela do agachar duplo (desmontar no ar/água). */
 const DOUBLE_JUMP_TICKS = 7;
+/** Janela do pulo duplo: LocalPlayerMixin.cobblemon$survivalJumpTriggerTime = 12 ticks. */
+const DOUBLE_JUMP_WINDOW = 12;
+/**
+ * Frente montaria-pulo: decolagem. No Java o 1º toque já tira a montaria do chão (pulo do HorseBehaviour) ou o jato
+ * anda sozinho (minSpeedFactor), e o AIR não tem gravidade. Aqui o grupo ride_air só tira a gravidade: parada no chão,
+ * ela ficava lá e 10 ticks depois voltava para LAND (a câmera ia para a órbita e voltava). O pulo duplo dá um impulso
+ * de subida (0,25 sem gravidade e com o arrasto de 0,91/tick ≈ 2,5 blocos, perto do pulo do HorseBehaviour; medido no
+ * BDS: 0,5 subia ~5,5) e o AIR só volta para LAND depois de sair do chão, ou sem conseguir subir (teto) por
+ * TAKEOFF_GRACE_TICKS. Pulo segurado continua subindo pelo vertical_movement_action.
+ */
+const TAKEOFF_VELOCITY = 0.25;
+const TAKEOFF_GRACE_TICKS = 40;
 
 function formNameOf(data: PokemonData): string {
   return data.getFormData()?.name ?? "";
@@ -266,11 +280,11 @@ export function isRidingPokemon(player: Player, entity: Entity): boolean {
   return riders(entity).some(r => r.id === player.id);
 }
 
-/** Jump apertado (playerButtonInput): dois toques em até 7 ticks = pulo duplo. */
+/** Jump apertado (playerButtonInput): dois toques em até 12 ticks = pulo duplo. */
 export function onJumpPressed(player: Player) {
   const now = system.currentTick;
   const last = lastJump.get(player.id);
-  if (last !== undefined && now - last <= DOUBLE_JUMP_TICKS) {
+  if (last !== undefined && now - last <= DOUBLE_JUMP_WINDOW) {
     doubleJumps.add(player.id);
     lastJump.delete(player.id);
   }
@@ -280,6 +294,7 @@ export function onJumpPressed(player: Player) {
 function setStyle(state: MountState, style: RideStyle) {
   state.style = style;
   state.tired = false;
+  state.airborne = false;
   state.lastTransition = system.currentTick;
   state.entity.triggerEvent(`cobblemon:ride_${style.toLowerCase()}`);
   if (state.controlledBy) applyControls(state, state.controlledBy);
@@ -513,15 +528,21 @@ export function tickRiding() {
     }
     const styles = (Object.keys(state.info.styles) as RideStyle[]).filter(s => getEntityInfo(entity.typeId)?.rideGroups.includes(s));
     const jumped = doubleJumps.delete(driver.id);
+    const onGround = entity.isOnGround;
+    if (state.style === "AIR" && !onGround) state.airborne = true;
     if (tick - state.lastTransition >= 10) {
       const next = nextRideStyle(state.style, styles, {
-        onGround: entity.isOnGround,
+        onGround: landingCounts(state, onGround, tick),
         inLiquid: entity.isInWater,
         eyeInFluid: entity.isInWater && isHeadUnderwater(entity),
         doubleJump: jumped,
         hasDriver: true,
       });
-      if (next && next !== state.style) setStyle(state, next);
+      if (next && next !== state.style) {
+        const from = state.style;
+        setStyle(state, next);
+        if (next === "AIR" && jumped && from !== "AIR") takeOff(state);
+      }
     }
     if (state.maxStamina > 0 && tick % 20 === 0) {
       state.stamina = staminaStep(state.stamina, state.maxStamina, state.style, 1);
@@ -540,6 +561,26 @@ export function tickRiding() {
       }
     }
   }
+}
+
+/** No AIR, o chão só conta depois de a montaria ter saído dele (ou passada a carência da decolagem). */
+export function landingCounts(state: { style?: RideStyle; airborne?: boolean; lastTransition: number }, onGround: boolean, tick: number): boolean {
+  if (!onGround || state.style !== "AIR") return onGround;
+  return !!state.airborne || tick - state.lastTransition >= TAKEOFF_GRACE_TICKS;
+}
+
+/** Impulso da decolagem, um tick depois do evento ride_air (os componentes do grupo novo já valem). */
+function takeOff(state: MountState) {
+  const entity = state.entity;
+  const vy = TAKEOFF_VELOCITY;
+  system.runTimeout(() => {
+    try {
+      if (!entity.isValid || state.style !== "AIR") return;
+      const v = entity.getVelocity();
+      if (v.y < vy) entity.applyImpulse({ x: 0, y: vy - v.y, z: 0 });
+    }
+    catch (e) { console.warn(`[montaria] decolagem: ${e}`); }
+  }, 1);
 }
 
 /** Cabeça do Pokémon dentro d'água (bloco na altura dos olhos). */

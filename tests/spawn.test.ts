@@ -315,8 +315,10 @@ assert.ok(groupsChecked >= 10, `poucos herds testados (${groupsChecked})`);
 	assert.equal(evaluateDespawn(wild(e => e.setProperty("cobblemon:busy", true)) as any, far, 9999, s), "skip");
 	assert.equal(evaluateDespawn(wild(e => e.setProperty("cobblemon:wild", false)) as any, far, 9999, s), "skip", "com dono");
 	assert.equal(evaluateDespawn(wild(e => { e.components.riding = {}; }) as any, far, 9999, s), "skip", "montado");
-	assert.equal(evaluateDespawn(wild(e => { e.components.inventory = { container: { getItem: () => ({ typeId: "cobblemon:ground_gem" }) } }; }) as any, far, 9999, s), "skip", "segurando item");
-	assert.equal(evaluateDespawn(wild(e => { e.components.inventory = { container: { getItem: () => undefined } }; }) as any, far, 9999, s), "despawn");
+	// Item segurado nos dados (propriedade "data"; pokemon/HeldItemStore), não num inventário da entidade.
+	assert.equal(evaluateDespawn(wild(e => e.setDynamicProperty("data", JSON.stringify({ species: "pikachu", minecraftItem: "cobblemon:ground_gem", item: "groundgem" }))) as any, far, 9999, s), "skip", "segurando item");
+	assert.equal(evaluateDespawn(wild(e => e.setDynamicProperty("data", JSON.stringify({ species: "pikachu", item: "" }))) as any, far, 9999, s), "despawn");
+	assert.equal(evaluateDespawn(wild(e => { e.components.inventory = { container: { getItem: () => ({ typeId: "cobblemon:ground_gem" }) } }; }) as any, far, 9999, s), "despawn", "inventário legado não conta como item segurado");
 	assert.equal(evaluateDespawn(wild(e => e.setDynamicProperty(MOUTH_ITEM_PROPERTY, "minecraft:diamond")) as any, far, 9999, s), "skip", "item na boca");
 	assert.equal(MOUTH_ITEM_PROPERTY, "cobblemon:mouth_item");
 	const fresh = wild(e => e.setDynamicProperty(SPAWN_TIME_PROPERTY, undefined));

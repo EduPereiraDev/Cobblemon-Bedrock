@@ -29,6 +29,7 @@ import { recordCapture, recordFlag } from "../pokedex/Progress";
 import { onPokemonCapturedWallpapers } from "../GUI/PCWallpapers";
 import { toSpeciesId } from "../speciesData";
 import { MOUTH_ITEM_PROPERTY } from "../spawning/Despawner";
+import { giveHeldItemIfEmpty } from "../pokemon/HeldItemStore"; // item segurado só nos dados
 import { setBeamTint } from "../pokemon/BeamTint";
 import { CobblemonEvents } from "../events/CobblemonEvents"; // frente msd-fase4: POKEMON_CAPTURED
 
@@ -396,11 +397,24 @@ async function beamUp(attempt: CaptureAttempt) {
   }
 }
 
-/** Altura do chão logo abaixo da bola (bloco sólido ou líquido). */
-function groundBelow(entity: Entity): number | undefined {
+/**
+ * Altura do chão logo abaixo da bola: o topo do 1º bloco com colisão num raio para baixo. É onde o FALL do Java para
+ * (`onHit` BLOCK; o clip do projétil usa a colisão do bloco e ignora fluidos, então a água não segura a bola).
+ * Afundando no chão (beta 7), medido no BDS: o `getBlockBelow` com `includePassableBlocks: false` só achava blocos
+ * "sólidos" do Bedrock (pedra, grama, terra) e devolvia `undefined` em vidro, folhas, laje, gelo, terra arada e painel;
+ * a bola caía o 1,5 s inteiro e parava dentro/abaixo do chão. O raio acha todos e dá o topo da colisão (laje: +0,5).
+ */
+export function groundBelow(entity: Entity): number | undefined {
   try {
-    const block = entity.dimension.getBlockBelow(entity.location, { includeLiquidBlocks: true, includePassableBlocks: false, maxDistance: 32 });
-    return block ? block.location.y + 1 : undefined;
+    const hit = entity.dimension.getBlockFromRay(entity.location, { x: 0, y: -1, z: 0 },
+      { includeLiquidBlocks: false, includePassableBlocks: false, maxDistance: 32 });
+    if (!hit) return undefined;
+    const y = hit.block.location.y;
+    // faceLocation (face Up) medido no BDS: 0 no bloco inteiro (vidro, pedra, folhas, gelo), 0,5 na laje, 0,9375 na
+    // terra arada. 0 = topo do bloco (1,0); aceita também um valor absoluto por segurança.
+    const face = hit.faceLocation?.y;
+    const top = typeof face !== "number" || !Number.isFinite(face) ? 1 : face > 1.0001 ? face - y : face;
+    return y + (top > 0 && top <= 1.0001 ? Math.min(1, top) : 1);
   }
   catch {
     return undefined;
@@ -440,7 +454,16 @@ function hidePokemon(target: Entity) {
   else safe(() => target.addEffect("invisibility", 20 * 60, { showParticles: false }));
 }
 
+/** Pokémon com captura em andamento (busyLocks do Java: só em memória; depois de uma queda nada fica ocupado). */
+const activeCaptureTargets = new Set<string>();
+
+export function isCaptureTarget(entity: Entity): boolean {
+  try { return activeCaptureTargets.has(entity.id); }
+  catch { return false; }
+}
+
 function freezePokemon(target: Entity) {
+  safe(() => activeCaptureTargets.add(target.id));
   safe(() => target.setProperty("cobblemon:busy", true));
   safe(() => target.addEffect("slowness", 20 * 60, { amplifier: 255, showParticles: false }));
 }
@@ -466,6 +489,7 @@ function releasePokemon(target: Entity) {
   else safe(() => target.removeEffect("invisibility"));
   safe(() => target.removeEffect("slowness"));
   safe(() => target.setProperty("cobblemon:busy", false));
+  safe(() => activeCaptureTargets.delete(target.id));
 }
 
 /**
@@ -522,9 +546,7 @@ function releaseMouthItem(target: Entity) {
   const id = target.getDynamicProperty(MOUTH_ITEM_PROPERTY);
   if (typeof id !== "string" || !id) return;
   try {
-    const container = target.getComponent("minecraft:inventory")?.container;
-    if (container && container.getItem(0) === undefined) container.setItem(0, new ItemStack(id, 1));
-    else target.dimension.spawnItem(new ItemStack(id, 1), target.location);
+    if (!giveHeldItemIfEmpty(target, id)) target.dimension.spawnItem(new ItemStack(id, 1), target.location);
   }
   catch (e) {
     console.warn(`Não foi possível soltar o item da boca (${id}): ${e}`);
@@ -630,6 +652,7 @@ export async function runCaptureSequence(attempt: CaptureAttempt, hitVelocity: V
   let context: CaptureContext | undefined;
   const ballId = (() => { try { return ballEntity.id; } catch { return undefined; } })();
   if (ballId !== undefined) activeCaptureBalls.add(ballId);
+  const targetId = (() => { try { return target.id; } catch { return undefined; } })();
   const name = (() => { try { return PokemonData.getFromEntity(target).getTranslatedName(); } catch { return { translate: "cobblemon.ui.pokemon" }; } })();
 
   /** Resultado final (com ou sem a bola): o Pokémon entra no time ou escapa. */
@@ -700,6 +723,8 @@ export async function runCaptureSequence(attempt: CaptureAttempt, hitVelocity: V
   }
   finally {
     if (ballId !== undefined) activeCaptureBalls.delete(ballId);
+    // Capturado (a entidade sai sem releasePokemon) ou qualquer outra saída: não fica marcado como em captura.
+    if (targetId !== undefined) activeCaptureTargets.delete(targetId);
     if (!caught) {
       // Restaura visibilidade/movimento e a flag `busy` do Pokémon em qualquer saída.
       if (!resolved && target.isValid) breakFree(attempt);

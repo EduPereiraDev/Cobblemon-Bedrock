@@ -280,7 +280,7 @@ function report(result: PokemonBattle | BattleStartError, players: Player[], not
  * `BattleFormat.GEN_9_DOUBLES` (os dois ficam no mesmo ator, como o MultiPokemonBattleActor).
  * Respeita `battleWildMaxDistance` (12) e o Alfa ganha a regra "Wild Alpha".
  */
-export function startWildBattle(player: Player, wild: Entity | Entity[], options: StartBattleOptions & { format?: BattleFormat } = {}): PokemonBattle | undefined {
+export function startWildBattle(player: Player, wild: Entity | Entity[], options: StartBattleOptions & { format?: BattleFormat; lead?: string } = {}): PokemonBattle | undefined {
   let wildEntities = Array.isArray(wild) ? wild : [wild];
   let format = options.format ?? (wildEntities.length > 1 ? BattleFormat.GEN_9_DOUBLES : BattleFormat.GEN_9_SINGLES);
   let maxDistance = configNumber("battleWildMaxDistance", 12);
@@ -296,7 +296,8 @@ export function startWildBattle(player: Player, wild: Entity | Entity[], options
       return undefined;
     }
   }
-  let playerActor = createPlayerActor(player, format, sentOutPokemon(player));
+  // BattleChallengePacket.selectedPokemonId: o selecionado vai na frente mesmo sem estar em campo (a batalha o envia).
+  let playerActor = createPlayerActor(player, format, options.lead ?? sentOutPokemon(player));
   if (playerActor instanceof BattleStartError)
     return report(playerActor, [player], options.notify);
   let wildData = wildEntities.map(entity => PokemonData.getFromEntity(entity));

@@ -234,6 +234,7 @@ export class Bot {
 		client.on("item_registry", (p) => { this.itemStates = p.itemstates ?? []; });
 		client.on("start_game", (p) => {
 			this.runtimeId = p.runtime_entity_id;
+			this.uniqueId = p.entity_id; // set_entity_link usa o unique id
 			this.position = { ...p.player_position };
 			this._tick = BigInt(p.current_tick ?? 0);
 		});

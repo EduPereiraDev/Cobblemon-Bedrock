@@ -1,5 +1,6 @@
 import { awardStat } from "./events/PlayerStats";
 import { Dimension, DimensionLocation, Entity, ItemStack, Player, RawMessage, Vector3, world } from "@minecraft/server";
+import { safeSendOutPosition, worldFor } from "./pokemon/SendOutTarget";
 import { Dex, toID } from "./showdown";
 import { getSpeciesData, SpeciesData, toSpeciesId, FormData, getFormForAspects, getLearnset, StatSet, HitboxEntry, EvolutionEntry } from "./speciesData";
 import { resolveVariant } from "../generated/scripts/variants";
@@ -1160,13 +1161,8 @@ export class PokemonData implements PokemonSet {
     if (this.shiny) { if (!entity.hasTag(SHINY_TAG)) entity.addTag(SHINY_TAG); }
     else if (entity.hasTag(SHINY_TAG)) entity.removeTag(SHINY_TAG);
     entity.setDynamicProperty("uuid", this.uuid);
-    // Sem item segurado o espaço 0 fica vazio: senão um item já consumido (berry etc.) voltaria a ser lido
-    // pelo loadFromCobblemon (duplicação).
-    const heldSlot = entity.getComponent("inventory")?.container?.getSlot(0);
-    if (this.minecraftItem)
-      heldSlot?.setItem(new ItemStack(this.minecraftItem));
-    else
-      heldSlot?.setItem(undefined);
+    // O item segurado vai só no JSON acima (minecraftItem/item): a entidade não tem inventário
+    // (pokemon/HeldItemStore; docs/pendencias/item-segurado.md).
     for (const [key, value] of Object.entries(this.entityStates)) {
       // Propriedade salva que a entidade atual não declara (setProperty lançaria erro).
       if (entity.getProperty(key) === undefined) continue;
@@ -1421,15 +1417,9 @@ export class PokemonData implements PokemonSet {
     let jsonData = entity.getDynamicProperty("data");
     if (!jsonData || !(typeof jsonData == "string")) throw new Error("Recieved pokemon data was invalid!");
     Object.assign(this, PokemonData.getFromJson(jsonData));
-    let heldItem = entity.getComponent("inventory")!.container!.getItem(0);
-    if (heldItem === undefined) {
-      this.item = "";
-      this.minecraftItem = undefined;
-    }
-    else {
-      this.item = toID(removeNamespace(heldItem.typeId));
-      this.minecraftItem = heldItem.typeId;
-    }
+    // Item segurado: o dos dados (getHeldItemOnEntity lê o mesmo JSON; nada de inventário na entidade).
+    this.minecraftItem = this.minecraftItem || undefined;
+    this.item = this.minecraftItem ? toID(removeNamespace(this.minecraftItem)) : "";
     this.entityStates = Object.fromEntries(
       validSaveEntityProperties.map(x => [x, entity.getProperty(x)]).filter(x => x[1] != null)
     );
@@ -1444,13 +1434,15 @@ export class PokemonData implements PokemonSet {
       owner = this.tryGetOwner();
 
     if (location === undefined && owner) {
-      let lookingAtBlock = owner.getBlockFromViewDirection({ maxDistance: 10 })?.block;
-      if (lookingAtBlock == undefined || !lookingAtBlock.above(1)?.isAir || !lookingAtBlock.above(2)?.isAir) {
-        location = Object.assign({ dimension: owner.dimension }, owner.location);
-      }
-      else {
-        location = { x: lookingAtBlock.x, y: lookingAtBlock.y + 1, z: lookingAtBlock.z, dimension: owner.dimension };
-      }
+      // raycastSafeSendout do Java (SendOutTarget); sem lugar seguro na mira, o jogador (caminhos sem animação que
+      // precisam do Pokémon fora: comandos, recuperação de erro).
+      const form = this.getFormData();
+      const species = this.getSpeciesData();
+      const hitbox = form?.hitbox ?? species.hitbox;
+      let at: Vector3 | undefined;
+      try { at = safeSendOutPosition(worldFor(owner), owner.getHeadLocation(), owner.getViewDirection(), { width: hitbox?.width ?? 1, height: hitbox?.height ?? 1, scale: form?.baseScale ?? species.baseScale ?? 1 }); }
+      catch { at = undefined; }
+      location = { ...(at ?? owner.location), dimension: owner.dimension };
     }
 
     let tryGet = this.tryGetPokemonOut();

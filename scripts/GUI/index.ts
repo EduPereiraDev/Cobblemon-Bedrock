@@ -53,7 +53,7 @@ export async function sendOutGUI(player: Player) {
     await recallAnimated(player, selectedPokemon);
   }
   else {
-    await sendOutAnimated(player, selectedPokemon);
+    await sendOutAnimated(player, selectedPokemon, true);
   }
 }
 

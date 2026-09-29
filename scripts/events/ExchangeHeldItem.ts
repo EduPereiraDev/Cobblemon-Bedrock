@@ -5,27 +5,26 @@ import { ItemUtils } from "../utils";
 import { itemName } from "../GUI/common";
 import { FORBIDDEN_HELD_ITEM_LANG, isForbiddenHeldItem } from "../pokemon/HeldItems";
 import { CobblemonEvents } from "./CobblemonEvents"; // frente msd-fase4: HELD_ITEM_POST
+import { getHeldItemOnEntity, setHeldItemOnEntity } from "../pokemon/HeldItemStore";
 
-/** Uma unidade do item, mantendo lore (TMs) e demais dados da pilha. */
-function single(item: ItemStack): ItemStack {
-  const copy = item.clone();
-  copy.amount = 1;
-  return copy;
+/** Pilha de uma unidade do item segurado (os dados guardam só o id). */
+function stackOf(itemId: string): ItemStack | undefined {
+  try { return new ItemStack(itemId, 1); }
+  catch { return undefined; } // item que não existe mais nos packs
 }
 
 /**
  * Agachar + usar no próprio Pokémon: dá, troca ou tira o item segurado (Pokemon.swapHeldItem).
- * Mensagens `cobblemon.held_item.*` com o nome traduzido dos itens.
+ * Mensagens `cobblemon.held_item.*` com o nome traduzido dos itens. O item segurado fica só nos dados do Pokémon
+ * (pokemon/HeldItemStore): a entidade não tem inventário.
  */
 export default function exchangeHeldItem(player: Player, pokemon: Entity) {
   let playerHandSlot = player.getComponent("inventory")?.container?.getSlot(player.selectedSlotIndex);
-  let pokemonHandSlot = pokemon.getComponent("inventory")?.container?.getSlot(0);
-
-  if (!playerHandSlot || !pokemonHandSlot)
+  if (!playerHandSlot)
     return;
   let playerItem = playerHandSlot.getItem();
-  let pokemonItem = pokemonHandSlot.getItem();
   let pokemonData = PokemonData.getFromEntity(pokemon);
+  const pokemonItem = getHeldItemOnEntity(pokemon);
   if (!playerItem && !pokemonItem)
     return;
 
@@ -35,28 +34,35 @@ export default function exchangeHeldItem(player: Player, pokemon: Entity) {
     return;
   }
 
-  if (playerItem && pokemonItem && playerItem.typeId === pokemonItem.typeId) {
-    player.sendMessage(message.With({ translate: "cobblemon.held_item.already_holding" }, [pokemonData, itemName(pokemonItem.typeId)]));
+  if (playerItem && pokemonItem && playerItem.typeId === pokemonItem) {
+    player.sendMessage(message.With({ translate: "cobblemon.held_item.already_holding" }, [pokemonData, itemName(pokemonItem)]));
     return;
   }
 
   if (playerItem && !pokemonItem) {
+    // Grava antes de consumir: sem dados válidos, nada muda no inventário do jogador.
+    if (!setHeldItemOnEntity(pokemon, playerItem.typeId)) return;
     player.sendMessage(message.With({ translate: "cobblemon.held_item.give" }, [pokemonData, itemName(playerItem.typeId)]));
-    pokemonHandSlot.setItem(single(playerItem));
     ItemUtils.decrementItemInHand(player);
   }
 
   if (playerItem && pokemonItem) {
-    player.sendMessage(message.With({ translate: "cobblemon.held_item.replace" }, [itemName(pokemonItem.typeId), pokemonData, itemName(playerItem.typeId)]));
-    pokemonHandSlot.setItem(single(playerItem));
+    const returned = stackOf(pokemonItem);
+    if (!setHeldItemOnEntity(pokemon, playerItem.typeId)) return;
+    player.sendMessage(message.With({ translate: "cobblemon.held_item.replace" }, [itemName(pokemonItem), pokemonData, itemName(playerItem.typeId)]));
     ItemUtils.decrementItemInHand(player);
-    ItemUtils.givePlayerItem(player, pokemonItem);
+    if (returned) {
+      // Inventário cheio: a sobra cai no chão (não some).
+      const leftover = player.getComponent("inventory")?.container?.addItem(returned);
+      if (leftover) player.dimension.spawnItem(leftover, player.location);
+    }
   }
 
   if (!playerItem && pokemonItem) {
-    player.sendMessage(message.With({ translate: "cobblemon.held_item.take" }, [itemName(pokemonItem.typeId), pokemonData]));
-    playerHandSlot.setItem(pokemonItem);
-    pokemonHandSlot.setItem();
+    const returned = stackOf(pokemonItem);
+    if (!setHeldItemOnEntity(pokemon, undefined)) return;
+    player.sendMessage(message.With({ translate: "cobblemon.held_item.take" }, [itemName(pokemonItem), pokemonData]));
+    if (returned) playerHandSlot.setItem(returned);
   }
 
   //Ensures that the pokemon's held item is updated in data.

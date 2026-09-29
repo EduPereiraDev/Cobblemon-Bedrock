@@ -516,3 +516,11 @@ cobblemon.port.controle.received=Você recebeu a Poké Ball do time: use para ab
 cobblemon.port.controle.already=Você já tem a Poké Ball do time.
 cobblemon.port.controle.full=Inventário cheio: libere um espaço para receber a Poké Ball do time.
 cobblemon.port.controle.empty_slot=O espaço selecionado do time está vazio.
+cobblemon.port.sendout.no_space=Sem lugar seguro para soltar o Pokémon: mire no chão por perto.
+
+## livro de boas-vindas (entregue na mão na primeira entrada; pode ser dropado)
+cobblemon.port.livro.p1.titulo=§lCobblemon Bedrock§r
+cobblemon.port.livro.p1.feito_por=Feito por: §1github.com/EduPereiraDev§r
+cobblemon.port.livro.p1.frase=Feito por um peça, que nunca nega seu legado.
+cobblemon.port.livro.p2.creditos=Port não oficial do Cobblemon (cobblemon.com), feito pela comunidade. Não afiliado à equipe do Cobblemon. Grátis para sempre.
+cobblemon.port.livro.p2.repo=Bugs e novidades: §1github.com/EduPereiraDev/Cobblemon-Bedrock§r

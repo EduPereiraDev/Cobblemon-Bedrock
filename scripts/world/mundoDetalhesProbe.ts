@@ -25,6 +25,7 @@ import { pulseNoteBlock, refreshDiscShelfDisplay } from "../machines/discShelfSe
 import { syncFossilFetus } from "../machines/fossilFetus";
 import { containerOf, ensureStorage, MACHINE_STORAGE } from "./Containers";
 import { debugProbesEnabled } from "../Config";
+import { getHeldItemOnEntity, setHeldItemOnEntity } from "../pokemon/HeldItemStore";
 
 function log(msg: string) {
   console.warn(`[mundo-detalhes] ${msg}`);
@@ -42,7 +43,14 @@ function offhand(entity: Entity, item: string): boolean {
 
 function describePokemon(entity: Entity): string {
   const data = PokemonData.tryGetFromEntity(entity);
-  const held = entity.getComponent("minecraft:inventory")?.container?.getItem(0)?.typeId ?? "-";
+  const held = getHeldItemOnEntity(entity) ?? "-";
+  // Item segurado fica só nos dados (pokemon/HeldItemStore); "espaço0" mostra o inventário legado (até o beta 7).
+  let slot0 = "sem-inventario";
+  try {
+    const legacy = entity.getComponent("minecraft:inventory")?.container;
+    if (legacy) slot0 = legacy.getItem(0)?.typeId ?? "vazio";
+  }
+  catch { /* sem componente */ }
   const shown = entity.getDynamicProperty("cobblemon:shown_item") ?? "-";
   const head = entity.getHeadLocation();
   let light = "-";
@@ -50,7 +58,7 @@ function describePokemon(entity: Entity): string {
   catch { /* descarregado */ }
   const health = entity.getComponent("minecraft:health")?.currentValue;
   const effects = entity.getEffects().map(e => `${e.typeId}:${e.amplifier}`).join(",") || "-";
-  return `${entity.typeId} segurado=${held} mostrado=${shown} mão2=${held !== "-" && offhand(entity, held)} luz=${light} aspects=${data?.aspects.join(",") ?? "-"} vida=${health} efeitos=${effects} variante=${entity.getProperty("cobblemon:variant")}`;
+  return `${entity.typeId} segurado=${held} espaço0=${slot0} mostrado=${shown} mão2=${held !== "-" && offhand(entity, held)} luz=${light} aspects=${data?.aspects.join(",") ?? "-"} vida=${health} efeitos=${effects} variante=${entity.getProperty("cobblemon:variant")}`;
 }
 
 function run(cmd: string, args: string[]) {
@@ -59,6 +67,12 @@ function run(cmd: string, args: string[]) {
     const list = dim.getEntities({ families: ["pokemon"] });
     log(`pokémon: ${list.length}`);
     for (const e of list) log(describePokemon(e));
+    // Itens soltos no chão (migração do item segurado: o motor derruba o conteúdo do inventário legado?).
+    const drops = dim.getEntities({ type: "minecraft:item" }).map(e => {
+      const stack = e.getComponent("minecraft:item")?.itemStack;
+      return `${stack?.typeId ?? "?"}x${stack?.amount ?? 0}@${e.location.x.toFixed(1)},${e.location.y.toFixed(1)},${e.location.z.toFixed(1)}`;
+    });
+    log(`itens no chão: ${drops.length} ${drops.join(" ")}`);
     return;
   }
   if (cmd === "mark") {
@@ -120,7 +134,7 @@ function run(cmd: string, args: string[]) {
       const data = createPokemonData(args[3] ?? "charmander", { level: 10 });
       if (!data) { log(`espécie ${args[3]} inexistente`); return; }
       const entity = spawnWildPokemon(dim, { x: loc.x + 0.5, y: loc.y, z: loc.z + 0.5 }, data);
-      if (entity && args[4]) entity.getComponent("minecraft:inventory")?.container?.setItem(0, new ItemStack(args[4], 1));
+      if (entity && args[4]) setHeldItemOnEntity(entity, args[4]);
       log(`spawn ${entity?.typeId ?? "falhou"} id=${entity?.id}`);
       return;
     }

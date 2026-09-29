@@ -15,7 +15,7 @@ import {
 import { isFlatNatural, rotateFacing, rotationToward, villageBox, villageTypeOf } from "../scripts/world/Villages";
 import { CHEST_HITS, registerChestHit } from "../scripts/world/Containers";
 import { battleMusicKind, battleMusicTrack, isBattleMusicPlaying, startBattleMusic, stopBattleMusic, tickBattleMusic } from "../scripts/world/BattleMusic";
-import { attackToDamageCurve, damageAfterArmour, defenceToArmour, scaledPokemonDamage, speciesMeleeDamage } from "../scripts/world/PokemonDamage";
+import { attackToDamageCurve, damageAfterArmour, defenceToArmour, isPokemonInvulnerable, scaledPokemonDamage, speciesMeleeDamage } from "../scripts/world/PokemonDamage";
 import { nextRoll, rideCameraPreset, sneakDismounts, yawDelta } from "../scripts/entity/Riding";
 
 const ROOT = process.cwd();
@@ -228,6 +228,27 @@ test("música de batalha", () => {
 
 // ---------------------------------------------------------------------------------------------
 // Dano por Pokémon
+
+
+test("PokemonEntity.isInvulnerableTo: dono, ocupado, feixe e playerDamagePokemon", () => {
+  const base = { busy: false, beam: false, owned: false, attackerIsPlayer: false, cause: "entityAttack", playerDamagePokemon: true };
+  // Selvagem: jogador bate (config padrão), mob bate, sufoca.
+  assert.equal(isPokemonInvulnerable({ ...base, attackerIsPlayer: true }), false);
+  assert.equal(isPokemonInvulnerable(base), false);
+  assert.equal(isPokemonInvulnerable({ ...base, cause: "suffocation" }), false);
+  // Com dono: nenhum jogador (nem o dono) machuca; sufocamento não; mob e lava sim.
+  assert.equal(isPokemonInvulnerable({ ...base, owned: true, attackerIsPlayer: true }), true);
+  assert.equal(isPokemonInvulnerable({ ...base, owned: true, attackerIsPlayer: true, cause: "projectile" }), true);
+  assert.equal(isPokemonInvulnerable({ ...base, owned: true, cause: "suffocation" }), true);
+  assert.equal(isPokemonInvulnerable({ ...base, owned: true }), false);
+  assert.equal(isPokemonInvulnerable({ ...base, owned: true, cause: "lava" }), false);
+  // Ocupado (captura) ou no feixe: nada machuca.
+  assert.equal(isPokemonInvulnerable({ ...base, busy: true, cause: "lava" }), true);
+  assert.equal(isPokemonInvulnerable({ ...base, beam: true }), true);
+  // playerDamagePokemon desligado: selvagem também fica imune a jogador.
+  assert.equal(isPokemonInvulnerable({ ...base, attackerIsPlayer: true, playerDamagePokemon: false }), true);
+  assert.equal(isPokemonInvulnerable({ ...base, playerDamagePokemon: false }), false);
+});
 
 test("dano por Pokémon (PokemonServerDelegate)", () => {
   assert.equal(attackToDamageCurve(5), 1);

@@ -296,7 +296,7 @@ export function startSpeciesBehaviours() {
   world.beforeEvents.entityItemPickup.subscribe(event => {
     const { entity, item } = event;
     if (!PICKUP.has(speciesIdOfType(entity.typeId))) return;
-    // Nunca deixa o Bedrock guardar no inventário (espaço do item segurado).
+    // O motor nunca pega sozinho: a coleta é do script (item na boca; o item segurado fica só nos dados).
     event.cancel = true;
     if (entity.getProperty("cobblemon:wild") !== true || entity.getDynamicProperty(MOUTH_PROPERTY)) return;
     system.run(() => {

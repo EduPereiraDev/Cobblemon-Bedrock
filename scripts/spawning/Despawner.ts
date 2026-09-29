@@ -13,6 +13,7 @@
  * DESPAWN_BATCH entidades avaliadas por rodada (rodízio).
  */
 import type { Entity, Vector3 } from "@minecraft/server";
+import { getHeldItemOnEntity } from "../pokemon/HeldItemStore";
 
 export interface DespawnSettings {
   despawnerNearDistance: number;
@@ -63,9 +64,8 @@ export function isDespawnExempt(entity: DespawnEntity): boolean {
   try {
     // Passageiro de algo (isPassenger) — o componente "riding" só existe em quem está montado.
     if (entity.getComponent("riding")) return true;
-    // isPersistenceRequired: canDropHeldItem && heldItem não vazio.
-    const container = (entity.getComponent("inventory") as { container?: { getItem(slot: number): unknown } } | undefined)?.container;
-    if (container && container.getItem(0) !== undefined) return true;
+    // isPersistenceRequired: canDropHeldItem && heldItem não vazio (item segurado nos dados; pokemon/HeldItemStore).
+    if (getHeldItemOnEntity(entity) !== undefined) return true;
   }
   catch { /* entidade sem componentes: segue */ }
   return false;

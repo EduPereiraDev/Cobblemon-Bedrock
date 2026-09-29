@@ -3,6 +3,11 @@
     "component_groups": {
       "cobblemon:instant_kill": {
         "minecraft:instant_despawn": {}
+      },
+      "cobblemon:capture": {
+        "minecraft:scale": {
+          "value": 1.0
+        }
       }
     },
     "events": {
@@ -10,6 +15,13 @@
         "add": {
           "component_groups": [
             "cobblemon:instant_kill"
+          ]
+        }
+      },
+      "cobblemon:capture": {
+        "add": {
+          "component_groups": [
+            "cobblemon:capture"
           ]
         }
       }

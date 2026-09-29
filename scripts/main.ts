@@ -13,7 +13,7 @@ import { hasSelectedStarter, hasTeam, offerStarter, promptStarterOnJoin, startSt
 import WorldCleanup from "./Cleanup";
 import { message } from "./language";
 import { bindCatchEvents } from "./catching";
-import { isCaptureInProgress } from "./catching/CaptureSequence";
+import { isCaptureInProgress, isCaptureTarget } from "./catching/CaptureSequence";
 import { isTrackedPlatform, PLATFORM_ENTITY } from "./battle/Platform";
 import { isBattleMock, resolveMockTarget } from "./battle/effects/Mock";
 import { scriptEventHandler } from "./events";
@@ -51,6 +51,7 @@ import { startAdaptacoes } from "./adaptacoes"; // frente adaptacoes: funil/comp
 import { startComparadores } from "./comparadores"; // frente comparadores: comparador da Healing Machine e do Metronome
 import { startLimitesB } from "./limitesB"; // frente limites-b: pinturas, enfermeira, fazendeiro, estruturas vanilla
 import { handleControlPokemonInteract, isControlItem, startControlItem } from "./controle"; // frente controle: Poké Ball do time
+import { startWelcomeBook } from "./welcomeBook";
 // Extensão Mega Showdown: privada (fora do repositório público). `@private/*` resolve pelo `paths` do tsconfig para
 // scripts/extensions/megaShowdown/ quando existe e para extensions/privateStub.ts quando não (e sempre no build público).
 import { isMegaShowdownActive, startMegaShowdown } from "@private/mega-showdown"; // frente msd-infra: extensão Mega Showdown (dormente sem o pack)
@@ -66,6 +67,9 @@ world.afterEvents.playerEmote.subscribe(({ player }) => {
 // Login sem inicial: oferece a escolha depois que o mundo terminar de carregar para o jogador
 // (respeita allowStarterOnJoin/promptStarterOnceOnly da config).
 startStarterReminder();
+// Livro de boas-vindas (créditos) na mão na primeira entrada; registrado antes do item de controle para ficar no
+// espaço selecionado (o item de controle vai para o próximo espaço livre, 5 ticks depois).
+startWelcomeBook();
 world.afterEvents.playerSpawn.subscribe(({ player, initialSpawn }) => {
   if (initialSpawn && !hasTeam(player))
     system.runTimeout(() => { if (player.isValid) void promptStarterOnJoin(player); }, 100);
@@ -199,7 +203,7 @@ world.afterEvents.worldLoad.subscribe(event => {
       // Frente batalha-minimizavel: a "tecla R" alterna minimizado/aberto (PartySendBinding.toggleBattleScreen).
       if (typeof id === "string") battleMap.get(id)?.getActorFromID(player.id)?.promptPlayerForRequest("toggle");
     },
-    startWildBattle: (player, wild) => { startWildBattle(player, wild); },
+    startWildBattle: (player, wild, lead) => { startWildBattle(player, wild, { lead }); },
     openPlayerMenu: (player, target) => { void openPlayerInteractionMenu(player, target); },
   });
   // Frente controle: item "Poké Ball do time" (usar = time, agachado + usar = envio rápido, agachado + atacar = próximo).
@@ -278,6 +282,13 @@ world.afterEvents.entityLoad.subscribe(arg => {
   if (familyComponent.hasTypeFamily("pokeball") || familyComponent.hasTypeFamily("pokeball_dummy")) {
     if (!isCaptureInProgress(arg.entity)) arg.entity.triggerEvent("cobblemon:instant_kill");
     return;
+  }
+
+  // busyLocks do Java vivem só em memória: um Pokémon salvo "ocupado" (queda no meio de uma captura) volta livre;
+  // senão ficaria impossível de capturar e imune a dano (PokemonDamage) para sempre.
+  if (familyComponent.hasTypeFamily("pokemon") && !isCaptureTarget(arg.entity)) {
+    try { if (arg.entity.getProperty("cobblemon:busy") === true) arg.entity.setProperty("cobblemon:busy", false); }
+    catch { }
   }
 
   //Prevents Shenanigans with duplicating pokemon by unloading them

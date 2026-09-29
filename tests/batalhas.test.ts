@@ -5,6 +5,7 @@ import { hasExpOverlay } from "../scripts/GUI/PartyHud";
 import assert from "node:assert/strict";
 import { advance, advanceUntil, createPlayer, FakeEntity, overworld, spawnWild } from "./batalhas-harness";
 import { PokemonData } from "../scripts/Pokemon";
+import { getHeldItemOnEntity } from "../scripts/pokemon/HeldItemStore";
 import { getAllSpeciesIds } from "../scripts/speciesData";
 import {
 	ActorType, BattleActor, BattleFormat, PokemonBattle, RandomBattleAI, StrongBattleAI, startBattle, startDoubleBattle,
@@ -109,6 +110,21 @@ function playerOf(battle: PokemonBattle, id: string) {
 	assert.equal(player.getProperty("cobblemon:in_battle"), false);
 	assert.ok(battle.showdownMessages.join("\n").includes(`|switch|p1a: ${lead.uuid}|`), "protocolo com UUID");
 	assert.ok(wild.animations.some(x => x.includes("faint")) || true);
+}
+
+// Líder explícito (BattleChallengePacket.selectedPokemonId): o selecionado vai na frente mesmo não sendo o 1º do time
+// e mesmo sem estar em campo (envio rápido mirando um selvagem).
+{
+	const first = setMoves(pokemon("bulbasaur", 20), ["tackle"]);
+	const selected = setMoves(pokemon("pikachu", 20), ["thunderbolt"]);
+	const player = createPlayer("Red", [first, selected]);
+	const wild = spawnWild(setMoves(pokemon("rattata", 3), ["tackle"]));
+	const battle = startWildBattle(player as never, wild as never, { lead: selected.uuid })!;
+	assert.ok(battle, "batalha com líder explícito começa");
+	playerOf(battle, player.id).decider = autoDecider;
+	await runToEnd(battle);
+	const firstSwitch = battle.showdownMessages.join("\n").split("\n").find(l => l.startsWith("|switch|p1a: "));
+	assert.ok(firstSwitch?.includes(selected.uuid), `o selecionado entra primeiro (${firstSwitch})`);
 }
 
 // Subida de nível na batalha: amizade por nível e pergunta de golpe novo quando já há 4 golpes.
@@ -284,16 +300,21 @@ function playerOf(battle: PokemonBattle, id: string) {
 }
 
 // ------------------------------------------------------------------------------------------------
-// Item segurado: sem minecraftItem o espaço 0 da entidade é esvaziado (berry consumida não volta).
+// Item segurado: só nos dados da entidade (pokemon/HeldItemStore); sem minecraftItem a entidade fica sem item
+// (berry consumida não volta) e nada vai para o inventário da entidade.
 // ------------------------------------------------------------------------------------------------
 {
 	const data = pokemon("pikachu", 10, { minecraftItem: "cobblemon:oran_berry", item: "oranberry" });
 	const entity = spawnWild(data);
-	assert.notEqual(entity.container.getItem(0), undefined, "item segurado aplicado na entidade");
+	assert.equal(getHeldItemOnEntity(entity as never), "cobblemon:oran_berry", "item segurado aplicado nos dados da entidade");
+	assert.equal(entity.container.getItem(0), undefined, "nada no inventário da entidade");
 	data.minecraftItem = undefined;
 	data.item = "";
 	data.applyToCobblemon(entity as never);
-	assert.equal(entity.container.getItem(0), undefined, "espaço 0 esvaziado");
+	assert.equal(getHeldItemOnEntity(entity as never), undefined, "item consumido some dos dados da entidade");
+	assert.equal(entity.container.getItem(0), undefined, "nada no inventário da entidade");
+	// Um item no inventário legado (pacotes até o beta 7) não é lido: a fonte é o JSON.
+	entity.container.setItem(0, { typeId: "cobblemon:leftovers", amount: 1 } as never);
 	const reloaded = PokemonData.tryGetFromEntity(entity as never);
 	assert.ok(reloaded);
 	assert.equal(reloaded!.minecraftItem, undefined, "loadFromCobblemon não traz o item de volta");

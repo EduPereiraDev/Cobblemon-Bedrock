@@ -12,12 +12,16 @@
  *   /execute as <npc> run scriptevent cblimits:npc_hide <jogador> <on|off>   (grava o `hide` dos dados MoLang)
  *   /execute as <npc> run scriptevent cblimits:npc_hide_info
  *   /scriptevent cblimits:input_probe <on|off>          (entrada e sprint de quem está montado, a cada 5 ticks)
+ *   /scriptevent cblimits:ride_probe <on|off>           (montaria: botões, eventos ride_*, veículo, chão e vy por tick)
+ *   /execute as <entidade> run scriptevent cblimits:entity_info [rótulo]   (vida, cavaleiros, dono)
  *   /scriptevent cblimits:ride_camera_info              (como jogador: modo de câmera, freelook, esquema)
  *   /scriptevent cblimits:camera_roll_test [graus]      (como jogador: spline parada com roll)
  *   /scriptevent cblimits:web_fall <x> <y> <z> <tipo...> (mede a queda de cada tipo numa coluna de 10 teias)
  *   /scriptevent cblimits:item_tags <item...>           (tags que o motor registrou no item, ex.: minecraft:bookshelf_books)
  */
-import { Dimension, Entity, ItemStack, Player, ScriptEventCommandMessageAfterEvent, Vector3, system, world } from "@minecraft/server";
+import {
+  Dimension, Entity, EntityHealthComponent, InputButton, ItemStack, Player, ScriptEventCommandMessageAfterEvent, Vector3, system, world,
+} from "@minecraft/server";
 import { debugProbesEnabled } from "../../Config";
 import { getMountedPokemon, getRideStyle, rideCameraSnapshot, rideSprintSnapshot } from "../../entity/Riding";
 import { cameraRollTest } from "../../entity/RideCameraRoll";
@@ -38,6 +42,73 @@ function nearestNpc(source: Entity | undefined): Entity | undefined {
   if (isNPCEntity(source)) return source;
   try { return source.dimension.getEntities({ type: NPC_ENTITY_ID, location: source.location, maxDistance: 8, closest: 1 })[0]; }
   catch { return undefined; }
+}
+
+/**
+ * Sonda da montaria (docs/pendencias/montaria-pulo.md): botões (playerButtonInput, os dois estados), eventos
+ * cobblemon:ride_* / on_mount / on_dismount, trocas de veículo e, a cada tick, estilo, chão e velocidade y.
+ */
+let rideProbe: { interval: number; unsubscribe: () => void } | undefined;
+const lastVehicle = new Map<string, string>();
+
+function setRideProbe(on: boolean) {
+  if (rideProbe) { system.clearRun(rideProbe.interval); rideProbe.unsubscribe(); }
+  rideProbe = undefined;
+  lastVehicle.clear();
+  if (!on) return;
+  const vehicleOf = (player: Player) => {
+    try { return player.getComponent("minecraft:riding")?.entityRidingOn; } catch { return undefined; }
+  };
+  const buttons = world.afterEvents.playerButtonInput.subscribe(({ player, button, newButtonState }) => {
+    const v = vehicleOf(player);
+    console.info(`[limites] botao tick=${system.currentTick} ${player.name} ${button} ${newButtonState} veiculo=${v?.typeId ?? "-"} estilo=${getRideStyle(player) ?? "-"}`);
+  });
+  const triggers = world.afterEvents.dataDrivenEntityTrigger.subscribe(({ entity, eventId }) => {
+    if (!/^cobblemon:(ride_|on_mount|on_dismount)/.test(eventId)) return;
+    let riders = -1;
+    try { riders = entity.getComponent("minecraft:rideable")?.getRiders().length ?? -1; } catch { }
+    console.info(`[limites] evento tick=${system.currentTick} ${entity.typeId} ${eventId} cavaleiros=${riders}`);
+  });
+  const interval = system.runInterval(() => {
+    for (const player of world.getAllPlayers()) {
+      const v = vehicleOf(player);
+      const now = v ? `${v.typeId}#${v.id}` : "-";
+      const before = lastVehicle.get(player.id) ?? "-";
+      if (now !== before) console.info(`[limites] veiculo tick=${system.currentTick} ${player.name} ${before} -> ${now}`);
+      lastVehicle.set(player.id, now);
+      if (!v) continue;
+      try {
+        const vel = v.getVelocity();
+        let jump = "-";
+        try { jump = String(player.inputInfo.getButtonState(InputButton.Jump)); } catch { }
+        console.info(`[limites] ride tick=${system.currentTick} ${player.name} estilo=${getRideStyle(player) ?? "-"} chao=${v.isOnGround} ` +
+          `x=${v.location.x.toFixed(2)} y=${v.location.y.toFixed(3)} z=${v.location.z.toFixed(2)} vy=${vel.y.toFixed(3)} agua=${v.isInWater} pulo=${jump} ` +
+          `power_jump=${v.hasComponent("minecraft:can_power_jump")}`);
+      }
+      catch (e) { console.warn(`[limites] ride: ${e}`); }
+    }
+  }, 1);
+  rideProbe = {
+    interval,
+    unsubscribe: () => {
+      world.afterEvents.playerButtonInput.unsubscribe(buttons);
+      world.afterEvents.dataDrivenEntityTrigger.unsubscribe(triggers);
+    },
+  };
+}
+
+/** Vida e cavaleiros da entidade de origem (`execute as <entidade> run scriptevent cblimits:entity_info <rótulo>`). */
+function entityInfo(entity: Entity, label: string) {
+  let health = "-";
+  try {
+    const h = entity.getComponent("minecraft:health") as EntityHealthComponent | undefined;
+    if (h) health = `${h.currentValue}/${h.effectiveMax}`;
+  }
+  catch { }
+  let riders = "-";
+  try { riders = String(entity.getComponent("minecraft:rideable")?.getRiders().map(r => r.typeId).join(",") ?? "-"); } catch { }
+  console.info(`[limites] entity_info ${label} ${entity.typeId} vida=${health} cavaleiros=[${riders}] dono=${String(entity.getDynamicProperty("owner_name") ?? "-")} ` +
+    `selvagem=${String(entity.getProperty("cobblemon:wild"))}`);
 }
 
 function setInputProbe(on: boolean) {
@@ -118,6 +189,13 @@ export function handleLimitsEvent(id: string, message: string, source: Entity | 
     }
     case "input_probe":
       setInputProbe(args[0] !== "off");
+      return;
+    case "ride_probe":
+      setRideProbe(args[0] !== "off");
+      console.info(`[limites] ride_probe ${args[0] !== "off" ? "on" : "off"}`);
+      return;
+    case "entity_info":
+      if (source) entityInfo(source, args[0] ?? "-");
       return;
     case "ride_camera_info":
       if (source instanceof Player) {

@@ -1,7 +1,7 @@
 {
   "name": "cobblemon-bedrock",
   "version": "0.2.0",
-  "packVersion": "1.0.7",
+  "packVersion": "1.0.8",
   "productName": "Cobblemon Bedrock",
   "description": "A port of the Minecraft mod Cobblemon to Bedrock Edition",
   "private": true,
@@ -18,7 +18,7 @@
     "check": "tsc -p tsconfig.json",
     "server": "node tools/server.mjs",
     "test": "node --experimental-strip-types --no-warnings tools/run-tests.mjs",
-    "test:e2e": "COBBLEMON_BDS=e2e COBBLEMON_BDS_PORT=19148 COBBLEMON_DIST=dist-e2e COBBLEMON_BDS_TRANSPORT=raknet COBBLEMON_BDS_ONLINE_MODE=false node tools/e2e/run.mjs",
+    "test:e2e": "COBBLEMON_BDS=${COBBLEMON_BDS:-e2e} COBBLEMON_BDS_PORT=${COBBLEMON_BDS_PORT:-19148} COBBLEMON_DIST=${COBBLEMON_DIST:-dist-e2e} COBBLEMON_BDS_TRANSPORT=${COBBLEMON_BDS_TRANSPORT:-raknet} COBBLEMON_BDS_ONLINE_MODE=${COBBLEMON_BDS_ONLINE_MODE:-false} node tools/e2e/run.mjs",
     "import:kotlin-posers": "node --experimental-strip-types tools/importer/kotlinPosers.ts"
   },
   "dependencies": {
