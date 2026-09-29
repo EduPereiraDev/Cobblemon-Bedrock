@@ -11,7 +11,7 @@
  * (`mobInteract` devolve FAIL) e a exibição de NPC com modelo de Pokémon (o clique é do NPC).
  */
 import { Entity, GameMode, Player, Vector3 } from "@minecraft/server";
-import { PokeBall, getPokeBall, projectilePower } from "./PokeBalls";
+import { PokeBall, getPokeBall, overhandPitch, projectilePower } from "./PokeBalls";
 
 /** Bola do Cobblemon pelo id do item (`cobblemon:great_ball`), ou undefined se o item não é Poké Ball. */
 export function pokeBallFromItem(typeId: string | undefined): PokeBall | undefined {
@@ -45,6 +45,20 @@ export function throwVelocity(direction: Vector3, power: number): Vector3 {
 }
 
 /**
+ * Direção do arremesso do Java: a do olhar com o ângulo por cima (`overhandPitch`, +5° olhando reto). Olhando
+ * exatamente para cima/baixo não há rumo horizontal: fica a direção do olhar (no Java o desvio ali é 0 ou 5°).
+ */
+export function overhandDirection(direction: Vector3): Vector3 {
+  const length = Math.hypot(direction.x, direction.y, direction.z) || 1;
+  const horizontal = Math.hypot(direction.x, direction.z) / length;
+  if (horizontal < 1e-6) return direction;
+  const pitch = -Math.asin(Math.max(-1, Math.min(1, direction.y / length))) * 180 / Math.PI;
+  const adjusted = overhandPitch(pitch) * Math.PI / 180;
+  const hx = direction.x / length / horizontal, hz = direction.z / length / horizontal;
+  return { x: hx * Math.cos(adjusted), y: -Math.sin(adjusted), z: hz * Math.cos(adjusted) };
+}
+
+/**
  * Ponto de saída: um pouco à frente dos olhos (o Java põe a bola 1 bloco à frente; aqui 0,6 para ela não nascer dentro
  * de um Pokémon colado no jogador, o que faria o projétil não registrar o acerto).
  */
@@ -73,7 +87,8 @@ export function throwPokeBall(player: Player, itemTypeId: string): boolean {
   }
   // Dono antes do primeiro tick de voo (o entitySpawn de catching/index.ts também grava o player_id).
   try { projectile.setDynamicProperty("player_id", player.id); } catch { }
-  const velocity = throwVelocity(direction, projectilePower(ball));
+  // Frente ball-hit: como o throwable nativo (angle_offset -5 no BP), sai 5° acima da mira, como no Java.
+  const velocity = throwVelocity(overhandDirection(direction), projectilePower(ball));
   const component = projectile.getComponent("minecraft:projectile");
   try {
     if (component) {

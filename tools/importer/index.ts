@@ -36,7 +36,7 @@ import { emitNpcs } from "./npcs.ts";
 import { buildHabitatPools, emitHabitatsModule } from "./habitats.ts";
 import { emitLootInjections } from "./lootInjection.ts";
 import { emitWallpapers } from "./wallpapers.ts";
-import { BlockMapper, buildStructures, StructureLoot } from "./structures.ts";
+import { BlockMapper, buildStructures, HABITAT_ANCHOR_MIMICS, StructureLoot } from "./structures.ts";
 import { buildJigsawStructures } from "./jigsaw.ts";
 import { emitRequestedParticles, emitScriptParticles, particleIndex } from "./particles.ts";
 import { flipbookOf } from "./animatedTextures.ts"; // frente animacao: texturas animadas (flipbook)
@@ -375,7 +375,7 @@ if (!contentOnlyPokemon) {
 
 // Frente limites-b: grupos de receita no catálogo (depois do catálogo), pinturas, enfermeira e generated/scripts/limitesB.ts.
 emitLimitesB(!contentOnlyPokemon);
-emitHabitatsModule(habitatPools, habitatAnchorRanges);
+emitHabitatsModule(habitatPools, habitatAnchorRanges, HABITAT_ANCHOR_MIMICS);
 // Frente mundo-detalhes: generated/scripts/mundoDetalhes.ts (luz, locators de item, vestíveis, compostagem, Fortuna).
 emitMundoDetalhesModule({ speciesData, included: new Set(included.keys()), wearables: wearablesOut, compostBlockItems: COMPOST_BLOCK_ITEMS, fortune: contentOnlyPokemon ? {} : fortuneData(), discTextures, fetus: fetusOut });
 emitAdvancements(); // frente ui-base: generated/scripts/advancements.ts (lê os itens gerados acima)

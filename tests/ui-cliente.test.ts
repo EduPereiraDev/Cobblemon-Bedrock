@@ -215,7 +215,11 @@ function cells(node: unknown, out: { key: string; value: Json; parentType: strin
   assert.equal(survival.spawned[0].id, "cobblemon:ultra_ball", "o mesmo projétil do throwable nativo");
   assert.equal(survival.spawned[0].owner, survival.player, "dono = quem arremessou");
   assert.equal(survival.spawned[0].props.player_id, "p1");
-  assert.deepEqual(survival.spawned[0].velocity, { x: 0, y: 0, z: 1.5 }, "potência do minecraft:projectile (1,25 × 1,2)");
+  // Frente ball-hit: throwPower do Java (1,25) e 5° por cima da mira (PokeBallItem: xRot - overhandFactor).
+  const thrown = survival.spawned[0].velocity as { x: number; y: number; z: number };
+  const rad5 = 5 * Math.PI / 180;
+  assert.ok(Math.abs(thrown.x) < 1e-9 && Math.abs(thrown.y - 1.25 * Math.sin(rad5)) < 1e-9 && Math.abs(thrown.z - 1.25 * Math.cos(rad5)) < 1e-9,
+    `potência 1,25 e +5° por cima (${JSON.stringify(thrown)})`);
   assert.equal(survival.slot.item?.amount, 2, "consome 1 no sobrevivência");
   const creative = makePlayer("Creative");
   assert.equal(throwPokeBall(creative.player, "cobblemon:ultra_ball"), true);

@@ -14,7 +14,9 @@
 //   (areia/cascalho suspeitos, baús). "gravity" e "cobblemon:height_range" não têm equivalente (ignorados).
 // - Bloco de habitat: no Java ele é invisível e imita outro bloco (MimicId); aqui cada um vira o bloco imitado e
 //   um único bloco de habitat "âncora" (o mais enterrado) guarda o pool no estado cobblemon:habitat_pool(_hi),
-//   com alcance que cobre todos os blocos de habitat do molde (HABITAT_ANCHOR_RANGES).
+//   com alcance que cobre todos os blocos de habitat do molde (HABITAT_ANCHOR_RANGES). A âncora também guarda o
+//   bloco que ela imita (cobblemon:habitat_mimic = índice em HABITAT_ANCHOR_MIMICS[pool]); no 1º tick o script
+//   troca a âncora pelo próprio bloco imitado e passa o habitat para um registro por posição (frente habitat-mimic).
 // As 67 estruturas jigsaw (worldgen/structure) viram jigsaw data-driven do Bedrock em jigsaw.ts (frente motor), que
 // usa convertBlocks com `keepJigsaw` (blocos jigsaw preservados nas peças) e marcadores de estrutura (`entities`).
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -252,8 +254,8 @@ export interface ConvertedStructure {
 	layer1: Int32Array;
 	/** Índice do bloco (ordem do .mcstructure) → block_entity_data. */
 	blockEntities: Map<number, Record<string, NbtTyped>>;
-	/** Bloco de habitat âncora: pool e alcance (blocos). */
-	habitat?: { poolId: string; range: number; pos: [number, number, number] };
+	/** Bloco de habitat âncora: pool, alcance (blocos) e bloco imitado (índice no estado cobblemon:habitat_mimic). */
+	habitat?: { poolId: string; range: number; pos: [number, number, number]; mimic: BedrockBlock; mimicIndex: number };
 	/** Loot tables do Java referenciadas pelos block entities. */
 	lootRefs: Set<string>;
 	/** Índice → atraso do 1º tick agendado (blocos com minecraft:tick colocados por feature não recebem tick sozinhos). */
@@ -279,6 +281,31 @@ export function templateBlocks(t: JavaTemplate): PlacedBlock[] {
 }
 
 const SOLID_HINT = /stone|dirt|deepslate|sand|gravel|clay|mud|terracotta|ore|netherrack|basalt|tuff|calcite|grass_block|mycelium|podzol|snow_block|ice|end_stone|blackstone/;
+
+/** Blocos imitados que caem sem apoio (a âncora vira o bloco imitado no mundo: evita escolher uma no ar). */
+const GRAVITY_MIMIC = /(^|:)(sand|red_sand|gravel|suspicious_sand|suspicious_gravel|[a-z_]*concrete_powder)$/;
+/** Valores do estado cobblemon:habitat_mimic (blocos imitados distintos por pool entre as âncoras). */
+export const HABITAT_MIMIC_SLOTS = 4;
+/**
+ * Frente habitat-mimic: bloco imitado de cada âncora, por pool (índice = valor de cobblemon:habitat_mimic). Preenchido
+ * na conversão (estruturas de molde único e peças de jigsaw) e emitido em generated/scripts/habitats.ts.
+ */
+export const HABITAT_ANCHOR_MIMICS = new Map<string, BedrockBlock[]>();
+
+/** Índice do bloco imitado da âncora no estado (0 se a lista do pool estiver cheia; aviso no import). */
+export function anchorMimicIndex(poolId: string, block: BedrockBlock): number {
+	let list = HABITAT_ANCHOR_MIMICS.get(poolId);
+	if (!list) HABITAT_ANCHOR_MIMICS.set(poolId, (list = []));
+	const key = (b: BedrockBlock) => `${b.name}|${JSON.stringify(Object.entries(b.states).sort())}`;
+	const found = list.findIndex((b) => key(b) === key(block));
+	if (found >= 0) return found;
+	if (list.length >= HABITAT_MIMIC_SLOTS) {
+		warn("bloco imitado de âncora de habitat além do limite do estado (usa o 1º do pool)", `${poolId} ${block.name}`);
+		return 0;
+	}
+	list.push(block);
+	return list.length - 1;
+}
 
 /** Converte blocos já processados num .mcstructure. */
 export function convertBlocks(size: [number, number, number], blocks: PlacedBlock[], opts: ConvertOptions): ConvertedStructure {
@@ -313,7 +340,10 @@ export function convertBlocks(size: [number, number, number], blocks: PlacedBloc
 				const o = at.get(`${b.pos[0] + dx},${b.pos[1] + dy},${b.pos[2] + dz}`);
 				if (o && (o.name === "cobblemon:habitat_block" || SOLID_HINT.test(o.name))) n++;
 			}
-			return n * 1000 - b.pos[1];
+			// Imitado que cai (areia, cascalho) sem nada embaixo: a âncora vira esse bloco no mundo e cairia.
+			const below = at.get(`${b.pos[0]},${b.pos[1] - 1},${b.pos[2]}`);
+			const unsupported = GRAVITY_MIMIC.test(String(b.nbt?.MimicId ?? "")) && (!below || /(^|:)(air|cave_air|void_air|structure_void|water|lava)$/.test(below.name));
+			return n * 1000 - b.pos[1] - (unsupported ? 100_000 : 0);
 		};
 		anchor = habitats.reduce((best, b) => (buried(b) > buried(best) ? b : best));
 		const poolId = String(anchor.nbt?.PoolId ?? "");
@@ -322,7 +352,8 @@ export function convertBlocks(size: [number, number, number], blocks: PlacedBloc
 			const d = Math.hypot(h.pos[0] - anchor.pos[0], h.pos[1] - anchor.pos[1], h.pos[2] - anchor.pos[2]);
 			range = Math.max(range, Math.ceil(d + Number(h.nbt?.RangeOfInfluence ?? 16)));
 		}
-		habitat = { poolId, range, pos: anchor.pos };
+		const mimic = opts.mapper.map(String(anchor.nbt?.MimicId ?? "minecraft:stone"), {}) ?? { name: "minecraft:stone", states: {} };
+		habitat = { poolId, range, pos: anchor.pos, mimic, mimicIndex: anchorMimicIndex(poolId, mimic) };
 	}
 	const air = { name: "minecraft:air", states: {} };
 	const water = opts.mapper.map("minecraft:water", { level: "0" }) ?? { name: "minecraft:water", states: { liquid_depth: 0 } };
@@ -350,7 +381,7 @@ export function convertBlocks(size: [number, number, number], blocks: PlacedBloc
 			if (b === anchor) {
 				bedrock = opts.mapper.map(name, props);
 				const index = opts.poolIndex?.get(habitat!.poolId) ?? 0;
-				if (bedrock) bedrock = { name: bedrock.name, states: { ...bedrock.states, "cobblemon:habitat_pool": index % 16, "cobblemon:habitat_pool_hi": Math.floor(index / 16) } };
+				if (bedrock) bedrock = { name: bedrock.name, states: { ...bedrock.states, "cobblemon:habitat_pool": index % 16, "cobblemon:habitat_pool_hi": Math.floor(index / 16), "cobblemon:habitat_mimic": habitat!.mimicIndex } };
 				// O tick do bloco (registro no detector de habitats) precisa ser agendado no molde.
 				ticks.set(idx, 10);
 			} else {

@@ -2,6 +2,7 @@
 import { RUNTIME_RESOLVER_SOURCE } from "./variants.ts";
 import type { Variation } from "./variants.ts";
 import { OUT_SCRIPTS, writeText } from "./util.ts";
+import { jsonTableExpression, objectLiteral, tableLines, typeCheckModule } from "./jsonTable.ts"; // frente otimizacao (#8)
 
 const HEADER = "// Arquivo gerado por tools/importer (npm run import). Não edite à mão.\n/* eslint-disable */\n";
 
@@ -24,7 +25,9 @@ export interface VariantsEntry {
 }
 
 export function emitVariantsModule(variants: Map<string, VariantsEntry>, poserAnimations: Map<string, Record<string, string>>): void {
-	const lines = [...variants].map(([id, v]) => `\t${JSON.stringify(id)}: ${JSON.stringify(v)},`);
+	// Frente otimizacao (#8): VARIANTS por JSON.parse("…"); cópia tipada em _tipos/ para o tsc.
+	const lines = tableLines(variants, "VARIANTS");
+	writeText(`${OUT_SCRIPTS}/_tipos/variants.check.ts`, typeCheckModule("../variants", ["SpeciesVariants"], [{ name: "VARIANTS", type: "Record<string, SpeciesVariants>", literal: objectLiteral(lines) }]));
 	const posers = [...poserAnimations].map(([id, v]) => `\t${JSON.stringify(id)}: ${JSON.stringify(v)},`);
 	writeText(
 		`${OUT_SCRIPTS}/variants.ts`,
@@ -58,9 +61,7 @@ export interface SpeciesVariants {
 }
 
 /** Variações (na ordem dos resolvers do Cobblemon) e combinações por espécie. */
-export const VARIANTS: Record<string, SpeciesVariants> = {
-${lines.join("\n")}
-};
+export const VARIANTS: Record<string, SpeciesVariants> = ${jsonTableExpression(lines, "VARIANTS")};
 
 /**
  * Animações nomeadas por poser (cry, recoil, physical, special, status, faint, battle_cry...) → id completo,

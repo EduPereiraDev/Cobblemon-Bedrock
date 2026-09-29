@@ -17,6 +17,8 @@ import { walkMovementValue } from "../../scripts/entity/RideSprint.ts"; // revie
 import { DYNAMAX_GROW_SECONDS, DYNAMAX_SCALE_FACTOR, GIMMICK_DYNAMAX, GIMMICK_MAX, GIMMICK_PROPERTY, gimmickTints } from "../../scripts/entity/GimmickProperty.ts"; // frente msd-fase1
 import { TYPE_HUES } from "../../scripts/GUI/layoutSpec.ts"; // frente msd-fase1: cor do tipo (ElementalType.hue) na tinta Tera
 import { POKEMON_MATERIALS } from "./zfightEntities.ts"; // frente zfight2: materiais das client entities de Pokémon
+import { jsonTableExpression, objectLiteral, tableLines, typeCheckModule } from "./jsonTable.ts"; // frente otimizacao (#8)
+import { compactVariantCondition, legacyVariantCondition } from "./variantConditions.ts"; // frente otimizacao (#6)
 
 export interface ComboOut {
 	poser: string;
@@ -115,8 +117,12 @@ export function gimmickPreAnimation(): string[] {
 
 const channel = (rgb: number, shift: number) => (((rgb >> shift) & 255) / 255).toFixed(3);
 
-/** Um estado por valor 1..GIMMICK_MAX (cor em on_entry) e o `default` sem tinta. */
-export function gimmickTintController(): Record<string, unknown> {
+/**
+ * A versão antiga (até a frente otimizacao): um estado por valor 1..GIMMICK_MAX (cor em on_entry) e o `default` sem
+ * tinta, com 21 transições `q.property('cobblemon:gimmick') == n` avaliadas a cada frame em todo Pokémon parado no
+ * `default`. Fica aqui como referência da prova de equivalência (tests/otimizacao.test.ts).
+ */
+export function legacyGimmickTintController(): Record<string, unknown> {
 	const property = `q.property('${GIMMICK_PROPERTY}')`;
 	const tints = gimmickTints(TYPE_HUES);
 	const states: Record<string, unknown> = {
@@ -134,6 +140,51 @@ export function gimmickTintController(): Record<string, unknown> {
 	return { format_version: "1.10.0", animation_controllers: { [GIMMICK_TINT_CONTROLLER]: { initial_state: "default", states } } };
 }
 
+/** Variável com o valor do gimmick gravado ao entrar no estado `on` (a antiga guardava isso no nome do estado gN). */
+export const GIMMICK_ENTERED_VAR = "v.cobblemon_gimmick_e";
+
+/**
+ * Frente otimizacao (#12): a mesma máquina com 2 estados. `default` (sem tinta) tem UMA transição, "valor com tinta"
+ * (faixa 1..GIMMICK_MAX: 2 comparações em vez de 21); `on` grava o valor em GIMMICK_ENTERED_VAR e a cor por uma busca
+ * binária (~5 comparações, só na entrada) e volta ao `default` quando a propriedade muda, como o gN fazia.
+ * Bissimulação com a antiga: gN ↔ (on, e = N); as transições, os on_entry (r, g, b, a) e a fase de avaliação (controller
+ * de animação) são os mesmos, então o resultado é igual frame a frame (tests/otimizacao.test.ts prova por avaliação
+ * exaustiva de todos os estados × valores da propriedade, e por sequências).
+ */
+export function gimmickTintController(): Record<string, unknown> {
+	const property = `q.property('${GIMMICK_PROPERTY}')`;
+	const tints = gimmickTints(TYPE_HUES);
+	const values = [...tints.keys()].sort((a, b) => a - b);
+	const contiguous = values.every((v, i) => i === 0 || v === values[i - 1] + 1);
+	if (!contiguous || values[0] < 1) throw new Error(`gimmick_tint: valores com tinta não contíguos (${values.join(",")})`);
+	const e = GIMMICK_ENTERED_VAR;
+	/** Busca binária pelo valor inteiro de `e` em values[lo..hi] → expressão de `leaf(valor)`. */
+	const tree = (lo: number, hi: number, leaf: (value: number) => string): string => {
+		if (lo === hi) return leaf(values[lo]);
+		const mid = (lo + hi + 1) >> 1;
+		return `(${e} < ${values[mid]} ? ${tree(lo, mid - 1, leaf)} : ${tree(mid, hi, leaf)})`;
+	};
+	const last = values.length - 1;
+	const color = [
+		`${e} = ${property};`,
+		`v.cobblemon_gimmick_r = ${tree(0, last, (v) => channel(tints.get(v)!.rgb, 16))};`,
+		`v.cobblemon_gimmick_g = ${tree(0, last, (v) => channel(tints.get(v)!.rgb, 8))};`,
+		`v.cobblemon_gimmick_b = ${tree(0, last, (v) => channel(tints.get(v)!.rgb, 0))};`,
+		`v.cobblemon_gimmick_a = ${tree(0, last, (v) => tints.get(v)!.alpha.toFixed(2))};`,
+	].join(" ");
+	const states: Record<string, unknown> = {
+		default: {
+			on_entry: ["v.cobblemon_gimmick_a = 0.0;"],
+			transitions: [{ on: `${property} >= ${values[0]} && ${property} <= ${values[last]}` }],
+		},
+		on: {
+			on_entry: [color],
+			transitions: [{ default: `${property} != ${e}` }],
+		},
+	};
+	return { format_version: "1.10.0", animation_controllers: { [GIMMICK_TINT_CONTROLLER]: { initial_state: "default", states } } };
+}
+
 let gimmickControllerWritten = false;
 function emitGimmickTintController(): void {
 	if (gimmickControllerWritten) return;
@@ -141,12 +192,12 @@ function emitGimmickTintController(): void {
 	writeJson(`${OUT_RP}/animation_controllers/pokemon/cobblemon_gimmick_tint.animation_controllers.json`, gimmickTintController());
 }
 
-/** Condição "variant ∈ índices" curta (usa negação quando é mais curta). */
+/**
+ * Condição "variant ∈ índices" (usa negação quando é mais curta). Frente otimizacao (#6): faixas e progressões no
+ * lugar da lista de `==` (variantConditions.ts; mesma função para todo inteiro, conferida no import).
+ */
 function variantCondition(indices: number[], total: number): string | undefined {
-	if (indices.length === total) return undefined;
-	const others = [...Array(total).keys()].filter((i) => !indices.includes(i));
-	if (others.length < indices.length) return `!(${others.map((i) => `v.cobblemon_variant == ${i}`).join(" || ")})`;
-	return indices.map((i) => `v.cobblemon_variant == ${i}`).join(" || ");
+	return compactVariantCondition(indices, total);
 }
 
 export function emitClientEntity(s: SpeciesRender): void {
@@ -197,8 +248,9 @@ export function emitClientEntity(s: SpeciesRender): void {
 		if (uvAnim) rc.uv_anim = uvAnim;
 		renderControllers[id] = rc;
 		// Condição curta vira filtro; lista longa sai mais barata desenhando a textura transparente (blank).
-		const cond = variantCondition(present, total);
-		rcList.push(cond && cond.split("||").length <= 6 ? { [id]: cond } : id);
+		// Frente otimizacao: a decisão continua pela lista ANTIGA (≤ 6 comparações); só o texto do filtro fica compacto.
+		const legacy = legacyVariantCondition(present, total);
+		rcList.push(legacy && legacy.split("||").length <= 6 ? { [id]: variantCondition(present, total)! } : id);
 	});
 	writeJson(`${OUT_RP}/render_controllers/pokemon/${s.id}.render_controllers.json`, { format_version: "1.10.0", render_controllers: renderControllers });
 
@@ -1288,7 +1340,9 @@ export function emitEntityDataModule(): void {
 	const dir = `${DATA}/cobblemon/pokemon_interactions`;
 	const files = existsSync(dir) ? walk(dir, (n) => n.endsWith(".json")).sort().map((f) => ({ name: basename(f, ".json"), json: tryReadJson(f) })) : [];
 	const sets = parseInteractions(files, interactionItem).sort((a, b) => Number(Object.keys(a.properties).length === 0) - Number(Object.keys(b.properties).length === 0));
-	const species = [...ENTITY_INFO].sort(([a], [b]) => a.localeCompare(b)).map(([id, info]) => `\t${JSON.stringify(id)}: ${JSON.stringify(info)},`);
+	// Frente otimizacao (#8): ENTITY_INFO por JSON.parse("…"); cópia tipada em _tipos/ para o tsc.
+	const species = tableLines([...ENTITY_INFO].sort(([a], [b]) => a.localeCompare(b)), "ENTITY_INFO");
+	writeText(`${OUT_SCRIPTS}/_tipos/entityData.check.ts`, typeCheckModule("../entityData", ["EntityInfo"], [{ name: "ENTITY_INFO", type: "Record<string, EntityInfo>", literal: objectLiteral(species) }]));
 	writeText(
 		`${OUT_SCRIPTS}/entityData.ts`,
 		`// Arquivo gerado por tools/importer/entities.ts (npm run import). Não edite à mão.
@@ -1316,9 +1370,7 @@ export interface Interaction { grouping: string; properties?: Record<string, str
 export interface InteractionSet { species: string; properties: Record<string, string>; interactions: Interaction[] }
 
 /** Dados de entidade por espécie (id sem namespace). */
-export const ENTITY_INFO: Record<string, EntityInfo> = {
-${species.join("\n")}
-};
+export const ENTITY_INFO: Record<string, EntityInfo> = ${jsonTableExpression(species, "ENTITY_INFO")};
 
 /** data/cobblemon/pokemon_interactions do Cobblemon 1.8.2 (conjuntos mais específicos primeiro). */
 export const INTERACTIONS: InteractionSet[] = ${JSON.stringify(sets)};

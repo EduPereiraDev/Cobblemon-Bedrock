@@ -17,6 +17,7 @@ import { CaptureContext, calculateCapture } from "./CaptureCalculator";
 import { PokeBall, getPokeBall, getPokeBallOrDefault, pokeBallName } from "./PokeBalls";
 import { BattleCaptureAction, beginBattleCapture, isCaptureInProgress, runCaptureSequence } from "./CaptureSequence";
 import { BALL_MAX_FLIGHT_TICKS, missedBallItem, shouldExpireBall } from "./MissedBall";
+import { configureBallFlight, trackBall } from "./BallFlight";
 import { DexProgress, getPokedex } from "../pokedex/PokedexStorage";
 import { bindPokedex } from "../pokedex";
 import { bindPCWallpapers } from "../GUI/PCWallpapers";
@@ -112,6 +113,8 @@ function isCreative(player: Player): boolean {
  * Sem dono (jogador saiu), o Java só descarta. O item nasce no ponto do acerto (`at`), com fallback na entidade.
  */
 function dropPokeball(pokeball: Entity, player: Player | undefined, at?: HitPlace) {
+  // Frente ball-hit: resolvida (o acerto por proximidade para de acompanhar; nada de segundo item/acerto).
+  try { pokeball.setDynamicProperty("resolved", true); } catch { }
   const itemId = missedBallItem(safeTypeId(pokeball), player?.isValid ? { creative: isCreative(player) } : undefined);
   if (itemId) {
     try {
@@ -215,12 +218,41 @@ function handleBallHit(projectile: Entity, hitEntity: Entity, thrower: Player, h
   }, hitVector);
 }
 
+/** A bola já acertou (captura em curso) ou já virou item/sumiu: fora do teste de acerto por proximidade. */
+function isBallResolved(pokeball: Entity): boolean {
+  try {
+    return pokeball.getDynamicProperty("activated") === true || pokeball.getDynamicProperty("resolved") === true
+      || pokeball.getProperty("cobblemon:disabled") === true;
+  }
+  catch { return true; }
+}
+
+/**
+ * Frente ball-hit: acerto por proximidade (BallFlight.ts, teste do Java com a caixa inflada) → o mesmo fluxo do acerto
+ * nativo. A bola para onde o Java a deixaria: no trecho à frente ela ainda não chegou ao alvo (fica onde está); no
+ * trecho já percorrido ela passou do ponto de entrada (volta para ele).
+ */
+function onProximityHit(projectile: Entity, target: Entity, point: Vector3, velocity: Vector3, forward: boolean) {
+  if (isBallResolved(projectile)) return;
+  const at: HitPlace = { dimension: projectile.dimension, location: point };
+  const thrower = getThrower(projectile);
+  if (!thrower) { dropPokeball(projectile, undefined, at); return; }
+  try { projectile.clearVelocity(); } catch { }
+  if (!forward) { try { projectile.teleport(point); } catch { } }
+  try { handleBallHit(projectile, target, thrower, velocity, at); }
+  catch (e) {
+    console.error(`Erro ao processar acerto da Poké Bola: ${e}`);
+    dropPokeball(projectile, thrower, at);
+  }
+}
+
 let bound = false;
 
 /** Liga os eventos de arremesso/captura (e da Pokédex). Chamado uma vez pelo main.ts. */
 export function bindCatchEvents() {
   if (bound) return;
   bound = true;
+  configureBallFlight(onProximityHit, isBallResolved);
 
   // Dono do projétil e animação de giro no ar.
   world.afterEvents.entitySpawn.subscribe(({ entity }) => {
@@ -231,13 +263,15 @@ export function bindCatchEvents() {
     const ball = getPokeBall(entity.typeId);
     try { entity.playAnimation(`animation.${ball?.ancient ? "ancient_poke_ball" : "poke_ball"}.throw`); } catch { }
     system.runTimeout(() => expireBall(entity), BALL_MAX_FLIGHT_TICKS);
+    trackBall(entity);
   });
 
   // Bateu num bloco sem capturar: nuvem, som de madeira agudo e volta a ser item.
   world.afterEvents.projectileHitBlock.subscribe(arg => {
     const projectile = arg.projectile;
     if (!isPokeballEntity(projectile)) return;
-    if (projectile.getDynamicProperty("activated") || projectile.getProperty("cobblemon:disabled")) return;
+    // Já acertou (nativo ou por proximidade) ou já virou item: sem segundo item.
+    if (isBallResolved(projectile)) return;
     try {
       arg.dimension.spawnParticle("minecraft:white_smoke_particle", arg.location);
       // SoundEvents.WOOD_PLACE com pitch 2,5 (o Java limita a 2,0); no Bedrock, colocar madeira = dig.wood.
@@ -249,7 +283,7 @@ export function bindCatchEvents() {
   world.afterEvents.projectileHitEntity.subscribe(arg => {
     const projectile = arg.projectile;
     if (!isPokeballEntity(projectile)) return;
-    if (projectile.getDynamicProperty("activated")) return;
+    if (isBallResolved(projectile)) return;
     const thrower = getThrower(projectile, arg.source);
     const target = arg.getEntityHit().entity;
     const at: HitPlace = { dimension: arg.dimension, location: arg.location };

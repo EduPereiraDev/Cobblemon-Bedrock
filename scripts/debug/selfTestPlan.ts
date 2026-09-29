@@ -48,6 +48,9 @@ export function planFor(mode: SelfTestMode): PhasePlan[] {
 export const KNOWN_PROBLEM_SPECIES = [
   "torchic", "altaria", "zubat", "skarmory", "porygonz", "exeggutor", "dugtrio", "ninetales", "flabebe", "unown",
   "furret", "blaziken", "frillish",
+  // Beta 5/6: texturas piscando no cliente (camadas, faces de trás, faces encostadas) e montarias.
+  "eternatus", "chandelure", "mamoswine", "arbok", "slowpoke", "slowbro", "slowking", "raichu", "furfrou", "torterra",
+  "hatterene", "goldeen", "tyrantrum", "garchomp", "drampa", "lapras", "charizard", "flygon", "joltik",
 ] as const;
 
 /** Um Pokémon a exibir: espécie e índice da combinação renderizável (`cobblemon:variant`). */

@@ -28,6 +28,7 @@ import { avoidTag, avoidedBy, applyAvoidTags } from "../scripts/pokemon/EntityIn
 import { blockClickMatches, BlockClickEvolution } from "../scripts/evolution/variants/BlockClickEvolution";
 import { anySpeciesUsesBlockClick } from "../scripts/evolution/BlockClick";
 import { DEFAULT_CONFIG } from "../scripts/Config";
+import { readGeneratedTableText } from "../tools/importer/generatedTable.mjs"; // frente otimizacao (#8)
 
 const ROOT = process.cwd();
 const UPSTREAM = join(ROOT, "upstream", "cobblemon", "common", "src", "main", "resources");
@@ -366,7 +367,8 @@ const seq = (...values: number[]) => { let i = 0; return () => values[i++ % valu
 	assert.equal(applyFurfrouTrim(plain), undefined);
 	assert.ok(plain.aspects.includes("star-trim"));
 	// Todos os cortes existem no resolver de variações.
-	const variants = readFileSync(join(ROOT, "generated", "scripts", "variants.ts"), "utf8");
+	// Frente otimizacao (#8): a tabela está em JSON.parse("…"); o texto JSON dela tem os aspects entre aspas.
+	const variants = JSON.stringify(readGeneratedTableText(readFileSync(join(ROOT, "generated", "scripts", "variants.ts"), "utf8"), "VARIANTS"));
 	for (const trim of Object.values(FURFROU_TRIMS)) assert.ok(variants.includes(`"${trim}-trim"`), `corte ${trim}`);
 }
 

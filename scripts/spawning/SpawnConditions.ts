@@ -88,7 +88,7 @@ export const nearbyRange = { horizontal: 4, vertical: 2 };
  * por perto, estruturas) — chamadas nativas indivisíveis — contadas para o aviso/sonda do passe de spawn. O Spawner zera
  * no começo de cada passe (passes de jogadores diferentes podem se intercalar: é só diagnóstico).
  */
-export const worldQueryStats = { calls: 0, maxMs: 0 };
+export const worldQueryStats = { calls: 0, maxMs: 0, sliceMaxMs: 0 };
 export function timedWorldQuery<T>(query: () => T): T {
   const t = Date.now();
   try { return query(); }
@@ -96,10 +96,17 @@ export function timedWorldQuery<T>(query: () => T): T {
     const ms = Date.now() - t;
     worldQueryStats.calls++;
     if (ms > worldQueryStats.maxMs) worldQueryStats.maxMs = ms;
+    // Frente spawn-multi: a maior da fatia em andamento (o Spawner zera a cada fatia), para o aviso de passe lento.
+    if (ms > worldQueryStats.sliceMaxMs) worldQueryStats.sliceMaxMs = ms;
   }
 }
 
 const nearbyCache = new WeakMap<SpawnContext, Map<string, boolean>>();
+/**
+ * Frente spawn-multi: a caixa de blocos por perto de uma posição é a mesma para todas as listas; um BlockVolume por
+ * posição (não um por consulta: eram até ~900 objetos nativos por passe, pressão no coletor de lixo).
+ */
+const nearbyVolumes = new WeakMap<SpawnContext, BlockVolume>();
 
 function hasNearbyBlock(ctx: SpawnContext, blocks: string[]): boolean {
   if (ctx.nearbyBlocks) return blocks.some(b => ctx.nearbyBlocks!.has(b));
@@ -112,20 +119,22 @@ function hasNearbyBlock(ctx: SpawnContext, blocks: string[]): boolean {
     cache.set(key, false);
     return false;
   }
-  const { x, y, z } = ctx.location;
-  // Pesca: caixa 10×10×10 em volta da boia (FishingSpawnablePosition.nearbyBlocks).
-  const h = ctx.positionType === "fishing" ? 5 : nearbyRange.horizontal;
-  const v = ctx.positionType === "fishing" ? 5 : nearbyRange.vertical;
+  let volume = nearbyVolumes.get(ctx);
+  if (!volume) {
+    const { x, y, z } = ctx.location;
+    // Pesca: caixa 10×10×10 em volta da boia (FishingSpawnablePosition.nearbyBlocks).
+    const h = ctx.positionType === "fishing" ? 5 : nearbyRange.horizontal;
+    const v = ctx.positionType === "fishing" ? 5 : nearbyRange.vertical;
+    volume = new BlockVolume(
+      { x: Math.floor(x) - h, y: Math.floor(y) - v, z: Math.floor(z) - h },
+      { x: Math.floor(x) + h, y: Math.floor(y) + v, z: Math.floor(z) + h },
+    );
+    nearbyVolumes.set(ctx, volume);
+  }
   let found = false;
   try {
-    found = timedWorldQuery(() => ctx.dimension.containsBlock(
-      new BlockVolume(
-        { x: Math.floor(x) - h, y: Math.floor(y) - v, z: Math.floor(z) - h },
-        { x: Math.floor(x) + h, y: Math.floor(y) + v, z: Math.floor(z) + h },
-      ),
-      { includeTypes: blocks },
-      false,
-    ));
+    const box = volume;
+    found = timedWorldQuery(() => ctx.dimension.containsBlock(box, { includeTypes: blocks }, false));
   }
   catch { found = false; }
   cache.set(key, found);

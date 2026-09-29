@@ -18,6 +18,7 @@ import { placePokedexOnLectern } from "./decor";
 import { isPokedexItem } from "../pokedex";
 import { blockKey } from "./store";
 import { registerMundoSonsProbe } from "./probe";
+import { startHabitats } from "./habitat";
 
 export { isPastured } from "./pasture";
 export { getTMMove, setTMMove, createTMStack, learnTMs, getLearnedTMs } from "./tm";
@@ -38,6 +39,8 @@ export function startMachines() {
   started = true;
   safe("iscas", registerSeasoningBaits);
   safe("sonda", registerMundoSonsProbe);
+  // Frente habitat-mimic: habitats como bloco imitado (quebra, editor, contorno para quem segura o item, laço).
+  safe("habitats", startHabitats);
 
   system.runInterval(() => {
     safe("panelas", () => tickCookingPots(FAST));

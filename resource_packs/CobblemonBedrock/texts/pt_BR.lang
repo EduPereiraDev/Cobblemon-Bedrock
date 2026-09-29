@@ -504,3 +504,15 @@ cobblemon.selftest.screen.achievements=Conquistas
 cobblemon.selftest.screen.stats=Estatísticas
 cobblemon.selftest.screen.toast_capture=Aviso de captura (toast)
 cobblemon.selftest.screen.toast_advancement=Aviso de conquista (toast)
+
+## controle (item de controle "Poké Ball do time": teclas R, setas e M do Cobblemon)
+item.cobblemon.party_control=Poké Ball do time
+cobblemon.port.controle.lore1=§7Usar: time • Agachado+usar: jogar/recolher
+cobblemon.port.controle.lore2=§7Agachado+atacar: próximo Pokémon
+cobblemon.port.controle.hint.mouse=Direito: time • Agachado+direito: jogar/recolher • Agachado+esquerdo: próximo
+cobblemon.port.controle.hint.gamepad=Usar (LT/L2): time • Agachado+usar: jogar/recolher • Agachado+atacar (RT/R2): próximo
+cobblemon.port.controle.hint.touch=Tocar: time • Agachado+tocar: jogar/recolher • Agachado+atacar (ou segurar num bloco): próximo
+cobblemon.port.controle.received=Você recebeu a Poké Ball do time: use para abrir o time; agachado + usar joga/recolhe o Pokémon selecionado; agachado + atacar passa para o próximo.
+cobblemon.port.controle.already=Você já tem a Poké Ball do time.
+cobblemon.port.controle.full=Inventário cheio: libere um espaço para receber a Poké Ball do time.
+cobblemon.port.controle.empty_slot=O espaço selecionado do time está vazio.

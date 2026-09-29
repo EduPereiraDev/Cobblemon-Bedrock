@@ -135,7 +135,21 @@ export function projectileEntityId(ball: PokeBall): string {
   return ball.id;
 }
 
-/** `minecraft:projectile.power` equivalente ao throwPower (a Poké Ball comum usa 1,5 no BP ⇔ 1,25). */
+/**
+ * `minecraft:projectile.power` da bola = throwPower do Java (blocos por tick). Frente ball-hit: as entidades de bola
+ * (BP) usam `runtime_identifier: minecraft:snowball` — sem isso o ator genérico andava DE NOVO pela velocidade a cada
+ * tick (medido no BDS: deslocamento 1,91 × v, atrito 0,91 e gravidade de mob), e a bola voava a ~2,5 blocos/tick e
+ * caía ~3 blocos em 10 blocos — e a física do ThrowableProjectile (gravidade 0,03, retenção 0,99) com o arremesso por
+ * cima (+5°, `angle_offset`) do PokeBallItem. Antes a potência era throwPower × 1,2 para compensar a olho.
+ */
 export function projectilePower(ball: PokeBall): number {
-  return Math.round(ball.throwPower * 1.2 * 100) / 100;
+  return ball.throwPower;
+}
+
+/**
+ * PokeBallItem.throwPokeBall: `shootFromRotation(player, xRot - overhandFactor, ...)`, com
+ * `overhandFactor = xRot < 0 ? 5 × cos(xRot) : 5` (graus; xRot < 0 = olhando para cima).
+ */
+export function overhandPitch(pitch: number): number {
+  return pitch - (pitch < 0 ? 5 * Math.cos(pitch * Math.PI / 180) : 5);
 }

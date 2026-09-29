@@ -67,6 +67,7 @@
     },
     "description": {
       "is_spawnable": false,
+      "runtime_identifier": "minecraft:snowball",
       "is_summonable": true,
       "is_experimental": false,
       "identifier": "cobblemon:ancient_poke_ball",
@@ -117,9 +118,11 @@
       "minecraft:physics": {},
       "minecraft:projectile": {
         "anchor": 1,
-        "gravity": 0.1,
+        "angle_offset": -5,
+        "gravity": 0.03,
+        "inertia": 0.99,
         "liquid_inertia": 0.8,
-        "power": 1.5,
+        "power": 1.25,
         "stop_on_hurt": true
       },
       "minecraft:pushable": {}

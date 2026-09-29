@@ -13,6 +13,7 @@ import { rewriteMolang, scanMolang, splitArgs, unquote } from "./molang.ts";
 import { fixBones } from "./animationBake.ts"; // frente cliente-modelos
 import { particleIndex } from "./particles.ts";
 import { ASSETS, BEDROCK_POKEMON, DATA, OUT_RP, OUT_SCRIPTS, count, readJson, tryReadJson, walk, warn, writeJson, writeText } from "./util.ts";
+import { jsonValueExpression, typeCheckModule } from "./jsonTable.ts"; // frente otimizacao (#8)
 
 /** Condição sobre a entidade (conjunção). Ausente = não testa. */
 export interface EntityCond {
@@ -292,6 +293,8 @@ export function emitActionEffects(_anims?: AnimationIndex, models?: Map<string, 
 		}
 	}
 	const locators = speciesLocators(geoFiles, ctx.locators);
+	// Frente otimizacao (#8): ACTION_EFFECTS por JSON.parse; cópia tipada em _tipos/ para o tsc.
+	writeText(`${OUT_SCRIPTS}/_tipos/actionEffects.check.ts`, typeCheckModule("../actionEffects", ["ActionKeyframe"], [{ name: "ACTION_EFFECTS", type: "Record<string, ActionKeyframe[]>", literal: JSON.stringify(timelines) }]));
 	writeText(
 		`${OUT_SCRIPTS}/actionEffects.ts`,
 		`// Arquivo gerado por tools/importer/actionEffects.ts (npm run import). Não edite à mão.
@@ -308,7 +311,7 @@ export type ActionKeyframe =
 	| { t: "seq"; cond?: "not_status"; kfs: ActionKeyframe[] };
 
 /** Timelines de data/cobblemon/action_effects (id = nome do arquivo). */
-export const ACTION_EFFECTS: Record<string, ActionKeyframe[]> = ${JSON.stringify(timelines)};
+export const ACTION_EFFECTS: Record<string, ActionKeyframe[]> = ${jsonValueExpression(timelines, "ACTION_EFFECTS")};
 
 /** q.bedrock_stateful('grupo', 'nome') das timelines → animação genérica emitida no RP. */
 export const GENERIC_ANIMATIONS: Record<string, string> = ${JSON.stringify(play)};

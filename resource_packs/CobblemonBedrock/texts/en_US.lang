@@ -504,3 +504,15 @@ cobblemon.selftest.screen.achievements=Advancements
 cobblemon.selftest.screen.stats=Statistics
 cobblemon.selftest.screen.toast_capture=Capture toast
 cobblemon.selftest.screen.toast_advancement=Advancement toast
+
+## controle (item de controle "Poké Ball do time": teclas R, setas e M do Cobblemon)
+item.cobblemon.party_control=Party Poké Ball
+cobblemon.port.controle.lore1=§7Use: party • Sneak+use: send out/recall
+cobblemon.port.controle.lore2=§7Sneak+attack: next Pokémon
+cobblemon.port.controle.hint.mouse=Right-click: party • Sneak+right: send out/recall • Sneak+left: next
+cobblemon.port.controle.hint.gamepad=Use (LT/L2): party • Sneak+use: send out/recall • Sneak+attack (RT/R2): next
+cobblemon.port.controle.hint.touch=Tap: party • Sneak+tap: send out/recall • Sneak+attack (or hold on a block): next
+cobblemon.port.controle.received=You received the Party Poké Ball: use it to open your party; sneak + use sends out/recalls the selected Pokémon; sneak + attack selects the next one.
+cobblemon.port.controle.already=You already have the Party Poké Ball.
+cobblemon.port.controle.full=Your inventory is full: free a slot to receive the Party Poké Ball.
+cobblemon.port.controle.empty_slot=The selected party slot is empty.

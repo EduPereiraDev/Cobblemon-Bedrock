@@ -52,6 +52,7 @@ import { spawnRuleCommand } from "./spawning/SpawnRules";
 import { RIDING_STATS, RidingStat, getMaxRideBoost, isRidingStat, setRideBoost } from "./pokemon/RideStats";
 import { registerBattleUiCommand } from "./battle/BattleUiMode";
 import { registerSelfTestCommand } from "./debug/SelfTest";
+import { registerControlCommand } from "./controle"; // frente controle: /cobblemon:controle
 
 // ---------------------------------------------------------------------------------------------
 // Ajudantes puros (testados em tests/interface.test.ts)
@@ -220,6 +221,7 @@ export function registerCommands(event: StartupEvent) {
   registerBattleUiCommand(event);
   // /cobblemon:selftest [modo] (+ scriptevent cobblemon:selftest): exercita o add-on para gerar o ContentLog do cliente.
   registerSelfTestCommand(event);
+  registerControlCommand(event);
 }
 
 // ---------------------------------------------------------------------------------------------

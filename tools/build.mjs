@@ -67,6 +67,26 @@ console.log(clean ? "build público: sem nada do Mega Showdown" : privateBuild ?
 if (withMsd) buildMsdPacks();
 else if (!clean) console.log("Mega Showdown: generated/ sem o pack (rode `npm run import` com upstream/mega-showdown no commit fixado)");
 
+// Frente otimizacao: pack menor e com menos arquivos, sem mudar nada no jogo (tools/optimize/index.mjs; as provas de
+// equivalência rodam aqui e derrubam o build se falharem). COBBLEMON_OPT=0 desliga. O pack MSD não é mexido; o que ele
+// cita ou sobrescreve no base fica como está.
+if (process.env.COBBLEMON_OPT !== "0") {
+	const { optimizeDist } = await import("./optimize/index.mjs");
+	try {
+		const report = await optimizeDist({
+			root,
+			rp: rpOut,
+			bp: bpOut,
+			msdRp: withMsd ? join(dist, "resource_packs", MSD_PACK) : undefined,
+			msdBp: withMsd ? join(dist, "behavior_packs", MSD_PACK) : undefined,
+		});
+		writeFileSync(join(dist, "optimize-report.json"), JSON.stringify(report, null, 2));
+	} catch (e) {
+		console.error(e instanceof Error ? e.message : e);
+		process.exit(1);
+	}
+}
+
 /**
  * Pack Mega Showdown: conteúdo gerado (+ escrito à mão em behavior_packs|resource_packs/CobblemonMegaShowdown, se
  * houver) e manifests. Ordem que vale no mundo (prova c, docs/pendencias/msd.md): o RP do MSD depende do BP do MSD e

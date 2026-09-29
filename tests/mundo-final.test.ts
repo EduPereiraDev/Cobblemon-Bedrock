@@ -224,9 +224,10 @@ clearHabitats();
 	const empty = registerHabitat("minecraft:overworld", { x: 50, y: 64, z: 50 }, defaultSettings());
 	assert.equal(activationBudget(empty, () => 0), 0);
 	assert.equal(influentialRange(empty, "world"), -1, "sem cancelamento por padrão");
-	// Bloco que sumiu do mundo sai do registro quando é conferido.
+	// Bloco que sumiu do mundo sai do registro quando é conferido. Frente habitat-mimic: o habitat agora É o bloco
+	// imitado (minecraft:stone por padrão), então "sumiu" = ar (tests/habitat-mimic.test.ts cobre imitado/trocado).
 	tick += 1000;
-	habitatWorld.lookup = () => "minecraft:stone";
+	habitatWorld.lookup = () => "minecraft:air";
 	assert.equal(detectHabitats("minecraft:overworld", { x: 0, y: 64, z: 0 }, 8, 8, "world").length, 0);
 	habitatWorld.lookup = () => "cobblemon:habitat_block";
 }

@@ -734,6 +734,9 @@ export class BlockBuilder {
 			// script) e o ticker do HabitatBlockEntity (fases, gatilhos) por scripts/spawning/Habitats.ts.
 			m.extraStates["cobblemon:habitat_pool"] = Array.from({ length: 16 }, (_, i) => i);
 			m.extraStates["cobblemon:habitat_pool_hi"] = [0, 1, 2, 3];
+			// Frente habitat-mimic: bloco que a âncora imita (índice em HABITAT_ANCHOR_MIMICS[pool]); o script troca a
+			// âncora por ele no 1º tick (scripts/machines/habitat.ts).
+			m.extraStates["cobblemon:habitat_mimic"] = [0, 1, 2, 3];
 			components["minecraft:tick"] = { interval_range: [10, 10], looping: true };
 		}
 	}

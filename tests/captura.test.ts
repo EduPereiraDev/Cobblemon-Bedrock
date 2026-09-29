@@ -152,9 +152,10 @@ function sequence(...values: number[]) {
 	assert.equal(pokeBallName("luxuryball"), "luxury_ball");
 	assert.equal(pokeBallName("cobblemon:poke_ball_dummy"), "poke_ball");
 	assert.equal(getPokeBall("cobblemon:ancient_jet_ball")!.throwPower, 2.5);
-	assert.equal(projectilePower(getPokeBall("ancient_jet_ball")!), 3);
-	assert.equal(projectilePower(getPokeBall("ancient_gigaton_ball")!), 0.9);
-	assert.equal(projectilePower(getPokeBall("poke_ball")!), 1.5);
+	// Frente ball-hit: potência do minecraft:projectile = throwPower do Java (blocos/tick, 1:1 no Bedrock).
+	assert.equal(projectilePower(getPokeBall("ancient_jet_ball")!), 2.5);
+	assert.equal(projectilePower(getPokeBall("ancient_gigaton_ball")!), 0.75);
+	assert.equal(projectilePower(getPokeBall("poke_ball")!), 1.25);
 	assert.equal(getPokeBall("dive_ball")!.waterDragValue, 0.99);
 	assert.ok(getPokeBall("master_ball")!.catchRateModifier.isGuaranteed());
 	assert.ok(getPokeBall("ancient_origin_ball")!.catchRateModifier.isGuaranteed());

@@ -60,17 +60,42 @@ Mac na rede local.
 
 ## 3. No jogo
 
+### Poké Ball do time (os controles do Cobblemon num item)
+
+O Bedrock não deixa um add-on criar teclas, então as teclas do Cobblemon Java (**R** = envio rápido, **setas** do
+overlay = trocar o selecionado, **M** = menu do time) viram um item: a **Poké Ball do time** (ícone de Poké Ball com
+brilho). Todo jogador recebe uma ao entrar no mundo e ela **nunca sai do inventário**: não pode ser dropada, posta em
+baú, funil, moldura, suporte de armadura, vitrine ou vaso, trocada com aldeão nem usada em receita, e fica com você ao
+morrer. Se sumir (ex.: `/clear`) volta em ~1 s; cópias extras somem. `/cobblemon:controle` devolve na hora e mostra a
+dica de novo.
+
+| Com o item na mão | Teclado e mouse | Controle | Celular | Faz |
+|---|---|---|---|---|
+| Usar, em pé | botão direito | LT / L2 | tocar (no ar ou no chão) | abre o menu do time (o mesmo de `/cobblemon:party`); sem time, a escolha do inicial |
+| Agachado + usar | Shift + direito | Agachar + LT/L2 | agachar + tocar | envio rápido (tecla R): solta o selecionado onde você olha ou recolhe se já está fora; mirando um **selvagem**, batalha com o selecionado na frente; mirando um **jogador**, o menu de batalha/troca; em batalha, minimiza/reabre a tela |
+| Agachado + atacar | Shift + esquerdo (no ar, num bloco ou numa entidade) | Agachar + RT/R2 | agachar + atacar numa entidade ou segurar num bloco | próximo Pokémon do time, de cima para baixo e de volta ao 1º (o HUD marca). Não quebra o bloco nem dá dano; num **selvagem**, começa a batalha com o selecionado. Em batalha não troca |
+| Usar no **seu** Pokémon, em pé | direito nele | LT/L2 nele | tocar nele | menu do Pokémon |
+| Usar no **seu** Pokémon, agachado | Shift + direito nele | Agachar + LT/L2 nele | agachar + tocar nele | montar (ou pôr no ombro); se ele não é montável, abre o menu do Pokémon. Mirar no próprio Pokémon tem prioridade sobre jogar/recolher |
+| Usar num selvagem, em pé | direito nele | LT/L2 nele | tocar nele | batalha (como de mão vazia) |
+
+- Em pé, usar num bloco interativo (baú, porta, PC, Healing Machine...) faz o normal do bloco; em moldura, vaso
+  decorado e vitrine não faz nada (o item não sai da mão). Montado, só "usar em pé" vale (agachar é descer).
+- Nas primeiras vezes que você segura o item, a actionbar mostra os controles; a dica some depois de 5 vezes ou 5 usos.
+- Os atalhos antigos continuam: agachado + pular (tecla R), agachar 2× (próximo), emote (time) e os comandos.
+- No celular com os controles clássicos de toque, tocar no ar não gera "atacar": para o próximo do time, agache e
+  toque numa entidade ou segure num bloco, ou use agachar 2× rápido.
+
 | Ação | Como |
 |---|---|
 | Escolher o inicial (11 regiões, como no Cobblemon) | aparece sozinho no primeiro login, ou `/cobblemon:starter` |
-| Menu do time: mandar para fora/recolher, resumo, golpes, item segurado, apelido, evoluir, mandar para o PC, soltar | `/cobblemon:party` ou fazer um emote |
+| Menu do time: mandar para fora/recolher, resumo, golpes, item segurado, apelido, evoluir, mandar para o PC, soltar | usar a Poké Ball do time, `/cobblemon:party` ou fazer um emote |
 | Resumo (info, atributos/IVs/EVs, golpes, marcas, saciedade, passos) | no menu do time, ou `/cobblemon:summary [espaço]`; o botão 3D/2D mostra o modelo ao vivo (lembrado por jogador). Tocar no retrato/modelo faz o Pokémon gritar; tocar de novo na aba Atributos mostra a página de montaria (valor/máx e % de bônus por estilo) |
 | Markings (os 6 símbolos do Cobblemon) | no resumo, toque em cada símbolo para passar pelos 3 estados; ficam gravados ao sair ou trocar de Pokémon e aparecem na prévia do PC |
 | Time na tela (HUD do Cobblemon à esquerda: retrato, HP/EXP, status, selecionado) | ligado por padrão; `/cobblemon:partyhud [true/false] [overlay/text]` liga/desliga e troca o estilo (`text` = a linha antiga na actionbar) |
 | PC (40 caixas, como no Cobblemon 1.7+; grade 6×5 com o time ao lado, papel de parede, mover/trocar, levar para o time, renomear caixa, soltar) | bloco de PC, botão "PC" no menu do time, ou `/cobblemon:pc [caixa]`. Reabre na última caixa vista |
 | PC: ordenar e filtrar | **Ordenar** a caixa por nome, nível, tipo, nº da Pokédex ou gênero (crescente/decrescente). **Filtrar** escurece quem não passa: nome parcial (`pika`), `!` para negar, `holding`, `fainted`, `legendary`, `mythical`, `ultrabeast` ou propriedades (`shiny`, `level=50`, `gender=female`...) |
-| Pokémon selecionado do time (setas do overlay no Cobblemon) | agachar duas vezes rápido passa para o próximo (o HUD marca o selecionado; em batalha não troca), ou `/cobblemon:selectslot <1-6>` |
-| Envio rápido (tecla R do Cobblemon) | agachado + pular: solta/recolhe o selecionado onde você olha; mirando um selvagem, batalha com ele na frente; mirando um jogador, abre batalha/troca; em batalha, minimiza ou reabre a tela da batalha (linha abaixo). Também `/cobblemon:sendout [1-6]` |
+| Pokémon selecionado do time (setas do overlay no Cobblemon) | agachado + atacar com a Poké Ball do time, ou agachar duas vezes rápido passa para o próximo (o HUD marca o selecionado; em batalha não troca), ou `/cobblemon:selectslot <1-6>` |
+| Envio rápido (tecla R do Cobblemon) | agachado + usar com a Poké Ball do time, ou agachado + pular: solta/recolhe o selecionado onde você olha; mirando um selvagem, batalha com ele na frente; mirando um jogador, abre batalha/troca; em batalha, minimiza ou reabre a tela da batalha (linha abaixo). Também `/cobblemon:sendout [1-6]` |
 | Capturar | arremessar uma Poké Bola no Pokémon selvagem. Como no Cobblemon, a bola que **não chega a capturar** (bateu no chão ou num bloco, acertou outra coisa, ou a captura foi recusada: Pokémon com dono, incapturável, ocupado, em batalha de outro, fora da sua vez) cai no chão como item da mesma bola e pode ser pega de volta; no criativo ela só some (e não é gasta). A bola em que o Pokémon **escapou** é gasta (quebra), e a que voa 30 s sem acertar nada some |
 | Pokédex e scanner | usar a Pokédex sem mirar abre a tela; usar mirando um Pokémon (até 10 blocos) escaneia com zoom por 15 ticks e abre a entrada. **Agachar + usar** liga o modo scanner: a roda do mouse/troca de hotbar dá zoom e mirar registra sem abrir a tela; usar sem agachar, trocar de item ou morrer desliga |
 | Move Dex (golpes na Pokédex) | na entrada de uma espécie, botão **Golpes**: golpes por nível, TM e ovo (filtros Todos/Nível/TM/Ovo), ordem por nível/nome/tipo/descoberto, troca de forma e detalhes do golpe. TMs que você ainda não aprendeu aparecem travados (a config `unlockAllMoveDexMovesByDefault` libera todos) |

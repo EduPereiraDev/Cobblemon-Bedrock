@@ -9,7 +9,7 @@ import { getSafeTeam } from "./pokemonStorage";
 import { registerCustomComponents } from "./custom_components";
 import { setupCobblemon } from "./Pokemon";
 import { registerCommands } from "./commands";
-import { hasTeam, offerStarter, promptStarterOnJoin, startStarterReminder } from "./starter";
+import { hasSelectedStarter, hasTeam, offerStarter, promptStarterOnJoin, startStarterReminder } from "./starter";
 import WorldCleanup from "./Cleanup";
 import { message } from "./language";
 import { bindCatchEvents } from "./catching";
@@ -50,6 +50,7 @@ import { registerLimitPrototypes } from "./experimental/limits"; // pesquisa 8: 
 import { startAdaptacoes } from "./adaptacoes"; // frente adaptacoes: funil/comparador da panela, abelhas, dispenser, vaso, Mental Herb
 import { startComparadores } from "./comparadores"; // frente comparadores: comparador da Healing Machine e do Metronome
 import { startLimitesB } from "./limitesB"; // frente limites-b: pinturas, enfermeira, fazendeiro, estruturas vanilla
+import { handleControlPokemonInteract, isControlItem, startControlItem } from "./controle"; // frente controle: Poké Ball do time
 // Extensão Mega Showdown: privada (fora do repositório público). `@private/*` resolve pelo `paths` do tsconfig para
 // scripts/extensions/megaShowdown/ quando existe e para extensions/privateStub.ts quando não (e sempre no build público).
 import { isMegaShowdownActive, startMegaShowdown } from "@private/mega-showdown"; // frente msd-infra: extensão Mega Showdown (dormente sem o pack)
@@ -98,9 +99,15 @@ world.beforeEvents.playerInteractWithEntity.subscribe(event => {
     return;
   }
   if (!target.typeId.startsWith("cobblemon:") || !target.getComponent("minecraft:type_family")?.hasTypeFamily("pokemon")) return;
-  const heldItem = event.itemStack;
+  let heldItem = event.itemStack;
   // Com a Pokédex na mão, o clique é o scanner da Pokédex, não interação com o Pokémon.
   if (heldItem?.typeId.startsWith("cobblemon:pokedex")) return;
+  // Frente controle: com a Poké Ball do time, agachado + usar num selvagem = batalha com o selecionado e no próprio
+  // Pokémon = montar (ou o menu dele); no resto, a interação é a de mão vazia (o item nunca vai para o Pokémon).
+  if (isControlItem(heldItem?.typeId)) {
+    if (handleControlPokemonInteract(event)) return;
+    heldItem = undefined;
+  }
   event.cancel = true;
   // Frente ui-cliente: com Poké Ball na mão, usar mirando o Pokémon arremessa (no Bedrock a mira na entidade troca o
   // itemUse por esta interação; no Java o mobInteract passa e o PokeBallItem.use arremessa).
@@ -194,6 +201,14 @@ world.afterEvents.worldLoad.subscribe(event => {
     },
     startWildBattle: (player, wild) => { startWildBattle(player, wild); },
     openPlayerMenu: (player, target) => { void openPlayerInteractionMenu(player, target); },
+  });
+  // Frente controle: item "Poké Ball do time" (usar = time, agachado + usar = envio rápido, agachado + atacar = próximo).
+  startControlItem({
+    inBattle: isPlayerInAnyBattle,
+    hasTeam,
+    openParty: player => { void openPartyMenu(player); },
+    offerStarter: player => { void offerStarter(player); },
+    hasSelectedStarter,
   });
 });
 

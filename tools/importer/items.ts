@@ -12,7 +12,7 @@ import { loadKotlinItems, statPath } from "./kotlin.ts";
 import type { KtItem } from "./kotlin.ts";
 import { decodePng, encodePng, firstFrame } from "./png.ts";
 import { compostChance } from "./mundoDetalhes.ts"; // frente mundo-detalhes
-import { legacyBallIcons } from "./legacyBallIcons.ts";
+import { legacyBallGuiIcons, legacyBallIcons } from "./legacyBallIcons.ts";
 import { ASSETS, DATA, OUT_BP, OUT_RP, OUT_SCRIPTS, copyFile, count, parseLenient, readJson, splitId, tryReadJson, walk, warn, writeJson, writeText } from "./util.ts";
 
 export const ITEM_FORMAT = "1.21.90";
@@ -279,6 +279,7 @@ export function buildItems(blocks: Map<string, BlockOut>, projectiles: Set<strin
 	for (const b of blocks.values()) if (b.hasOwnItem) ids.add(b.placeBlock);
 	// Poké Balls só do port (itens à mão, ex.: strange_ball): ícone gerado a partir do modelo da bola.
 	count("ícones de Poké Balls à mão", legacyBallIcons(iconData));
+	count("ícones de tela de Poké Balls à mão", legacyBallGuiIcons());
 	writeJson(`${OUT_RP}/textures/item_texture.json`, { resource_pack_name: "CobblemonBedrock", texture_name: "atlas.items", texture_data: iconData });
 	emitScriptItems(scriptItems);
 	count("itens (JSON)", json);

@@ -52,7 +52,7 @@ export const EasingType = { Linear: "Linear", InOutSine: "InOutSine", OutQuad: "
 export const ScriptEventSource = { Block: "Block", Entity: "Entity", NPCDialogue: "NPCDialogue", Server: "Server" };
 // Frente "mundo-detalhes" (vasos/apricorn/raio): faces de bloco e causas de dano.
 export const Direction = { Down: "Down", East: "East", North: "North", South: "South", Up: "Up", West: "West" };
-export const EntityDamageCause = { fireTick: "fireTick", freezing: "freezing", lightning: "lightning", contact: "contact" };
+export const EntityDamageCause = { fireTick: "fireTick", freezing: "freezing", lightning: "lightning", contact: "contact", entityAttack: "entityAttack", projectile: "projectile" };
 // Pesquisa 8 (scripts/experimental/limits): esquema de controle, splines de câmera e texto por jogador.
 export const ControlScheme = { CameraRelative: "CameraRelative", CameraRelativeStrafe: "CameraRelativeStrafe", LockedPlayerRelativeStrafe: "LockedPlayerRelativeStrafe", PlayerRelative: "PlayerRelative", PlayerRelativeStrafe: "PlayerRelativeStrafe" };
 export class LinearSpline { controlPoints: unknown[] = []; }
@@ -63,3 +63,8 @@ export const BlockTypes = { get: (id: string) => ({ id }), getAll: () => [] };
 export const ItemTypes = { get: (_id: string): unknown => undefined, getAll: (): unknown[] => [] };
 // Frente "review-fixes-3" (enfermeira: zumbificação/cura; mental_restoration: causa do spawn).
 export const EntityInitializationCause = { Born: "Born", Event: "Event", Loaded: "Loaded", Spawned: "Spawned", Transformed: "Transformed" };
+
+// Frente controle: trava do item de controle e filtros do balanço do braço.
+export const ItemLockMode = { inventory: "inventory", none: "none", slot: "slot" };
+export const HeldItemOption = { AnyItem: "AnyItem", NoItem: "NoItem" };
+export const EntitySwingSource = { Attack: "Attack", Build: "Build", DropItem: "DropItem", Event: "Event", Interact: "Interact", Mine: "Mine", None: "None", ThrowItem: "ThrowItem", UseItem: "UseItem" };

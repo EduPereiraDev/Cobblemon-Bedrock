@@ -9,6 +9,7 @@ import { basename } from "node:path";
 import type { SpawnBuilder } from "./spawns.ts";
 import { parseRange } from "./spawns.ts";
 import { DATA, OUT_SCRIPTS, count, readJson, walk, warn, writeText } from "./util.ts";
+import { jsonTableExpression, objectLiteral, tableLines, typeCheckModule } from "./jsonTable.ts"; // frente otimizacao (#8)
 
 export interface HabitatSpawnOut {
 	id: string;
@@ -101,8 +102,10 @@ const HEADER = "// Arquivo gerado por tools/importer (npm run import). Não edit
  * Emite generated/scripts/habitats.ts. `anchorRanges`: alcance (blocos) do bloco de habitat "âncora" das
  * estruturas convertidas por pool (cobre todos os blocos de habitat do molde original + rangeOfInfluence).
  */
-export function emitHabitatsModule(pools: HabitatPoolOut[], anchorRanges: Map<string, number>): void {
-	const body = pools.map((p) => `\t${JSON.stringify(p.id)}: ${JSON.stringify(p)},`).join("\n");
+export function emitHabitatsModule(pools: HabitatPoolOut[], anchorRanges: Map<string, number>, anchorMimics: Map<string, Array<{ name: string; states: Record<string, string | number | boolean> }>> = new Map()): void {
+	// Frente otimizacao (#8): HABITAT_POOLS por JSON.parse("…"); cópia tipada em _tipos/ para o tsc.
+	const body = tableLines(pools.map((p) => [p.id, p] as [string, unknown]), "HABITAT_POOLS");
+	writeText(`${OUT_SCRIPTS}/_tipos/habitats.check.ts`, typeCheckModule("../habitats", ["HabitatPoolData"], [{ name: "HABITAT_POOLS", type: "Record<string, HabitatPoolData>", literal: objectLiteral(body) }]));
 	writeText(
 		`${OUT_SCRIPTS}/habitats.ts`,
 		`${HEADER}
@@ -123,12 +126,19 @@ export interface HabitatPoolData {
 }
 
 /** data/cobblemon/habitat_pools do Cobblemon 1.8.2. */
-export const HABITAT_POOLS: Record<string, HabitatPoolData> = {
-${body}
-};
+export const HABITAT_POOLS: Record<string, HabitatPoolData> = ${jsonTableExpression(body, "HABITAT_POOLS")};
 
 /** Alcance do bloco âncora das estruturas convertidas (por pool), em blocos. */
 export const HABITAT_ANCHOR_RANGES: Record<string, number> = ${JSON.stringify(Object.fromEntries([...anchorRanges].sort()))};
+
+/** Bloco imitado (Bedrock) pelas âncoras de cada pool; índice = estado cobblemon:habitat_mimic da âncora. */
+export interface HabitatMimicBlock {
+	name: string;
+	states: Record<string, string | number | boolean>;
+}
+
+/** Blocos imitados das âncoras das estruturas convertidas, por pool (frente habitat-mimic). */
+export const HABITAT_ANCHOR_MIMICS: Record<string, HabitatMimicBlock[]> = ${JSON.stringify(Object.fromEntries([...anchorMimics].sort(([a], [b]) => a.localeCompare(b))))};
 `,
 	);
 }

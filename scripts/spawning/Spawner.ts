@@ -13,8 +13,10 @@
  * 5. Criação: nível sorteado na faixa, shiny por `shinyRate`, Alfa (aspect + marca + moveset "alpha"),
  *    item segurado, dados do herd.
  *
- * Os passes andam em rodízio (no máximo SPAWN_TUNING.maxPassesPerRun por execução) e o despawn por
- * idade roda a cada segundo sobre um lote de entidades. Passes acima de SPAWN_TUNING.slowPassMs geram
+ * Cada jogador tem o seu timer e o seu passe fatiado (PlayerSpawnScheduler, frente spawn-multi): todos os passes em
+ * andamento andam a cada tick com um orçamento POR JOGADOR, então a taxa de passes por jogador é a do Cobblemon com
+ * qualquer número de jogadores; os limites (cap por chunk, teto por jogador) são locais. O despawn por idade roda a cada
+ * segundo sobre um lote de entidades proporcional ao número de jogadores. Fatias acima de SPAWN_TUNING.slowPassMs geram
  * um aviso no log.
  *
  * API para outras frentes (pesca, Poké Snack, comandos): ver docs/pendencias/spawn.md.
@@ -49,9 +51,19 @@ export { bucketNormalizingInfluence, selectSpawnActions } from "./SpawnSelector"
 
 /** Ajustes só do port (não existem na config do Cobblemon). */
 export const SPAWN_TUNING = {
-  /** Intervalo do laço de spawn (ticks). Cada execução roda no máximo maxPassesPerRun passes. */
-  runIntervalTicks: 2,
-  maxPassesPerRun: 1,
+  /**
+   * Frente spawn-multi: orçamento de CPU por jogador e por tick, [mín, máx] em ms, para as fatias do passe dele
+   * (PlayerSpawnScheduler). Por jogador, não global: cada jogador tem o seu passe a cada ticksBetweenSpawnAttempts, com
+   * qualquer nº de jogadores. Dentro da faixa, o orçamento segue o custo medido dos passes do jogador.
+   */
+  playerTickBudgetMs: [2, 15] as [number, number],
+  /** Fração de ticksBetweenSpawnAttempts em que um passe deve terminar (o orçamento por jogador é calculado para isso). */
+  passTargetFraction: 0.6,
+  /**
+   * Salvaguarda do watchdog (pico de ~100 ms por tick): tempo dos passes num tick (ms) a partir do qual os que faltam
+   * andam no tick seguinte, primeiro que os outros. Só entra quando a máquina não dá conta de todos os passes.
+   */
+  tickCeilingMs: 40,
   /** Colunas da zona examinadas por passe (a zona 8×8 tem 64). */
   zoneColumns: 12,
   /** Blocos extras acima da zona lidos para medir o espaço livre das posições. */
@@ -63,14 +75,21 @@ export const SPAWN_TUNING = {
   hasSpaceReadBudget: 1200,
   /** Aviso no log quando um passe passa disso (ms). */
   slowPassMs: 20,
-  /** Salvaguarda por jogador: selvagens num raio de maximumSpawningZoneDistanceFromPlayer + 16. */
-  maxWildPerPlayer: 64,
+  /**
+   * Salvaguarda do port (não existe no Java): selvagens num raio de maximumSpawningZoneDistanceFromPlayer + 16 (80).
+   * Frente spawn-multi: era 64 e travava a densidade abaixo do cap local do Java (3×3 chunks, pokemonPerChunk) com
+   * jogadores juntos — medido: passes "teto" e 64–69 selvagens em volta. Pelo cap do Java, cada caixa de 48×48 em volta
+   * de uma zona passa de no máximo 9 + (maximumSpawnsPerPass − 1) = 16; o disco de raio 80 cobre ~8,7 caixas (~140).
+   * Com 160 ela quase não corta antes do cap do Java (medido: 0 passes com 1–4 jogadores juntos, 6 de 1075 com 6); fica
+   * contra acúmulo patológico (despawn desligado na config etc.).
+   */
+  maxWildPerPlayer: 160,
   /**
    * Nível pelo time do jogador (PlayerLevelRangeInfluence). No Cobblemon 1.8.2 não tem efeito
    * nos spawns naturais (o nível é sobrescrito); desligado por paridade.
    */
   playerLevelScaling: false,
-  /** Despawn: intervalo (ticks) e entidades avaliadas por rodada. */
+  /** Despawn: intervalo (ticks) e entidades avaliadas por rodada POR JOGADOR da dimensão. */
   despawnIntervalTicks: 20,
   despawnBatch: 32,
   /** AlphaLevelMatchingSensor: raio (blocos). */
@@ -311,6 +330,15 @@ function noteRead(stats: ReadStats, ms: number) {
 export function singleReadNote(worstSliceMs: number, worstSliceReadMs: number): string {
   if (worstSliceMs <= 0 || worstSliceReadMs < worstSliceMs * 0.8) return "";
   return `; ${worstSliceReadMs} ms numa única leitura de bloco (chamada indivisível: parada do motor ou do coletor de lixo, não trabalho do spawner)`;
+}
+
+/**
+ * Frente spawn-multi: o mesmo de singleReadNote para UMA consulta ao mundo (containsBlock de blocos por perto ou da zona,
+ * consulta de estrutura): no BDS emulado vistas paradas de 21–146 ms numa única chamada nativa.
+ */
+export function singleQueryNote(worstSliceMs: number, worstSliceQueryMs: number): string {
+  if (worstSliceMs <= 0 || worstSliceQueryMs < worstSliceMs * 0.8) return "";
+  return `; ${worstSliceQueryMs} ms numa única consulta ao mundo (chamada indivisível: parada do motor ou do coletor de lixo, não trabalho do spawner)`;
 }
 
 /** AreaSpawnablePosition.isSafeSpace por tipo de posição (o bloco que o hitbox ocuparia). */
@@ -884,7 +912,7 @@ export function trySpawnNear(player: Player): SpawnAction[] {
  * as fatias entre os ticks. No mundo hospedado pelo cliente um passe inteiro de 26–148 ms num tick só travava o
  * anfitrião. A taxa de passes (ticksBetweenSpawnAttempts) e a seleção são as mesmas; o spawn sai alguns ticks depois.
  */
-function* spawnPass(player: Player, sliced: boolean): Generator<void, SpawnAction[], void> {
+function* spawnPass(player: Player, sliced: boolean, outcome: PassOutcome = { result: "desligado", spawned: 0 }): Generator<void, SpawnAction[], void> {
   // Fatiado, o job só começa num tick seguinte: o jogador pode ter saído (o laço conferiu antes).
   if (!player.isValid) return [];
   const s = settings();
@@ -894,17 +922,22 @@ function* spawnPass(player: Player, sliced: boolean): Generator<void, SpawnActio
   const readStats: ReadStats = { maxReadMs: 0, reads: 0, sliceMaxReadMs: 0 };
   worldQueryStats.calls = 0;
   worldQueryStats.maxMs = 0;
+  worldQueryStats.sliceMaxMs = 0;
   let sliceStart = t0;
   let worstSlice = 0;
   let worstPart = "";
   let worstSliceRead = 0;
+  let worstSliceQuery = 0;
   const endSlice = (part: string) => {
     const ms = Date.now() - sliceStart;
-    if (ms > worstSlice) { worstSlice = ms; worstPart = part; worstSliceRead = readStats.sliceMaxReadMs ?? 0; }
+    if (ms > worstSlice) { worstSlice = ms; worstPart = part; worstSliceRead = readStats.sliceMaxReadMs ?? 0; worstSliceQuery = worldQueryStats.sliceMaxMs; }
     readStats.sliceMaxReadMs = 0;
+    worldQueryStats.sliceMaxMs = 0;
   };
   const zone = constrainZone(zoneFor(player, s), s);
+  outcome.result = "zona";
   if (!zone) return [];
+  outcome.result = "cap";
   if (zoneIsFull(zone, s.pokemonPerChunk)) return [];
   // Frente cliente-teste4: as duas consultas de entidades (getEntities, nativas) em fatias separadas; juntas passavam de
   // 20 ms no BDS emulado ("passe lento: 22 ms na maior fatia (zona …)"). Mesmas consultas, mesma ordem.
@@ -914,7 +947,9 @@ function* spawnPass(player: Player, sliced: boolean): Generator<void, SpawnActio
     sliceStart = Date.now();
     if (!player.isValid) return [];
   }
+  outcome.result = "teto";
   if (wildNear(player, s.maximumSpawningZoneDistanceFromPlayer + 16) >= SPAWN_TUNING.maxWildPerPlayer) return [];
+  outcome.result = "ok";
   const t1 = Date.now();
   if (sliced) {
     endSlice("zona");
@@ -981,6 +1016,7 @@ function* spawnPass(player: Player, sliced: boolean): Generator<void, SpawnActio
     sliceStart = Date.now();
   }
   endSlice("fim");
+  outcome.spawned = done.length;
   const t4 = Date.now();
   // Fatiado, o que pesa no tick é a maior fatia (o passe inteiro se espalha por vários ticks).
   const cost = sliced ? worstSlice : t4 - t0;
@@ -988,51 +1024,301 @@ function* spawnPass(player: Player, sliced: boolean): Generator<void, SpawnActio
   if (sliced && debugProbesEnabled()) console.info(`[spawn] passe: maior fatia ${worstSlice} ms (${worstPart}), relógio ${t4 - t0} ms, posições ${positions.length}, leituras de bloco ${readStats.reads}, a maior ${readStats.maxReadMs} ms, na maior fatia ${worstSliceRead} ms, consultas ao mundo ${worldQueryStats.calls}, a maior ${worldQueryStats.maxMs} ms, entidades ${done.length}`);
   if (cost > SPAWN_TUNING.slowPassMs && t4 - lastSlowWarning > 10000) {
     lastSlowWarning = t4;
-    console.warn(`[spawn] passe lento: ${cost} ms${sliced ? ` na maior fatia (${worstPart}; passe em ${t4 - t0} ms de relógio)` : ""} (zona ${t1 - t0}, posições ${t2 - t1} [${positions.length}], seleção ${t3 - t2}, entidades ${t4 - t3} [${done.length}]; leituras de bloco ${readStats.reads}, a maior ${readStats.maxReadMs} ms; consultas ao mundo ${worldQueryStats.calls}, a maior ${worldQueryStats.maxMs} ms${sliced ? singleReadNote(worstSlice, worstSliceRead) : ""})`);
+    console.warn(`[spawn] passe lento: ${cost} ms${sliced ? ` na maior fatia (${worstPart}; passe em ${t4 - t0} ms de relógio)` : ""} (zona ${t1 - t0}, posições ${t2 - t1} [${positions.length}], seleção ${t3 - t2}, entidades ${t4 - t3} [${done.length}]; leituras de bloco ${readStats.reads}, a maior ${readStats.maxReadMs} ms; consultas ao mundo ${worldQueryStats.calls}, a maior ${worldQueryStats.maxMs} ms${sliced ? singleReadNote(worstSlice, worstSliceRead) + singleQueryNote(worstSlice, worstSliceQuery) : ""})`);
   }
   return done;
 }
 
-/** Passes fatiados em andamento (um por jogador). */
-const passesInFlight = new Set<string>();
+// ---------------------------------------------------------------------------------------------
+// Sonda multi (frente spawn-multi, docs/pendencias/spawn-multi.md): passes e spawns por jogador e custo do spawner por
+// tick, resumidos a cada SPAWN_PROBE_TICKS quando a sonda está ligada (`scriptevent cobblemon:debug_probes on`).
 
-const playerTimers = new Map<string, number>();
-let lastRunTick = 0;
-let rotation = 0;
+/** Como um passe terminou: sem zona válida/carregada, cap por chunk, teto por jogador, seleção feita (ok). */
+export interface PassOutcome { result: "ok" | "zona" | "cap" | "teto" | "desligado"; spawned: number }
+
+const SPAWN_PROBE_TICKS = 1200;
+
+interface PlayerProbe { name: string; passes: number; outcomes: Record<string, number>; spawned: number; maxTicks: number; late: number }
+
+/** Contadores da sonda multi (puros: testáveis sem o mundo). */
+export class SpawnProbe {
+  readonly players = new Map<string, PlayerProbe>();
+  readonly tickCosts: number[] = [];
+  readonly tickWall: number[] = [];
+  private pendingCost = 0;
+  private lastFlushMs: number | undefined;
+  ticks = 0;
+  startMs = 0;
+
+  constructor(private readonly now: () => number = Date.now) { this.startMs = now(); }
+
+  addCost(ms: number) { this.pendingCost += ms; }
+
+  notePass(id: string, name: string, outcome: PassOutcome, ticks: number, interval: number) {
+    let p = this.players.get(id);
+    if (!p) this.players.set(id, p = { name, passes: 0, outcomes: {}, spawned: 0, maxTicks: 0, late: 0 });
+    p.name = name;
+    p.passes++;
+    p.outcomes[outcome.result] = (p.outcomes[outcome.result] ?? 0) + 1;
+    p.spawned += outcome.spawned;
+    if (ticks > p.maxTicks) p.maxTicks = ticks;
+    if (ticks > interval) p.late++;
+  }
+
+  /** Fecha o tick: custo do spawner nele e o tempo de relógio desde o tick anterior. */
+  flushTick() {
+    const t = this.now();
+    this.tickCosts.push(this.pendingCost);
+    if (this.lastFlushMs !== undefined) this.tickWall.push(t - this.lastFlushMs);
+    this.lastFlushMs = t;
+    this.pendingCost = 0;
+    this.ticks++;
+  }
+
+  /** Linha do resumo e zera os contadores. `nearby(id)` = selvagens perto do jogador (ou undefined). */
+  report(nearby: (id: string) => number | undefined = () => undefined): string {
+    const seconds = Math.max(0.001, (this.now() - this.startMs) / 1000);
+    const costs = [...this.tickCosts].sort((a, b) => a - b);
+    const q = (list: number[], f: number) => list.length ? list[Math.min(list.length - 1, Math.floor(list.length * f))] : 0;
+    const avg = (list: number[]) => list.length ? list.reduce((a, b) => a + b, 0) / list.length : 0;
+    const wall = [...this.tickWall].sort((a, b) => a - b);
+    const parts = [...this.players].map(([id, p]) => {
+      const o = p.outcomes;
+      const near = nearby(id);
+      return `${p.name}: passes ${p.passes} (ok ${o.ok ?? 0}, zona ${o.zona ?? 0}, cap ${o.cap ?? 0}, teto ${o.teto ?? 0}), spawns ${p.spawned}, duração máx ${p.maxTicks} ticks, atrasados ${p.late}${near === undefined ? "" : `, selvagens perto ${near}`}`;
+    });
+    const line = `[spawn] multi: ticks ${this.ticks} em ${seconds.toFixed(1)} s (${(this.ticks / seconds).toFixed(1)} TPS), spawner/tick média ${avg(costs).toFixed(2)} ms p99 ${q(costs, 0.99)} ms máx ${costs.at(-1) ?? 0} ms, tick médio ${avg(wall).toFixed(1)} ms máx ${wall.at(-1) ?? 0} ms | ${parts.join(" | ")}`;
+    this.reset();
+    return line;
+  }
+
+  reset() {
+    this.players.clear();
+    this.tickCosts.length = 0;
+    this.tickWall.length = 0;
+    this.pendingCost = 0;
+    this.lastFlushMs = undefined;
+    this.ticks = 0;
+    this.startMs = this.now();
+  }
+}
+
+const spawnProbe = new SpawnProbe();
+
+function probeTick() {
+  if (!debugProbesEnabled()) {
+    // Desligada: descarta o que juntou (sem montar a linha).
+    if (spawnProbe.ticks || spawnProbe.players.size) spawnProbe.reset();
+    return;
+  }
+  spawnProbe.flushTick();
+  if (spawnProbe.ticks < SPAWN_PROBE_TICKS) return;
+  const byId = new Map(world.getAllPlayers().map(p => [p.id, p] as const));
+  console.info(spawnProbe.report(id => {
+    const player = byId.get(id);
+    if (!player?.isValid) return undefined;
+    try { return wildNear(player, 64, 1000); }
+    catch { return undefined; }
+  }));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Agenda dos passes por jogador (frente spawn-multi)
+
+/**
+ * PlayerSpawner.tick de cada jogador (ServerPlayerMixin: todo ServerPlayer tem o seu spawner e o tica no fim do próprio
+ * tick). Cada jogador tem o seu timer (1º passe após `firstDelayTicks`, depois a cada `ticksBetweenSpawnAttempts`) e o
+ * seu passe fatiado; a cada tick TODOS os passes em andamento andam, cada um com o seu orçamento (adaptado ao custo dos
+ * passes daquele jogador, para caber no intervalo), sem fila nem rodízio entre jogadores: a frequência de passes de um
+ * jogador não depende de quantos jogadores há no mundo.
+ *
+ * Antes (até a frente spawn-multi) o laço rodava a cada 2 ticks e começava no máximo UM passe por execução para o mundo
+ * inteiro (rodízio), e cada passe era um `system.runJob` disputando o orçamento de jobs do motor (~14 ms por tick,
+ * medido) com os dos outros jogadores: com N jogadores cada um tinha no máximo 10/N passes por segundo e os passes
+ * demoravam mais ticks (medido: 59 → 46 → 22 → 13 passes por jogador a cada 1200 ticks com 1, 2, 4 e 6 jogadores).
+ *
+ * `tickCeilingMs` é só a salvaguarda do watchdog (pico de ~100 ms por tick): passado dele, os passes que faltam andam no
+ * tick seguinte, primeiro que os outros. Só entra quando a máquina não dá conta de todos os passes (no BDS emulado,
+ * onde um passe custa ~200 ms, a partir de ~3 jogadores longe uns dos outros); aí todos perdem por igual.
+ */
+export interface PlayerSchedulerOptions {
+  firstDelayTicks: number;
+  /**
+   * Orçamento de CPU de um jogador por tick (ms), adaptado ao custo medido dos passes DELE: custo estimado / ticks-alvo
+   * (`targetFraction` × ticksBetweenSpawnAttempts), entre `minPlayerBudgetMs` e `maxPlayerBudgetMs`. Em hardware nativo
+   * um passe custa poucos ms e o orçamento fica no mínimo (custo por tick baixo); no BDS emulado (~200 ms por passe)
+   * sobe até o máximo para o passe caber no intervalo.
+   */
+  minPlayerBudgetMs: number;
+  maxPlayerBudgetMs: number;
+  targetFraction: number;
+  /** Custo estimado (ms) de um passe de quem ainda não terminou nenhum. */
+  initialPassCostMs: number;
+  tickCeilingMs: number;
+  /** Jogadores que entram no mesmo tick começam com fases diferentes (passos de `phaseStride` ticks). */
+  phaseStride: number;
+  now?: () => number;
+}
+
+export class PlayerSpawnScheduler<P extends { id: string }> {
+  readonly timers = new Map<string, number>();
+  readonly passes = new Map<string, { gen: Generator<void, unknown, void>; startTick: number; cpuMs: number }>();
+  /** Custo médio (média móvel) dos passes de cada jogador (ms de CPU). */
+  readonly passCost = new Map<string, number>();
+  private joinTick = -1;
+  private joinedThisTick = 0;
+  private resumeFrom: string | undefined;
+  private readonly now: () => number;
+
+  constructor(readonly opts: PlayerSchedulerOptions) { this.now = opts.now ?? Date.now; }
+
+  /**
+   * Um tick do servidor. `canSpawn(p)` falso congela o timer do jogador (o mixin só chama PlayerSpawner.tick quando
+   * enableSpawning, a gamerule e a blocklist da dimensão deixam). `start(p)` cria o passe; `onDone(p, ticks)` ao terminar.
+   * Retorna o tempo gasto nos passes neste tick (ms).
+   */
+  tick(players: readonly P[], tick: number, interval: number, canSpawn: (p: P) => boolean, start: (p: P) => Generator<void, unknown, void>, onDone?: (id: string, ticks: number) => void): number {
+    const seen = new Set<string>();
+    for (const player of players) {
+      const id = player.id;
+      seen.add(id);
+      let timer = this.timers.get(id);
+      if (timer === undefined) {
+        if (this.joinTick !== tick) { this.joinTick = tick; this.joinedThisTick = 0; }
+        timer = this.opts.firstDelayTicks + (this.joinedThisTick++ * this.opts.phaseStride) % Math.max(1, interval);
+      }
+      if (canSpawn(player)) {
+        timer -= 1;
+        // Passe anterior ainda em andamento: o timer fica vencido e o próximo começa quando ele acabar.
+        if (timer <= 0 && !this.passes.has(id)) {
+          timer = interval;
+          this.passes.set(id, { gen: start(player), startTick: tick, cpuMs: 0 });
+        }
+      }
+      this.timers.set(id, timer);
+    }
+    for (const id of [...this.timers.keys()]) {
+      if (seen.has(id)) continue;
+      this.timers.delete(id);
+      this.passCost.delete(id);
+      const pass = this.passes.get(id);
+      if (pass) {
+        try { pass.gen.return(undefined); } catch { /* já terminou */ }
+        this.passes.delete(id);
+      }
+    }
+    if (this.passes.size === 0) return 0;
+    const ids = [...this.passes.keys()];
+    const first = this.resumeFrom !== undefined ? Math.max(0, ids.indexOf(this.resumeFrom)) : 0;
+    this.resumeFrom = undefined;
+    const tickStart = this.now();
+    for (let k = 0; k < ids.length; k++) {
+      const id = ids[(first + k) % ids.length];
+      if (k > 0 && this.now() - tickStart >= this.opts.tickCeilingMs) {
+        this.resumeFrom = id;
+        break;
+      }
+      const pass = this.passes.get(id)!;
+      const budget = this.budgetFor(id, interval, tick - pass.startTick);
+      const t0 = this.now();
+      let done = false;
+      // Fatias do passe deste jogador em sequência até gastar o orçamento dele (muitas fatias são curtas).
+      do {
+        try { done = pass.gen.next().done === true; }
+        catch (e) {
+          console.warn(`Erro no spawner: ${e}`);
+          done = true;
+        }
+      } while (!done && this.now() - t0 < budget);
+      pass.cpuMs += this.now() - t0;
+      if (done) {
+        this.passes.delete(id);
+        const previous = this.passCost.get(id);
+        this.passCost.set(id, previous === undefined ? pass.cpuMs : previous * 0.7 + pass.cpuMs * 0.3);
+        onDone?.(id, tick - pass.startTick);
+      }
+    }
+    return this.now() - tickStart;
+  }
+
+  /**
+   * Orçamento deste tick para o jogador (ms): o bastante para o passe dele caber em targetFraction do intervalo; passe que
+   * já passou desse prazo (custo acima do estimado) anda com o máximo.
+   */
+  budgetFor(id: string, interval: number, elapsedTicks = 0): number {
+    const ticks = Math.max(1, Math.floor(interval * this.opts.targetFraction));
+    if (elapsedTicks >= ticks) return this.opts.maxPlayerBudgetMs;
+    const cost = this.passCost.get(id) ?? this.opts.initialPassCostMs;
+    return Math.min(this.opts.maxPlayerBudgetMs, Math.max(this.opts.minPlayerBudgetMs, cost / ticks));
+  }
+}
+
+const scheduler = new PlayerSpawnScheduler<Player>({
+  firstDelayTicks: 100,
+  minPlayerBudgetMs: SPAWN_TUNING.playerTickBudgetMs[0],
+  maxPlayerBudgetMs: SPAWN_TUNING.playerTickBudgetMs[1],
+  targetFraction: SPAWN_TUNING.passTargetFraction,
+  initialPassCostMs: 40,
+  tickCeilingMs: SPAWN_TUNING.tickCeilingMs,
+  phaseStride: 7,
+});
+
+/** Nome e resultado de cada passe em andamento (sonda multi). */
+const passInfo = new Map<string, { name: string; outcome: PassOutcome }>();
+
+/**
+ * O passe fatiado com as consultas ao mundo contadas só nele (worldQueryStats é um só: os passes de jogadores
+ * diferentes se intercalam no mesmo tick).
+ */
+function* trackedPass(player: Player, outcome: PassOutcome): Generator<void, void, void> {
+  const queries = { calls: 0, maxMs: 0, sliceMaxMs: 0 };
+  const pass = spawnPass(player, true, outcome);
+  while (true) {
+    worldQueryStats.calls = queries.calls;
+    worldQueryStats.maxMs = queries.maxMs;
+    worldQueryStats.sliceMaxMs = queries.sliceMaxMs;
+    let step: IteratorResult<void, SpawnAction[]>;
+    try { step = pass.next(); }
+    finally {
+      queries.calls = worldQueryStats.calls;
+      queries.maxMs = worldQueryStats.maxMs;
+      queries.sliceMaxMs = worldQueryStats.sliceMaxMs;
+    }
+    if (step.done) return;
+    yield;
+  }
+}
+
+/** ServerPlayerMixin.canSpawn: enableSpawning, gamerule doPokemonSpawning e a blocklist da dimensão do jogador. */
+function canSpawnFor(player: Player, enabled: boolean, s: SpawnSettings): boolean {
+  if (!enabled) return false;
+  try { return !s.worldSpawningBlocklist.includes(player.dimension.id); }
+  catch { return false; }
+}
 
 function spawnTick() {
-  const now = system.currentTick;
-  const elapsed = Math.max(1, now - lastRunTick);
-  lastRunTick = now;
   const players = world.getAllPlayers();
-  if (players.length === 0) return;
+  if (players.length === 0 && scheduler.timers.size === 0) return;
   const s = settings();
-  const seen = new Set<string>();
-  const due: Player[] = [];
-  for (const player of players) {
-    seen.add(player.id);
-    const left = (playerTimers.get(player.id) ?? 100) - elapsed;
-    playerTimers.set(player.id, left);
-    if (left <= 0) due.push(player);
-  }
-  for (const id of [...playerTimers.keys()]) if (!seen.has(id)) playerTimers.delete(id);
-  if (!s.enableSpawning || !spawningEnabled || !getGameRule("doPokemonSpawning") || due.length === 0) return;
-  // Rodízio: no máximo maxPassesPerRun passes por execução; os outros esperam a próxima.
-  for (let i = 0; i < Math.min(due.length, SPAWN_TUNING.maxPassesPerRun); i++) {
-    const player = due[(rotation++) % due.length];
-    // Passe anterior ainda em fatias: o timer fica vencido e o próximo começa assim que ele terminar (a taxa de passes
-    // continua a de ticksBetweenSpawnAttempts enquanto um passe levar menos que isso; no BDS emulado, 3–20 ticks).
-    if (passesInFlight.has(player.id)) continue;
-    playerTimers.set(player.id, s.ticksBetweenSpawnAttempts);
-    if (!player.isValid) continue;
-    const id = player.id;
-    passesInFlight.add(id);
-    system.runJob((function* () {
-      try { yield* spawnPass(player, true); }
-      catch (e) { console.warn(`Erro no spawner: ${e}`); }
-      finally { passesInFlight.delete(id); }
-    })());
-  }
+  const interval = s.ticksBetweenSpawnAttempts;
+  const enabled = s.enableSpawning && spawningEnabled && getGameRule("doPokemonSpawning");
+  const cost = scheduler.tick(
+    players, system.currentTick, interval,
+    player => canSpawnFor(player, enabled, s),
+    player => {
+      const outcome: PassOutcome = { result: "desligado", spawned: 0 };
+      passInfo.set(player.id, { name: player.name, outcome });
+      return trackedPass(player, outcome);
+    },
+    (id, ticks) => {
+      const info = passInfo.get(id);
+      passInfo.delete(id);
+      if (info) spawnProbe.notePass(id, info.name, info.outcome, ticks, interval);
+    },
+  );
+  spawnProbe.addCost(cost);
+  // Quem saiu no meio de um passe: o agendador descartou o passe sem onDone.
+  if (passInfo.size > scheduler.passes.size) for (const id of passInfo.keys()) if (!scheduler.passes.has(id)) passInfo.delete(id);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1058,8 +1344,10 @@ function despawnTick() {
     if (wild.length === 0) continue;
     let cursor = despawnCursor.get(dimensionId) ?? 0;
     if (cursor >= wild.length) cursor = 0;
-    const batch = Math.min(wild.length, SPAWN_TUNING.despawnBatch);
     const locations = byDimension.get(dimensionId) ?? [];
+    // Frente spawn-multi: lote por jogador da dimensão (o Java confere cada entidade a cada tick). Com um lote fixo por
+    // dimensão, mais jogadores (e mais selvagens) faziam cada entidade esperar mais para sumir e segurar o cap local.
+    const batch = Math.min(wild.length, SPAWN_TUNING.despawnBatch * Math.max(1, locations.length));
     for (let i = 0; i < batch; i++) {
       const entity = wild[(cursor + i) % wild.length];
       try {
@@ -1122,7 +1410,6 @@ function alphaLevelTick(players: Player[]) {
 
 /** Liga o laço de spawn e o de despawn. Chamar uma vez no carregamento do mundo. */
 export function startSpawner() {
-  lastRunTick = system.currentTick;
   // Frente cliente-log: índices da seleção montados em fatias no carregamento, e o Dex do @pkmn/sim (carga única de
   // ~40 ms no BDS emulado) carregado aqui, não na primeira fatia "gerar Pokémon" com o jogador já no mundo.
   system.runJob((function* () {
@@ -1131,7 +1418,8 @@ export function startSpawner() {
     try { PokemonData.generateNewWildPokemon("pikachu", { level: 5, aspects: [], shiny: false }); }
     catch { /* só aquecimento */ }
   })());
-  system.runInterval(spawnTick, SPAWN_TUNING.runIntervalTicks);
+  system.runInterval(spawnTick, 1);
+  system.runInterval(probeTick, 1);
   system.runInterval(() => {
     try { despawnTick(); }
     catch (e) { console.warn(`Erro no despawner: ${e}`); }

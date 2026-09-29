@@ -27,8 +27,10 @@ reexporta `emitSpawnsModule`), `tests/spawn.test.ts`.
 - **Zona/caps** (config via `getConfig()` a cada passe): zona `spawningZoneDiameter`×`spawningZoneHeight` a 16–64 blocos,
   puxada para a direção do movimento, correção vertical `maxVerticalCorrectionBlocks`, cap de 3×3 chunks
   (`pokemonPerChunk`), `maximumSpawnsPerPass`, `minimumDistanceBetweenEntities`, `ticksBetweenSpawnAttempts` (1º passe
-  após 100 ticks), `enableSpawning`, `worldSpawningBlocklist`, `shinyRate`, `maxNearbyBlocks*Range`. Rodízio de 1 passe
-  por execução (a cada 2 ticks); aviso `[spawn] passe lento` no log acima de 20 ms (no máx. 1 a cada 10 s).
+  após 100 ticks), `enableSpawning`, `worldSpawningBlocklist`, `shinyRate`, `maxNearbyBlocks*Range`. Um timer e um passe
+  fatiado por jogador, todos andando a cada tick com orçamento por jogador (`PlayerSpawnScheduler`, frente spawn-multi:
+  a taxa por jogador não cai com N; ver `docs/pendencias/spawn-multi.md`); aviso `[spawn] passe lento` no log acima de
+  20 ms numa fatia (no máx. 1 a cada 10 s).
 - **Despawn** (`Despawner.ts`): CobblemonAgingDespawner exato (`despawnerNear/FarDistance`, `Min/MaxAgeTicks`), 32
   entidades por segundo por dimensão; ignora em batalha, `cobblemon:busy`, montado, segurando item (no Cobblemon isso
   torna a entidade persistente — inclusive Alfas com gema) e `cobblemon:persistent`. Idade = `world.getAbsoluteTime()`

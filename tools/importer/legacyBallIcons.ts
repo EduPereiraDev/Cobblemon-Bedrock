@@ -111,3 +111,35 @@ export function legacyBallIcons(atlas: Record<string, { textures: string }>): nu
 	}
 	return made;
 }
+
+/**
+ * Ícone pequeno da bola nas telas (HUD do time, resumo, PC, batalha: textures/gui/cobblemon/ball/<bola>.png, 18×44
+ * com os dois quadros do Cobblemon) para as bolas à mão que não têm um. Sem ele o HUD mostrava a textura "sem
+ * textura" (xadrez rosa e preto) para Pokémon capturados na Strange Ball. Recolore o de poke_ball como o ícone do item.
+ */
+export function legacyBallGuiIcons(): number {
+	const baseGui = `${ASSETS}/textures/gui/ball/poke_ball.png`;
+	const baseModel = `${ASSETS}/textures/item/poke_balls/models/poke_ball.png`;
+	if (!existsSync(baseGui) || !existsSync(baseModel)) return 0;
+	const gui = decodePng(baseGui);
+	const from = capColor(decodePng(baseModel));
+	if (!from) return 0;
+	let made = 0;
+	for (const f of walk(`${HAND_BP}/items/pokeballs`, (n) => n.endsWith(".json"))) {
+		let item: any;
+		try { item = parseLenient(readFileSync(f, "utf8"))?.["minecraft:item"]; }
+		catch { continue; }
+		const id: string | undefined = item?.description?.identifier;
+		if (!id) continue;
+		const name = id.replace(/^[a-z0-9_.-]+:/, "");
+		const out = `${OUT_RP}/textures/gui/cobblemon/ball/${name}.png`;
+		if (existsSync(out) || existsSync(`${HAND_RP}/textures/gui/cobblemon/ball/${name}.png`)) continue;
+		const modelFile = [`${ASSETS}/textures/item/poke_balls/models/${name}.png`, `${HAND_RP}/textures/pokeballs/${name}.png`].find((p) => existsSync(p));
+		const to = modelFile ? capColor(decodePng(modelFile)) : undefined;
+		if (!to) { warn("ícone de tela de Poké Ball à mão sem textura de modelo", id); continue; }
+		mkdirSync(dirname(out), { recursive: true });
+		writeFileSync(out, encodePng(recolorIcon(gui, from, to)));
+		made++;
+	}
+	return made;
+}

@@ -1,7 +1,7 @@
 {
   "name": "cobblemon-bedrock",
   "version": "0.2.0",
-  "packVersion": "1.0.6",
+  "packVersion": "1.0.7",
   "productName": "Cobblemon Bedrock",
   "description": "A port of the Minecraft mod Cobblemon to Bedrock Edition",
   "private": true,
@@ -28,6 +28,7 @@
     "@pkmn/sim": "^0.10.11"
   },
   "devDependencies": {
+    "@napi-rs/image": "1.15.0",
     "@types/node": "^22.10.0",
     "esbuild": "^0.25.0",
     "typescript": "^5.9.0"

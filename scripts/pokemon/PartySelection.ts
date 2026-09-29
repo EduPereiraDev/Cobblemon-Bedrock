@@ -103,8 +103,11 @@ function canBattle(entity: Entity): boolean {
   catch { return false; }
 }
 
-/** PartySendBinding.onRelease + SendOutPokemonHandler.handle para o espaço `slot` (padrão: o selecionado). */
-export function quickSend(player: Player, slot = getSelectedSlot(player)): QuickSendResult {
+/**
+ * PartySendBinding.onRelease + SendOutPokemonHandler.handle para o espaço `slot` (padrão: o selecionado).
+ * `aimed` (frente controle): entidade já conhecida (o clique do item de controle nela), no lugar do raio da mira.
+ */
+export function quickSend(player: Player, slot = getSelectedSlot(player), aimed?: Entity): QuickSendResult {
   if (!actions) return "none";
   if (actions.inBattle(player)) {
     actions.reopenBattle(player);
@@ -113,12 +116,14 @@ export function quickSend(player: Player, slot = getSelectedSlot(player)): Quick
   const pokemon = getSafeTeam(player)[slot];
   if (!pokemon) return "empty";
   const config = getConfig();
-  let target: Entity | undefined;
-  try {
-    target = player.getEntitiesFromViewDirection({ maxDistance: config.battleSpectateMaxDistance })
-      .map(hit => hit.entity).find(entity => entity.isValid && entity.id !== player.id);
+  let target: Entity | undefined = aimed?.isValid ? aimed : undefined;
+  if (!target) {
+    try {
+      target = player.getEntitiesFromViewDirection({ maxDistance: config.battleSpectateMaxDistance })
+        .map(hit => hit.entity).find(entity => entity.isValid && entity.id !== player.id);
+    }
+    catch { target = undefined; }
   }
-  catch { target = undefined; }
 
   const isPokemon = !!target?.getComponent("minecraft:type_family")?.hasTypeFamily("pokemon");
   // canSendOutPokemon: nada na mira ou o próprio Pokémon.

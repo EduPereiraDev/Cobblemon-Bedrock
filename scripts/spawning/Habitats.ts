@@ -19,11 +19,17 @@
  * No Bedrock não há block entity: as configurações ficam numa dynamic property do mundo (MachineStore "habitat");
  * blocos colocados pelas estruturas convertidas trazem o pool no estado `cobblemon:habitat_pool(_hi)` e usam a
  * configuração das estruturas do Cobblemon (natural, replaceSpawns, FULL_RANDOM). A detecção (HabitatBlockDetector,
- * raio 128) usa um registro em memória alimentado pelo tick do bloco e pelas configurações salvas.
+ * raio 128) usa um registro em memória alimentado pelas configurações salvas.
+ *
+ * Frente habitat-mimic: no Java o bloco é invisível (RenderShape.INVISIBLE) e o renderer desenha o bloco imitado
+ * (`mimicId`, padrão minecraft:stone); só quem segura o item de habitat vê o próprio bloco. Aqui o bloco técnico
+ * vira o PRÓPRIO bloco imitado no 1º tick/colocação (scripts/machines/habitat.ts) e o habitat passa a existir só
+ * pelo registro por posição (dynamic property). Um habitat vale enquanto a posição tiver o bloco imitado (ou o bloco
+ * técnico ainda não convertido, ou a forma em que o imitado vira sozinho: grama → terra etc.).
  */
 import { Block, Dimension, Entity, Vector3, system, world } from "@minecraft/server";
 import { BEST_SPAWNER_CONFIG, SpawnEntry } from "../../generated/scripts/spawns";
-import { HABITAT_ANCHOR_RANGES, HABITAT_POOLS, HabitatSpawnEntry } from "../../generated/scripts/habitats";
+import { HABITAT_ANCHOR_MIMICS, HABITAT_ANCHOR_RANGES, HABITAT_POOLS, HabitatMimicBlock, HabitatSpawnEntry } from "../../generated/scripts/habitats";
 import { PokemonProperties } from "../PokemonProperties";
 import { MachineStore, blockKey, parseBlockKey } from "../machines/store";
 import type { SpawnContext } from "./SpawnConditions";
@@ -51,8 +57,12 @@ export interface HabitatSettings {
   levelRange: [number, number];
   /** PokemonProperties aplicadas ao que o bloco ativado spawna. */
   modifiers: string;
-  /** Bloco que ele imita (drop fora do criativo). */
+  /** Bloco que ele imita (drop fora do criativo). No Bedrock é o bloco que fica no mundo no lugar do habitat. */
   mimicId: string;
+  /** Estados do bloco imitado no Bedrock (folhas persistentes, eixo de toras). Ausente = permutação padrão. */
+  mimicStates?: Record<string, string | number | boolean>;
+  /** Registro compacto de estrutura: o resto vem de structureSettings(poolId) (expandSettings). */
+  preset?: "structure";
   // NaturalHabitatSpawning
   replaceSpawns: boolean;
   rangeOfInfluence: number;
@@ -80,6 +90,45 @@ export function structureSettings(poolId: string, maxLevel = 100): HabitatSettin
     ...defaultSettings(maxLevel), style: "natural", poolId, phaseOrder: "FULL_RANDOM", replaceSpawns: true,
     rangeOfInfluence: HABITAT_ANCHOR_RANGES[poolId] ?? 16,
   };
+}
+
+/** Registro salvo (completo ou compacto de estrutura) → configuração completa. */
+export function expandSettings(saved: Partial<HabitatSettings>, maxLevel = 100): HabitatSettings {
+  if (saved.preset === "structure" && saved.poolId) return { ...structureSettings(saved.poolId, maxLevel), ...saved };
+  return { ...defaultSettings(maxLevel), ...saved };
+}
+
+/** Bloco imitado da âncora de estrutura (estado cobblemon:habitat_mimic → HABITAT_ANCHOR_MIMICS[pool]). */
+export function anchorMimic(poolId: string, index: number): HabitatMimicBlock {
+  const list = HABITAT_ANCHOR_MIMICS[poolId] ?? [];
+  return list[index] ?? list[0] ?? { name: "minecraft:stone", states: {} };
+}
+
+/**
+ * Formas em que o bloco imitado vira sozinho no mundo (o bloco de habitat do Java não muda; aqui o imitado é um bloco
+ * vanilla de verdade): grama/micélio/podzol sem luz → terra, terra → grama/micélio, nylium coberto → netherrack.
+ */
+const MIMIC_DRIFT: Record<string, readonly string[]> = {
+  "minecraft:grass_block": ["minecraft:dirt"],
+  "minecraft:mycelium": ["minecraft:dirt"],
+  "minecraft:podzol": ["minecraft:dirt"],
+  "minecraft:dirt": ["minecraft:grass_block", "minecraft:mycelium"],
+  "minecraft:crimson_nylium": ["minecraft:netherrack"],
+  "minecraft:warped_nylium": ["minecraft:netherrack"],
+  "minecraft:mud": ["minecraft:clay"],
+};
+
+/** O bloco nesta posição ainda é o habitat (técnico não convertido, imitado ou forma derivada do imitado). */
+export function isHabitatBlockType(settings: Pick<HabitatSettings, "mimicId">, typeId: string): boolean {
+  if (typeId === HABITAT_BLOCK) return true;
+  const mimic = normalizeBlockId(settings.mimicId);
+  return typeId === mimic || (MIMIC_DRIFT[mimic]?.includes(typeId) ?? false);
+}
+
+/** "stone" → "minecraft:stone". */
+export function normalizeBlockId(id: string): string {
+  const t = id.trim();
+  return t.includes(":") ? t : `minecraft:${t}`;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -183,8 +232,10 @@ export interface HabitatState {
   affectsFishing: boolean;
 }
 
-export const habitatStore = new MachineStore<HabitatSettings>("habitat");
+export const habitatStore = new MachineStore<Partial<HabitatSettings>>("habitat");
 const registry = new Map<string, HabitatState>();
+/** Os registros salvos já entraram no registro em memória (uma vez por carregamento). */
+let savedLoaded = false;
 
 /** Relógio isolado para os testes. */
 export const habitatClock = {
@@ -210,6 +261,31 @@ export function habitatByKey(key: string): HabitatState | undefined {
 export function clearHabitats() {
   registry.clear();
   savedLoaded = true;
+}
+
+/** Habitats salvos (imitados já convertidos) entram no registro uma vez por carregamento do mundo. */
+export function ensureSavedHabitats(maxLevel = 100) {
+  if (savedLoaded) return;
+  savedLoaded = true;
+  try { loadSavedHabitats(maxLevel); }
+  catch { /* sem mundo */ }
+}
+
+/** Habitat registrado nesta posição (carrega os salvos na 1ª consulta). */
+export function habitatAt(dimensionId: string, pos: Vector3): HabitatState | undefined {
+  ensureSavedHabitats();
+  return registry.get(blockKey(dimensionId, pos));
+}
+
+/** Remove o habitat do registro e o registro salvo (quebra ou bloco trocado). */
+export function forgetHabitat(key: string) {
+  registry.delete(key);
+  try { habitatStore.delete(key); }
+  catch {
+    // Contexto só de leitura (before event): apaga no próximo tick.
+    try { system.run(() => habitatStore.delete(key)); }
+    catch { /* sem mundo */ }
+  }
 }
 
 /** Monta/atualiza o estado de um bloco com as configurações dadas. */
@@ -246,12 +322,23 @@ export function poolIndexOf(block: Block): number {
   catch { return 0; }
 }
 
-/** Configuração efetiva de um bloco: salva por script, senão a da estrutura (pool no estado), senão padrão. */
+/** Índice do bloco imitado gravado no estado da âncora (0 em blocos de antes da frente habitat-mimic). */
+export function mimicIndexOf(block: Block): number {
+  try { return Number(block.permutation.getState("cobblemon:habitat_mimic" as never) ?? 0) || 0; }
+  catch { return 0; }
+}
+
+/**
+ * Configuração efetiva de um bloco: salva por script, senão a da estrutura (pool e bloco imitado no estado), senão
+ * padrão (HabitatBlockEntity: estilo ativado, pool vazio, imita minecraft:stone).
+ */
 export function settingsForBlock(block: Block, maxLevel = 100): HabitatSettings {
   const saved = habitatStore.get(blockKey(block.dimension.id, block.location));
-  if (saved) return { ...defaultSettings(maxLevel), ...saved };
+  if (saved) return expandSettings(saved, maxLevel);
   const pool = poolByIndex(poolIndexOf(block));
-  return pool ? structureSettings(pool, maxLevel) : defaultSettings(maxLevel);
+  if (!pool) return defaultSettings(maxLevel);
+  const mimic = anchorMimic(pool, mimicIndexOf(block));
+  return { ...structureSettings(pool, maxLevel), preset: "structure", mimicId: mimic.name, mimicStates: mimic.states };
 }
 
 /** Registra/renova um bloco que existe no mundo. */
@@ -272,7 +359,7 @@ export function loadSavedHabitats(maxLevel = 100) {
     const saved = habitatStore.get(key);
     if (!saved) continue;
     const { dimension, location } = parseBlockKey(key);
-    registerHabitat(dimension, location, { ...defaultSettings(maxLevel), ...saved }).lastSeen = -Infinity;
+    registerHabitat(dimension, location, expandSettings(saved, maxLevel)).lastSeen = -Infinity;
   }
 }
 
@@ -330,10 +417,18 @@ const STALE_TICKS = 100;
 
 function alive(state: HabitatState, now: number): boolean {
   if (now - state.lastSeen <= STALE_TICKS) return true;
+  return checkHabitatInWorld(state, now);
+}
+
+/**
+ * Confere no mundo se o habitat ainda está lá (bloco imitado, técnico ou forma derivada). Bloco trocado (explosão,
+ * pistão, /setblock): sai do registro e do registro salvo, como o block entity que some com o bloco no Java.
+ */
+export function checkHabitatInWorld(state: HabitatState, now = habitatClock.tick()): boolean {
   const type = habitatWorld.lookup(state.dimensionId, state.pos);
   if (type === null || type === undefined) return false; // chunk descarregado: fica no registro, sem valer
-  if (type !== HABITAT_BLOCK) {
-    registry.delete(state.key);
+  if (!isHabitatBlockType(state.settings, type)) {
+    forgetHabitat(state.key);
     return false;
   }
   state.lastSeen = now;
@@ -350,15 +445,10 @@ export interface DetectedHabitat {
  * HabitatBlockDetector.detectFromInput: blocos a até max(128, 2 × tamanho da zona) do centro da zona com alcance
  * de influência > 0 para este spawner.
  */
-let savedLoaded = false;
 
 export function detectHabitats(dimensionId: string, center: Vector3, zoneLength: number, zoneHeight: number, spawner: SpawnerId): DetectedHabitat[] {
-  if (!savedLoaded) {
-    // Blocos configurados por script voltam ao registro na 1ª detecção depois de carregar o mundo.
-    savedLoaded = true;
-    try { loadSavedHabitats(); }
-    catch { /* sem mundo */ }
-  }
+  // Habitats salvos voltam ao registro na 1ª detecção depois de carregar o mundo.
+  ensureSavedHabitats();
   if (registry.size === 0) return [];
   const search = Math.max(DETECTOR_RANGE, zoneLength * 2, zoneHeight * 2);
   const now = habitatClock.tick();

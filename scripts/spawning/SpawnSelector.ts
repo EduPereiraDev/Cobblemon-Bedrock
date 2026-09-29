@@ -15,8 +15,10 @@
  *    Herd: remove todas as outras entradas, fixa o bucket, remove posições a menos de
  *    `minDistanceBetweenSpawns` e continua escolhendo membros até `maxHerdSize` / `maxTimes`.
  *
- * Desvio consciente: posições/entradas removidas valem para todos os buckets do passe (no Cobblemon
- * um bucket calculado depois ainda vê posições já ocupadas).
+ * Remoções (posições perto de um spawn, entradas tiradas por um herd) valem só para os buckets já montados no passe,
+ * como no Cobblemon (SeparatedSelectionData.removeSpawnablePositions/removeSpawnDetails): um bucket sorteado pela 1ª vez
+ * depois vê todas as posições. Frente spawn-multi: antes valiam para todos os buckets, o que tirava posições dos buckets
+ * raros sorteados depois do 1º spawn do passe (menos incomuns/raros por passe que no Java).
  */
 import type { Entity } from "@minecraft/server";
 import { BEST_SPAWNER_CONFIG, HerdMember, SPAWNS, SpawnDrops, SpawnEntry } from "../../generated/scripts/spawns";
@@ -389,8 +391,6 @@ class Selection {
   /** Nível sorteado de cada herd do passe (chave `${id}__LEVEL`). */
   readonly context = new Map<string, number>();
   private readonly bucketData = new Map<string, BucketData>();
-  private readonly removedEntries = new Set<SpawnEntry>();
-  private readonly removedPositions = new Set<SpawnContext>();
   private herdCounter = 0;
   readonly herdGroups = new Map<SpawnEntry, string>();
 
@@ -405,18 +405,16 @@ class Selection {
     return all;
   }
 
-  /** SpawnablePosition.getWeight: peso × weightMultipliers × influências. */
   /**
-   * baseWeight com as condições dos weightMultipliers memorizadas por posição no passe (frente cliente-log: timeRange e
+   * weightMultipliers sobre `weight`, com as condições memorizadas por posição no passe (frente cliente-log: timeRange e
    * moonPhase consultam o relógio do mundo, chamada nativa, a cada entrada). Mesma conta de baseWeight.
    */
   private readonly multiplierMemo = new Map<SpawnContext, (boolean | undefined)[]>();
-  private baseWeightAt(entry: SpawnEntry, ctx: SpawnContext): number {
+  private applyMultipliers(entry: SpawnEntry, ctx: SpawnContext, weight: number): number {
     const multipliers = entry.weightMultipliers;
-    if (!multipliers?.length) return entry.weight;
+    if (!multipliers?.length) return weight;
     let memo = this.multiplierMemo.get(ctx);
     if (!memo) this.multiplierMemo.set(ctx, memo = []);
-    let weight = entry.weight;
     for (const m of multipliers) {
       const id = multiplierGroupOf(m);
       let meets = memo[id];
@@ -426,12 +424,17 @@ class Selection {
     return weight;
   }
 
+  /**
+   * SpawnablePosition.getWeight: peso → influências da posição (spawner, zona, causa) → weightMultipliers, nessa ordem
+   * (applyInfluences(extraInfluences = detail.weightMultipliers)). Frente spawn-multi: antes os multiplicadores vinham
+   * primeiro — igual para influências multiplicativas, diferente para uma regra de spawn como `v.weight + 5`.
+   */
   weightAt(entry: SpawnEntry, ctx: SpawnContext): number {
-    let weight = this.baseWeightAt(entry, ctx);
+    let weight = entry.weight;
     for (const influence of this.influencesAt(ctx)) {
       if (influence.affectWeight) weight = influence.affectWeight(entry, ctx, weight);
     }
-    return weight;
+    return this.applyMultipliers(entry, ctx, weight);
   }
 
   /**
@@ -455,7 +458,7 @@ class Selection {
    * passe fatiado entre ticks (selectSpawnActionsJob). Só com a fonte padrão de entradas.
    */
   *warmJob(ctx: SpawnContext, clock = new SliceClock(4), bucket?: string): Generator<string, void, void> {
-    if (this.opts.entriesFor || this.removedPositions.has(ctx)) return;
+    if (this.opts.entriesFor) return;
     // Cede por tempo, não por contagem: algumas condições consultam o mundo (blocos por perto, estruturas) e custam
     // bem mais que as outras. Frente fix3: o relógio é o da fatia (compartilhado entre as posições), não um por posição.
     // Frente fix3: só as entradas do bucket sorteado (as dos outros buckets não seriam usadas no passe).
@@ -491,7 +494,6 @@ class Selection {
 
   /** Candidatas de uma posição num bucket; cede quando a fatia passa do orçamento (hasSpace lê blocos do mundo). */
   private *addPositionDataJob(data: BucketData, bucket: string, ctx: SpawnContext, clock: SliceClock | undefined): Generator<string, void, void> {
-    if (this.removedPositions.has(ctx)) return;
     for (const entry of this.candidates(ctx, bucket)) {
       if (clock?.due) {
         yield "bucket";
@@ -533,7 +535,6 @@ class Selection {
 
   private passesBeforeSpace(entry: SpawnEntry, ctx: SpawnContext): boolean {
     if (!this.allowed(entry, ctx)) return false;
-    if (this.removedEntries.has(entry)) return false;
     if (this.opts.filter && !this.opts.filter(entry)) return false;
     for (const influence of this.influencesAt(ctx)) {
       if (influence.affectSpawnable && !influence.affectSpawnable(entry, ctx)) return false;
@@ -568,30 +569,23 @@ class Selection {
     return data;
   }
 
+  /** removeSpawnDetails: só nos buckets já montados. */
   removeEntries(shouldRemove: (entry: SpawnEntry) => boolean) {
     for (const data of this.bucketData.values()) {
       for (const [type, byType] of data) {
         for (const entry of byType.keys()) {
-          if (shouldRemove(entry)) {
-            byType.delete(entry);
-            this.removedEntries.add(entry);
-          }
+          if (shouldRemove(entry)) byType.delete(entry);
         }
         if (byType.size === 0) data.delete(type);
       }
     }
   }
 
+  /** removeSpawnablePositions: só nos buckets já montados. */
   removePositions(shouldRemove: (ctx: SpawnContext) => boolean) {
-    // Frente cliente-log (desempenho): só as posições removidas agora mexem nos dados (as de antes já saíram deles ou
-    // nem entraram); sem cópias de Map a cada entrada. Mesmo resultado.
+    // Frente cliente-log (desempenho): o predicado roda uma vez por posição (não por entrada); sem cópias de Map.
     const removed: SpawnContext[] = [];
-    for (const ctx of this.positions) {
-      if (!this.removedPositions.has(ctx) && shouldRemove(ctx)) {
-        this.removedPositions.add(ctx);
-        removed.push(ctx);
-      }
-    }
+    for (const ctx of this.positions) if (shouldRemove(ctx)) removed.push(ctx);
     if (!removed.length) return;
     for (const data of this.bucketData.values()) {
       for (const [type, byType] of data) {
