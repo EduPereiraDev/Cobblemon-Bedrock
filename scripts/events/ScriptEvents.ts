@@ -44,14 +44,19 @@ const scriptIDDictionary: { [key: string]: Function } = {
   // Tratado em scripts/debug/SelfTest.ts (alias do /cobblemon:selftest); aqui só não avisa "inválido".
   "cobblemon:selftest": function () { },
   "cobblemon:interacted": function (event: ScriptEventCommandMessageAfterEvent) {
-    let player = event.sourceEntity!.dimension.getPlayers({ location: event.sourceEntity!.location, tags: ["interacter"], closest: 1 })[0]!
+    // O comando da fila roda depois: a entidade pode ter saído (recolhida, capturada) nesse meio tempo.
+    const entity = event.sourceEntity;
+    if (!entity?.isValid) return;
+    let player = entity.dimension.getPlayers({ location: entity.location, tags: ["interacter"], closest: 1 })[0];
+    if (!player) return;
     player.removeTag("interacter");
-    handlePokemonInteract(player, event.sourceEntity!);
+    handlePokemonInteract(player, entity);
   },
   "cobblemon:setup": function (event: ScriptEventCommandMessageAfterEvent) {
-    if (event.sourceEntity!.getProperty("cobblemon:initialized") === true)
+    const entity = event.sourceEntity;
+    if (!entity?.isValid || entity.getProperty("cobblemon:initialized") === true)
       return;
-    setupCobblemon(event.sourceEntity!)
+    setupCobblemon(entity)
   },
   "cobblemon:update_self": function (event: ScriptEventCommandMessageAfterEvent) {
     //Ensures that the json data and state data are up to date
@@ -63,9 +68,12 @@ const scriptIDDictionary: { [key: string]: Function } = {
   },
   "cobblemon:pokeball_thrown": function (event: ScriptEventCommandMessageAfterEvent) {
     // O dono já é registrado pelo projétil (catching/index.ts); só usa o jogador mais perto como último recurso.
-    if (event.sourceEntity!.getDynamicProperty("player_id") !== undefined) return;
-    let player = event.sourceEntity!.dimension.getPlayers({ location: event.sourceEntity!.location, closest: 1 })[0];
-    if (player) event.sourceEntity!.setDynamicProperty("player_id", player.id);
+    // Comando da fila do minecraft:entity_spawned: num arremesso à queima-roupa a bola já virou a dummy da captura
+    // (catching/CaptureDummy) e saiu antes dele rodar.
+    const ball = event.sourceEntity;
+    if (!ball?.isValid || ball.getDynamicProperty("player_id") !== undefined) return;
+    let player = ball.dimension.getPlayers({ location: ball.location, closest: 1 })[0];
+    if (player) ball.setDynamicProperty("player_id", player.id);
   },
   "cobblemon:debug_setup": function () {
     registerDebugSettings();

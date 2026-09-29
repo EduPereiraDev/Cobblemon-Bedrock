@@ -7,12 +7,12 @@
 > Port **não oficial** do mod Java Cobblemon para o **Minecraft Bedrock**, para jogar com amigos no console, celular e
 > PC. Gratuito, sem fins comerciais e sem monetização.
 
-**Status:** beta. Everything from Cobblemon 1.8 was ported and passes automated tests (unit, content validation and
-end-to-end tests with protocol bots on a dedicated server), but it has **not been play-tested on a real client yet**:
-expect visual issues. Please report them in [Issues](../../issues).
+**Status:** stable (v1.0). Everything from Cobblemon 1.8 was ported, passes automated tests (unit, content validation
+and end-to-end tests with protocol bots on a dedicated server) and was play-tested on a real Windows client through eight
+betas. Please report any issue in [Issues](../../issues).
 
-**Status:** beta. Tudo do Cobblemon 1.8 foi portado e passa nos testes automáticos, mas ainda **não foi testado com o
-jogo aberto**: podem aparecer problemas visuais. Reporte em [Issues](../../issues).
+**Status:** estável (v1.0). Tudo do Cobblemon 1.8 foi portado, passa nos testes automáticos e foi testado com o jogo
+aberto (Windows) ao longo de oito betas. Reporte qualquer problema em [Issues](../../issues).
 
 ## O que tem / What's included
 

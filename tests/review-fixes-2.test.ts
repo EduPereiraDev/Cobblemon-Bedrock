@@ -332,5 +332,15 @@ function battler(id: string, battle: any, mode: string) {
 	assert.ok(messages.some(text => text.includes("is invalid")), "controle: id desconhecido ainda avisa");
 }
 
+// Log do cliente (beta 8): comando da fila (queue_command) de uma entidade que já saiu — a bola arremessada à
+// queima-roupa vira a dummy da captura antes do scriptevent rodar. Nenhum handler pode lançar.
+{
+	const gone = { isValid: false, getDynamicProperty() { throw new TypeError("entidade inválida"); } };
+	for (const id of ["cobblemon:pokeball_thrown", "cobblemon:interacted", "cobblemon:setup"]) {
+		assert.doesNotThrow(() => scriptEventHandler({ id, message: "", sourceEntity: undefined } as never), `${id} sem entidade`);
+		assert.doesNotThrow(() => scriptEventHandler({ id, message: "", sourceEntity: gone } as never), `${id} com entidade inválida`);
+	}
+}
+
 assert.deepEqual(warnings.filter(w => /NPC:/.test(w)), [], "sem avisos do NPC escondido/modelo");
 console.error("review-fixes-2: ok");
