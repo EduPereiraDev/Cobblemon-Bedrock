@@ -26,3 +26,5 @@ export const SELFTEST_PARTICLES: string[] = [];
 export const SELFTEST_SOUNDS: string[] = [];
 /** Espécie → capacidades de locomoção lidas do JSON da entidade: `w` anda, `s` nada, `f` voa. */
 export const SELFTEST_LOCOMOTION: Record<string, string> = {};
+/** Identificadores dos itens do BP (o esbuild descarta o export quando ninguém o usa). */
+export const SELFTEST_ITEMS: string[] = [];

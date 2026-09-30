@@ -31,6 +31,7 @@ import { Dex, toID } from "../showdown";
 import { getEntityInfo, getRideInfo } from "../entity/EntityData";
 import { RIDE_STYLES, RIDING_STATS_DISPLAY, rideStyleLangKey, statRange } from "../pokemon/RideStats";
 import { formByDisplay, hasDiscoveredMove, hasUndiscoveredLevelUpTM, moveDexContext, openMoveDex } from "./MoveDex";
+import { providedItemName } from "../items/itemNames"; // frente msd-fase6: nome de item de outro namespace
 
 /** Chaves de texto do port (pedido de lang em docs/pendencias/captura.md). */
 export const DEX_KEYS = {
@@ -451,7 +452,7 @@ function entryTabLines(tab: PokedexTab, entry: DexEntry, species: SpeciesData, f
       if (drops.length === 0) lines.push(tr("cobblemon.ui.pokedex.info.drops_empty"));
       drops.forEach((drop, i) => {
         const [namespace, id] = drop.item.includes(":") ? drop.item.split(":", 2) : ["minecraft", drop.item];
-        const name: RawMessage = namespace === "cobblemon" ? { translate: `item.cobblemon.${id}` } : { translate: `item.${id}.name` };
+        const name: RawMessage = namespace === "cobblemon" ? { translate: `item.cobblemon.${id}` } : providedItemName(namespace, id) ?? { translate: `item.${id}.name` };
         const amount = drop.percentage !== undefined ? `${drop.percentage}%` : drop.quantityRange ? `${drop.quantityRange}×` : "1×";
         lines.push(i > 0 ? "\n" : "", "- ", name, ` ${amount}`);
       });

@@ -56,6 +56,10 @@ import { startWelcomeBook } from "./welcomeBook";
 // scripts/extensions/megaShowdown/ quando existe e para extensions/privateStub.ts quando não (e sempre no build público).
 import { isMegaShowdownActive, startMegaShowdown } from "@private/mega-showdown"; // frente msd-infra: extensão Mega Showdown (dormente sem o pack)
 import { startMegaShowdownContent } from "@private/mega-showdown/content"; // frente msd-conteudo: espécies, spawns e conquistas do MSD
+import { installFormTitleGuard } from "./ui/formTitleGuard"; // telas empilhadas: título de form nunca lido como número pelo JSON UI
+
+// Antes de qualquer tela: sem isso, um título como "Infernape" mostrava todos os layouts do roteador juntos.
+installFormTitleGuard();
 
 
 // Emote continua como atalho (console não tem tecla de time): abre o menu do time, ou a escolha do inicial.
@@ -195,7 +199,7 @@ world.afterEvents.worldLoad.subscribe(event => {
   const msdStarted = Date.now(); // frente msd-fase2: custo da extensão no tick do worldLoad (watchdog)
   startMegaShowdown(); // frente msd-infra: só liga com o pack CobblemonMegaShowdown no mundo
   startMegaShowdownContent(); // frente msd-conteudo: tabelas do MSD, só com o pack no mundo
-  if (isMegaShowdownActive()) console.info(`Cobblemon Bedrock: Mega Showdown no worldLoad em ${Date.now() - msdStarted} ms`);
+  if (isMegaShowdownActive()) console.info(`Cobblemon Bedrock: extensão no worldLoad em ${Date.now() - msdStarted} ms`);
   startPartySelection({
     inBattle: isPlayerInAnyBattle,
     reopenBattle: player => {

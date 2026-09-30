@@ -64,9 +64,19 @@ export function validateMolangVariables(docs: Map<string, any>, err: (m: string)
 	// inflate negativo do Java (plano "de fundo"; com descarte de face de trás ele não briga).
 	for (const [key, j] of rpMaterialFiles()) rp.set(key, j);
 	const oneSided = oneSidedGeometries(rp);
+	// Frente msd-beta: só as geometrias que alguma client entity/attachable cita são desenhadas (e o material que decide o
+	// risco vem delas). Numa árvore com um pack de extensão por cima, a geometria do base que a client entity da extensão
+	// deixou de citar (a extensão tem a dela, com outro identificador) fica sem material e não aparece no jogo. No base
+	// sozinho nenhuma geometria de entidade fica sem uso (conferido em 2026-09-29).
+	const referenced = new Set<string>();
+	for (const [, j] of rp) {
+		const desc = (j?.["minecraft:client_entity"] ?? j?.["minecraft:attachable"])?.description;
+		for (const id of Object.values<unknown>(desc?.geometry ?? {})) if (typeof id === "string") referenced.add(id);
+	}
 	for (const [key, j] of rp) {
 		if (!key.startsWith("/models/entity/")) continue;
 		for (const g of j?.["minecraft:geometry"] ?? []) {
+			if (!referenced.has(g?.description?.identifier)) continue;
 			stats.geometries++;
 			const flat = flatEntityCubes(g, oneSided.has(g?.description?.identifier));
 			if (flat.length) err(`${where(key)}: ${g?.description?.identifier} tem ${flat.length} cubo(s) de espessura zero (as duas faces no mesmo plano piscam com o material de entidade de dois lados): ${flat.slice(0, 3).join(", ")}`);

@@ -335,9 +335,10 @@ function emitPortraitsModule(table: Record<string, [string, string]>): void {
  * espécie → [retrato, perfil]: variant → índice da imagem distinta (0 = todos os variants usam a imagem 0).
  * Um caractere base-62 por variant, ou "~" + dois caracteres por variant.
  */
-const INDEX: Record<string, 0 | [string, string]> = {
+export const PORTRAIT_INDEX: Record<string, 0 | [string, string]> = {
 ${rows.join("\n")}
 };
+const INDEX = PORTRAIT_INDEX;
 
 const B62 = ${JSON.stringify(B62)};
 
@@ -370,6 +371,20 @@ export function portraitIconTexture(species: string, variant = 0): string {
 /** Corpo inteiro 128 px (enquadramento do Summary do Cobblemon). */
 export function profileTexture(species: string, variant = 0): string {
 	return \`${PORTRAIT_DIRS.profile}/\${species}_\${imageIndex(species, variant, 1)}\`;
+}
+
+/**
+ * Frente msd-beta: acrescenta ou troca entradas do índice (pacote de extensão com espécies/variantes próprias, cujas
+ * imagens vêm no resource pack dela). Devolve quantas entradas mudaram.
+ */
+export function addPortraitIndex(entries: Record<string, 0 | [string, string]>): number {
+	let changed = 0;
+	for (const [species, entry] of Object.entries(entries)) {
+		if (JSON.stringify(INDEX[species]) === JSON.stringify(entry)) continue;
+		INDEX[species] = entry;
+		changed++;
+	}
+	return changed;
 }
 `,
 	);

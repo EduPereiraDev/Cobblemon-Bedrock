@@ -20,7 +20,7 @@ const alphaEyes = await optional("./msdAlphaEyes.ts");
 export const msdModulesPresent: boolean = infra !== undefined;
 
 export const isMsdChild: () => boolean = infra?.isMsdChild ?? (() => false);
-export const msdOrderCombos: (species: string, combos: Combo[]) => Combo[] = infra?.msdOrderCombos ?? ((_s, combos) => combos);
+export const msdOrderCombos: (species: string, combos: Combo[], supplement?: () => Combo[]) => Combo[] = infra?.msdOrderCombos ?? ((_s, combos) => combos);
 export const msdOrderAspectBits: (species: string, bits: string[]) => string[] = infra?.msdOrderAspectBits ?? ((_s, bits) => bits);
 export const msdRecordSpecies: (species: string, combos: Combo[], aspectBits: string[]) => void = infra?.msdRecordSpecies ?? (() => {});
 export const msdWriteChildResult: (out: string, variants: Map<string, unknown>) => void = infra?.msdWriteChildResult ?? (() => {});

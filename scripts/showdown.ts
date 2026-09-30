@@ -7,7 +7,7 @@
  * conhece, então a escolha vira uma ação própria na fila do turno e o efeito dos scripts
  * `data/cobblemon/bag_items/*.js` do Cobblemon é aplicado aqui em TypeScript.
  */
-import { Battle, BattleStreams, Dex, RandomPlayerAI, Streams, Teams, toID } from "@pkmn/sim";
+import { Battle, BattleStreams, Dex, Pokemon as SimPokemonClass, RandomPlayerAI, Streams, Teams, toID } from "@pkmn/sim";
 import type { Format, MoveTarget, Pokemon, PokemonSet, Side, StatsTable } from "@pkmn/sim";
 
 export { Dex, RandomPlayerAI, Teams, toID };
@@ -34,6 +34,8 @@ interface CobblemonSetExtras {
 interface CobblemonFormatOptions {
 	gameType?: "singles" | "doubles" | "triples" | "multi";
 	gen?: number | string;
+	/** Regras do BattleFormat (BattleRules.kt). O @pkmn/sim só conhece as dele; as do Cobblemon são aplicadas aqui. */
+	ruleset?: string[];
 }
 
 const BASE_FORMATS: Record<string, string> = {
@@ -71,6 +73,72 @@ const COBBLEMON_HELD_ITEMS: Record<string, object> = {
 	for (const [id, data] of Object.entries(COBBLEMON_HELD_ITEMS)) if (!items[id]) items[id] = data;
 }
 
+// ---------------------------------------------------------------------------------------------
+// Regra "Wild Alpha" do Cobblemon 1.8.2 (showdown.zip: data/mods/cobblemon/rulesets.js, conditions.js e
+// sim/pokemon.js). O BattleBuilder põe a regra quando o selvagem é Alfa (battle/index.ts); o fork do Showdown dá ao
+// primeiro Pokémon do lado 2 a condição `alphaboost`, que sorteia floor(nível / 10) + 1 estágios entre Atk/Def/SpA/SpD/
+// Spe (no máximo 6 por atributo) e os guarda em `alphaBoosts`, um multiplicador do atributo base que NÃO é estágio
+// comum (não aparece como -boost, não some com Haze/troca). O `-start|…|alphaboost` já tem mensagem e efeito no port.
+// ---------------------------------------------------------------------------------------------
+
+export const WILD_ALPHA_RULE = "Wild Alpha";
+const ALPHA_BOOST_TABLE = [1, 1.5, 2, 2.5, 3, 3.5, 4];
+type AlphaBoostable = Pokemon & { alphaBoosts?: Partial<Record<string, number>> };
+
+const ALPHA_BOOST_CONDITION = {
+	name: "alphaboost",
+	onStart(this: Battle, target: AlphaBoostable) {
+		const stats = ["atk", "def", "spa", "spd", "spe"];
+		const boost: Record<string, number> = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+		const pool = stats.slice();
+		const count = Math.floor(target.level / 10) + 1;
+		for (let i = 0; i < count; i++) {
+			if (!pool.length) break;
+			const idx = this.random(pool.length);
+			const stat = pool[idx];
+			boost[stat] = (boost[stat] ?? 0) + 1;
+			if ((boost[stat] ?? 0) >= 6) {
+				pool[idx] = pool[pool.length - 1];
+				pool.pop();
+			}
+		}
+		target.alphaBoosts ??= { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, accuracy: 0, evasion: 0 };
+		for (const stat in boost) target.alphaBoosts[stat] = boost[stat];
+		this.add("-start", target, "alphaboost");
+	},
+};
+{
+	const conditions = (Dex.data as unknown as { Conditions: Record<string, object> }).Conditions;
+	if (!conditions.alphaboost) conditions.alphaboost = ALPHA_BOOST_CONDITION;
+	// sim/pokemon.js do fork: getStat multiplica o atributo guardado pelo alphaBoost antes dos estágios e modificadores.
+	const proto = SimPokemonClass.prototype as unknown as { getStat: (this: AlphaBoostable, stat: string, unboosted?: boolean, unmodified?: boolean) => number };
+	const originalGetStat = proto.getStat;
+	proto.getStat = function (statName, unboosted, unmodified) {
+		// Sem Alfa (quase sempre): nenhuma conta extra por getStat.
+		if (!this.alphaBoosts) return originalGetStat.call(this, statName, unboosted, unmodified);
+		const id = toID(statName) as keyof Pokemon["storedStats"];
+		const level = this.alphaBoosts?.[id] ?? 0;
+		if (level <= 0 || !(id in this.storedStats)) return originalGetStat.call(this, statName, unboosted, unmodified);
+		const saved = this.storedStats[id];
+		this.storedStats[id] = Math.floor(saved * ALPHA_BOOST_TABLE[Math.min(6, level)]);
+		try { return originalGetStat.call(this, statName, unboosted, unmodified); }
+		finally { this.storedStats[id] = saved; }
+	};
+}
+
+/** rulesets.js do fork (`wildalpha`): mensagem no início e `alphaboost` no primeiro Pokémon ativo do lado 2. */
+function installWildAlphaRule(format: Writable<Format>, base: Format): void {
+	const baseBegin = format.onBegin;
+	format.onBegin = function (this: Battle) {
+		baseBegin?.call(this);
+		this.add("rule", "Wild Alpha: The first Pokémon on the opposing side receives an alpha boost.");
+	};
+	(format as { onSwitchIn?: (this: Battle, pokemon: Pokemon) => void }).onSwitchIn = function (this: Battle, pokemon: Pokemon) {
+		(base as { onSwitchIn?: (this: Battle, pokemon: Pokemon) => void }).onSwitchIn?.call(this, pokemon);
+		if (pokemon === this.sides[1]?.active[0]) pokemon.addVolatile("alphaboost");
+	};
+}
+
 /**
  * Frente msd-fase3: ganchos chamados no início de cada batalha (onBegin do formato: estado persistente já aplicado e
  * nenhum request enviado). Vazio no base; a extensão Mega Showdown põe aqui o Dynamax em gen9 (SD/side.js do MSD).
@@ -92,7 +160,7 @@ export class BattleStream extends BattleStreams.BattleStream {
 		const gameType = requested.gameType ?? "singles";
 		delete options.format;
 		options.formatid = BASE_FORMATS[gameType] ?? BASE_FORMATS.singles;
-		options.format = createFormat(options.formatid, gameType);
+		options.format = createFormat(options.formatid, gameType, Array.isArray(requested.ruleset) ? requested.ruleset : []);
 		// Mesmo que o BattleStream.start original, mas passando o formato já montado.
 		options.send = (t: string, data: string | string[]) => {
 			this.pushMessage(t, Array.isArray(data) ? data.join("\n") : data);
@@ -109,7 +177,7 @@ export class BattleStream extends BattleStreams.BattleStream {
  * Cópia do formato base (via protótipo, sem mexer no cache do Dex) com o gameType pedido e um
  * onBegin que aplica o estado persistente dos Pokémon.
  */
-function createFormat(formatId: string, gameType: string): Format {
+function createFormat(formatId: string, gameType: string, cobblemonRules: readonly string[] = []): Format {
 	const base = Dex.formats.get(formatId, true);
 	const format = Object.create(base) as Writable<Format>;
 	format.gameType = gameType as Format["gameType"];
@@ -140,6 +208,7 @@ function createFormat(formatId: string, gameType: string): Format {
 			side.pokemonLeft = side.pokemon.filter(pokemon => !pokemon.fainted).length;
 		}
 	};
+	if (cobblemonRules.includes(WILD_ALPHA_RULE)) installWildAlphaRule(format, base);
 	return format;
 }
 

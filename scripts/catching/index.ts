@@ -175,6 +175,30 @@ function isUncatchable(entity: Entity): boolean {
 }
 
 /**
+ * Gancho "bola acertou um Pokémon" (CobblemonEvents.THROWN_POKEBALL_HIT, cancelável; frente msd-fase6). Devolve true
+ * para cancelar: a captura não começa e a bola volta a ser item. Sem gancho registrado, nada muda.
+ */
+export type BallHitHook = (thrower: Player, target: Entity, ballTypeId: string) => boolean;
+const ballHitHooks: BallHitHook[] = [];
+
+export function addBallHitHook(hook: BallHitHook): void {
+  if (!ballHitHooks.includes(hook)) ballHitHooks.push(hook);
+}
+
+/** Só para os testes. */
+export function clearBallHitHooksForTests(): void {
+  ballHitHooks.length = 0;
+}
+
+function ballHitCanceled(thrower: Player, target: Entity, ballTypeId: string): boolean {
+  for (const hook of ballHitHooks) {
+    try { if (hook(thrower, target, ballTypeId)) return true; }
+    catch (e) { console.warn(`Gancho de acerto da Poké Bola: ${e}`); }
+  }
+  return false;
+}
+
+/**
  * EmptyPokeBallEntity.onHitEntity: valida e começa a captura.
  * @param ballAt Onde a bola parou, se foi teleportada neste tick (acerto por proximidade no trecho já percorrido).
  */
@@ -211,6 +235,13 @@ function handleBallHit(projectile: Entity, hitEntity: Entity, thrower: Player, h
   }
   else if (tryGetBattleFromEntity(thrower) !== undefined) {
     return fail({ translate: "cobblemon.capture.you_in_battle" });
+  }
+
+  // CobblemonEvents.THROWN_POKEBALL_HIT (frente msd-fase6): depois das validações e antes da captura; cancelado, a bola
+  // cai como item em silêncio (EmptyPokeBallEntity.drop()).
+  if (ballHitHooks.length && ballHitCanceled(thrower, target, projectile.typeId)) {
+    dropPokeball(projectile, thrower, at);
+    return;
   }
 
   projectile.setDynamicProperty("activated", true);

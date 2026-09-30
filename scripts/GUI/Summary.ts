@@ -36,7 +36,7 @@ import { MAX_EV, STAT_LANG, STAT_ORDER } from "./PokemonEdit";
 import {
   RADAR_HEXAGON, RADAR_PENTAGON, STAT_BAR_LINES, STAT_FILL_MARKERS, STAT_MODES, StatMode, radarTextures, statFillTexture,
 } from "./layoutSpec";
-import { extraSummaryInfo } from "./summaryExtras";
+import { extraSummaryInfo, notifyMovesShown } from "./summaryExtras";
 import { sizeCategoryKey } from "../pokemon/Scale";
 import { RIDE_STYLES, RIDING_STATS, getMaxRideBoost, getRideBoost, getRideStat, rideInfoOf, rideStyleLangKey, statRange } from "../pokemon/RideStats";
 import { Dex as ShowdownDex } from "../showdown";
@@ -495,7 +495,13 @@ export async function showSummary(player: Player, pokemon: PokemonData, options:
   let wantStudio = options.studio ?? prefersStudio(player, false);
   try {
     while (player.isValid) {
+      // Frente msd-fase6: aba Golpes mostrada (MoveSlotWidget do Cobblemon); um ouvinte que mude o Pokémon já gravou.
+      const movesChanged = tab === "moves" && notifyMovesShown(player, current);
       const team = safe(() => getSafeTeam(player), [] as (PokemonData | null)[]);
+      if (movesChanged) {
+        const fresh = team.find(member => member?.uuid === current.uuid);
+        if (fresh) current = getLivePokemon(fresh);
+      }
       const inParty = team.some(member => member?.uuid === current.uuid);
       const toggle = hasStudio(player) || safe(() => studioAvailable(player), false);
       let studio = false;

@@ -24,7 +24,7 @@ export { getSelectedSlot, setSelectedSlot, cycleSelectedSlot, getSelectedPokemon
 export { showToast, advancementToast, captureToast, evolutionToast } from "./Toast";
 export { setPortraitResolver, portraitPath } from "./portraits";
 export { typeGlyph, categoryGlyph, ballGlyph, TYPE_GLYPHS, CATEGORY_GLYPHS } from "./glyphs";
-export { recordAchievementEvent, hasAchievement, getAchievements, onAchievementCompleted } from "./achievements/tracker";
+export { recordAchievementEvent, hasAchievement, getAchievements, onAchievementCompleted, grantAchievement } from "./achievements/tracker";
 export { openAchievements } from "./achievements/screen";
 export type { AchievementEvent } from "./achievements/engine";
 

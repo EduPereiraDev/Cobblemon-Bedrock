@@ -16,6 +16,7 @@ import { Dex, toID } from "../showdown";
 import { Evolution } from "../evolution/Evolution";
 import { ItemInteractionEvolution } from "../evolution/variants/ItemInteractionEvolution";
 import { TradeEvolution } from "../evolution/variants/TradeEvolution";
+import { providedItemName } from "./itemNames"; // frente msd-fase6: nome de item de outro namespace
 
 // ---------------------------------------------------------------------------------------------
 // Tipos
@@ -149,7 +150,8 @@ export function getItemData(typeId: string): ItemData | undefined {
 
 function itemKey(typeId: string): RawMessage {
   const [namespace, id] = typeId.includes(":") ? typeId.split(":", 2) : ["cobblemon", typeId];
-  return { translate: namespace === "cobblemon" ? `item.cobblemon.${id}` : `item.${id}.name` };
+  if (namespace !== "cobblemon") return providedItemName(namespace, id) ?? { translate: `item.${id}.name` };
+  return { translate: `item.cobblemon.${id}` };
 }
 
 /** HP máximo atualizado (atributos podem ter mudado por EV/nível desde o último cálculo). */

@@ -418,6 +418,9 @@ export class PokemonBattle {
           continue;
         // Frente msd-fase3: batalha que termina com o Pokémon em Dynamax volta ao HP sem o Dynamax (Pokemon.getUndynamaxedHP).
         pokemon.currentHealth = sim.fainted ? 0 : sim.getUndynamaxedHP();
+        // Pokemon.currentHealth do Cobblemon corta no HP máximo dos dados: forma de batalha com mais HP (Tera Shift,
+        // Terapagos-Stellar) não deixa o Pokémon acima do máximo depois da batalha.
+        if (pokemon.maxHealth > 0 && pokemon.currentHealth > pokemon.maxHealth) pokemon.currentHealth = pokemon.maxHealth;
         if (pokemon.currentHealth <= 0)
           pokemon.status = StatusEffect.Faint;
         else if (sim.status) {

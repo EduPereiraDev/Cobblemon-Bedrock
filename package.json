@@ -1,7 +1,7 @@
 {
   "name": "cobblemon-bedrock",
   "version": "0.2.0",
-  "packVersion": "1.0.10",
+  "packVersion": "1.0.11",
   "productName": "Cobblemon Bedrock",
   "description": "A port of the Minecraft mod Cobblemon to Bedrock Edition",
   "private": true,

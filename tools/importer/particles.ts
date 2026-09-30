@@ -20,6 +20,7 @@ import { ASSETS, HAND_RP, OUT_RP, OUT_SCRIPTS, copyFile, count, readJson, walk, 
 import { LEVEL_SOUND_EVENTS, PARTICLE_MAX_COLLISION_RADIUS } from "./clientRules.ts";
 import { rewriteMolang, scanMolang, unquote } from "./molang.ts";
 import { guardParticleVariables, particlePreInitReads } from "./molangVars.ts"; // frentes cliente-teste3-log e cliente-teste4
+import { fixBareMolangCalls, moveParticleScopeStatements } from "./molangVars.ts"; // frente msd-beta
 
 const PARTICLES_DIR = `${ASSETS}/bedrock/particles`;
 
@@ -337,6 +338,8 @@ export function particleSoundDefinition(name: string, soundEvents?: Set<string>,
  * separado por ";") e aninha math.max/min com mais de 2 argumentos.
  */
 export function repairParticleMolang(expr: string): string {
+	// Frente msd-beta: `rand(a, b)` (Snowstorm/Java) não existe no Bedrock ("unknown token") → math.random(a, b).
+	expr = fixBareMolangCalls(expr);
 	const statements = expr.split(";");
 	const fixed = statements.map((st) => {
 		let depth = 0;
@@ -455,6 +458,9 @@ export function clientSafeParticle(json: any, opts: { child?: boolean; soundEven
 	pe.components = repairDeep(comps);
 	if (pe.curves) pe.curves = repairDeep(pe.curves);
 	if (pe.events) pe.events = repairDeep(pe.events);
+	// Frente msd-beta: v.particle_* lido no creation_expression do emissor vai para a inicialização da partícula
+	// (o cliente acusa "unknown variable 'variable.particle_age'"); antes do guarda de variáveis abaixo.
+	if (moveParticleScopeStatements(json)) count("partículas: comandos com v.particle_* do emissor para a partícula (particle_initialization)", 1);
 	// Frente cliente-teste3-log: TODA variável lida e não escrita pela partícula ganha padrão no creation_expression
 	// (`v.x = v.x ?? padrão;`): filhas (o pai não passa as variáveis dele), as disparadas por animação/entidade/script
 	// sem MolangVariableMap e as curvas lidas antes da 1ª avaliação. O `??` mantém o valor que o script passar.

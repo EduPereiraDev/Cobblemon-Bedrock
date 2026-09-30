@@ -20,6 +20,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkPublicDist, cleanBuildPlugin, forbiddenInBundle, leakedInputs } from "./cleanBuild.mjs";
 import { selfTestManifestPlugin } from "./selftest/manifest.mjs";
+import { moveNameWidthsPlugin } from "./ui/moveNameWidths.mjs"; // frente msd-beta: nomes de golpe longos no tile
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const release = process.argv.includes("--release");
@@ -33,7 +34,7 @@ if (privateBuild && clean) {
 }
 const PACK = "CobblemonBedrock";
 const MSD_PACK = "CobblemonMegaShowdown";
-/** UUIDs fixos do pack MSD (header e módulo). A versão acompanha a do base. */
+/** UUIDs fixos do pack MSD (header e módulo). A versão é própria (msdPackVersion). */
 const MSD_UUID = {
 	bp: "5ee3685f-7aed-42e2-a365-f51824f0410d", bpData: "f21a2f0e-6a1a-4a5c-ba0a-a9ba0e6c6a40",
 	rp: "752874ff-580d-49e5-af9c-06ae4aaec7ed", rpResources: "7bf7c6e1-feb6-468d-9427-d6f82daeae69",
@@ -99,25 +100,46 @@ function buildMsdPacks() {
 		mergeTree(join(generated, kind, MSD_PACK), out);
 		mergeTree(join(root, kind, MSD_PACK), out);
 	}
-	const version = base.bp.header.version;
+	const { version, label } = msdPackVersion();
 	const common = {
 		format_version: 2,
 		metadata: { authors: ["Yajat Kaul e colaboradores (Cobblemon: Mega Showdown)", ...(base.bp.metadata?.authors ?? [])], license: "Mega Showdown License v2.1 (uso privado; ver credits.txt)" },
 	};
-	const description = "§6Extensão Mega Showdown do Cobblemon Bedrock. Uso privado, não redistribuir (credits.txt). Fique ACIMA do Cobblemon Bedrock.";
+	const baseLabel = `v${base.bp.header.version.join(".")}`;
+	const description = `§6${label}§r — Extensão Mega Showdown do Cobblemon Bedrock (para o ${baseLabel}). Uso privado, não redistribuir (credits.txt). Fique ACIMA do Cobblemon Bedrock.`;
 	writeFileSync(join(dist, "behavior_packs", MSD_PACK, "manifest.json"), JSON.stringify({
 		...common,
-		header: { name: "Cobblemon: Mega Showdown (BP)", description, uuid: MSD_UUID.bp, version, min_engine_version: base.bp.header.min_engine_version },
+		header: { name: `${label} Cobblemon: Mega Showdown (BP)`, description, uuid: MSD_UUID.bp, version, min_engine_version: base.bp.header.min_engine_version },
 		modules: [{ type: "data", uuid: MSD_UUID.bpData, version }],
 		dependencies: [{ uuid: base.bp.header.uuid, version: base.bp.header.version }, { uuid: MSD_UUID.rp, version }],
 	}, null, "\t"));
 	writeFileSync(join(dist, "resource_packs", MSD_PACK, "manifest.json"), JSON.stringify({
 		...common,
-		header: { name: "Cobblemon: Mega Showdown (RP)", description, uuid: MSD_UUID.rp, version, min_engine_version: base.rp.header.min_engine_version },
+		header: { name: `${label} Cobblemon: Mega Showdown (RP)`, description, uuid: MSD_UUID.rp, version, min_engine_version: base.rp.header.min_engine_version },
 		modules: [{ type: "resources", uuid: MSD_UUID.rpResources, version }],
 		dependencies: [{ uuid: MSD_UUID.bp, version }, { uuid: base.rp.header.uuid, version: base.rp.header.version }],
 	}, null, "\t"));
-	console.log(`Mega Showdown: ${MSD_PACK} (BP + RP) em ${dist}`);
+	console.log(`Mega Showdown: ${MSD_PACK} (BP + RP) ${label} (manifest ${version.join(".")}) em ${dist}`);
+}
+
+/**
+ * Versão própria do pack MSD (o Bedrock identifica o pack por UUID + versão: sem subir a versão, importar o .mcaddon novo
+ * por cima do antigo é ignorado). O contador fica em tools/msd-version.json (fora do git): `{ "label": "1.0.0-beta",
+ * "build": N }`. Cada build `--private` soma 1 e grava; o nome do pack leva "v1.0.0-beta.N". O manifest só aceita três
+ * números, então a série beta vai em [0, 0, N] (abaixo da futura 1.0.0 estável, na ordem do semver). Builds de
+ * desenvolvimento (E2E com o MSD) usam o último número, com "-dev" no nome, sem gravar nada.
+ */
+function msdPackVersion() {
+	const file = join(root, "tools", "msd-version.json");
+	let state = { label: "1.0.0-beta", build: 0 };
+	try { state = { ...state, ...JSON.parse(readFileSync(file, "utf8")) }; } catch { }
+	let build = Math.max(0, Math.floor(Number(state.build) || 0));
+	if (privateBuild) {
+		build++;
+		writeFileSync(file, JSON.stringify({ ...state, build }, null, "\t") + "\n");
+	}
+	const n = Math.max(1, build);
+	return { version: [0, 0, n], label: `v${state.label}.${n}${privateBuild ? "" : "-dev"}` };
 }
 
 /**
@@ -257,7 +279,7 @@ const result = await build({
 	banner: { js: "var global = globalThis;" },
 	logLevel: "warning",
 	// /cobblemon:selftest: partículas, sons, blocos e entidades lidos dos packs já mesclados em dist/.
-	plugins: [slimShowdown, selfTestManifestPlugin({ dist }), ...(clean ? [cleanBuildPlugin({ root, stubbed })] : [])],
+	plugins: [slimShowdown, selfTestManifestPlugin({ dist }), moveNameWidthsPlugin({ dist }), ...(clean ? [cleanBuildPlugin({ root, stubbed })] : [])],
 });
 const bytes = Object.values(result.metafile.outputs).find((o) => o.entryPoint)?.bytes ?? 0;
 console.log(`scripts empacotados em ${Date.now() - started}ms (${(bytes / 1e6).toFixed(2)} MB)`);

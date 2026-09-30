@@ -25,6 +25,7 @@ import { getLearnedTMs, getTMMove } from "../../machines/tm";
 import { TECHNICAL_MACHINES } from "../../machines/data";
 import { pasturedIds } from "../../machines/pasture";
 import { advancementToast, showToast } from "../Toast";
+import { getStructuresAt } from "../../world/StructureRegistry"; // frente msd-fase6: critério `structure`
 import { AchievementEvent, AchievementState, ProgressCounters, applyEvent, parseAchievements } from "./engine";
 
 export const ACHIEVEMENTS_PROPERTY = "cobblemon:advancements";
@@ -82,6 +83,14 @@ export function recordAchievementEvent(player: Player, event: AchievementEvent) 
   for (const def of completed) announce(player, def);
 }
 
+/**
+ * Concede um advancement direto (todos os critérios restantes), como o `award` do Java: `"catching/first_catch"` ou
+ * com `cobblemon:`. Id desconhecido não faz nada (o AdvancementHelper do Java só registra no log). Frente msd-fase6.
+ */
+export function grantAchievement(player: Player, id: string) {
+  recordAchievementEvent(player, { type: "grant", id });
+}
+
 /** Algum advancement ainda aberto usa este tipo de critério? (evita trabalho quando tudo já foi feito) */
 function pending(player: Player, type: string): boolean {
   const done = getAchievements(player).d;
@@ -92,8 +101,28 @@ function pending(player: Player, type: string): boolean {
 // Conjuntos derivados das definições
 
 const criteriaOf = (type: string) => ADVANCEMENT_DEFS.flatMap(def => Object.values(def.criteria).filter(c => c.t === type));
-const INVENTORY_ITEMS = new Set(criteriaOf("inventory").flatMap(c => (c.items as string[]) ?? []));
-const INTERACT_ITEMS = new Set(criteriaOf("pokemon_interact").map(c => String(c.item)));
+/**
+ * Conjuntos derivados das definições. Frente msd-fase6: recalculados quando a lista cresce (uma extensão acrescenta
+ * conquistas no worldLoad, depois deste módulo carregar); antes, os itens das conquistas acrescentadas nunca contavam.
+ */
+let derivedFor = -1;
+let INVENTORY_ITEMS = new Set<string>();
+let INTERACT_ITEMS = new Set<string>();
+function refreshDerived() {
+  if (derivedFor === ADVANCEMENT_DEFS.length) return;
+  derivedFor = ADVANCEMENT_DEFS.length;
+  // Conquistas acrescentadas depois do load (extensões): o índice por id também as enxerga.
+  for (const def of ADVANCEMENT_DEFS) if (!ADVANCEMENTS_BY_ID.has(def.id)) (ADVANCEMENTS_BY_ID as Map<string, AdvancementDef>).set(def.id, def);
+  INVENTORY_ITEMS = new Set(criteriaOf("inventory").flatMap(c => (c.items as string[]) ?? []));
+  INTERACT_ITEMS = new Set(criteriaOf("pokemon_interact").map(c => String(c.item)));
+}
+refreshDerived();
+
+/** Algum critério `inventory` pede este item? (conjunto recalculado se a lista de conquistas cresceu) */
+export function isTrackedInventoryItem(typeId: string): boolean {
+  refreshDerived();
+  return INVENTORY_ITEMS.has(typeId);
+}
 const TUMBLESTONE_ITEMS = new Set(["cobblemon:tumblestone", "cobblemon:black_tumblestone", "cobblemon:sky_tumblestone"]);
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -104,6 +133,7 @@ const armed = new Map<string, Map<string, number>>();
 const ARM_TICKS = 600;
 
 function arm(player: Player, item: string) {
+  refreshDerived();
   if (!INTERACT_ITEMS.has(item)) return;
   let map = armed.get(player.id);
   if (!map) armed.set(player.id, map = new Map());
@@ -117,7 +147,7 @@ function isArmed(player: Player, item: string): boolean {
 }
 
 function inventoryEvent(player: Player, stack: ItemStack | undefined) {
-  if (!stack || !INVENTORY_ITEMS.has(stack.typeId)) return;
+  if (!stack || !isTrackedInventoryItem(stack.typeId)) return;
   let tm: string | undefined;
   if (stack.typeId === "cobblemon:technical_machine") {
     try { tm = getTMMove(stack)?.move; } catch { }
@@ -142,6 +172,7 @@ function subscribeWorld() {
   world.afterEvents.playerInventoryItemChange.subscribe(({ player, itemStack, beforeItemStack }) => {
     try {
       inventoryEvent(player, itemStack);
+      refreshDerived();
       // Item de uso em Pokémon que saiu do inventário depois de ser usado (bala, menta, reviver...).
       if (beforeItemStack && INTERACT_ITEMS.has(beforeItemStack.typeId)
         && (!itemStack || itemStack.typeId !== beforeItemStack.typeId || itemStack.amount < beforeItemStack.amount)
@@ -331,12 +362,35 @@ function pollSlow(player: Player) {
   if (pending(player, "pick_starter")) {
     try { if (hasSelectedStarter(player)) recordAchievementEvent(player, { type: "pick_starter" }); } catch { }
   }
+  if (pending(player, "structure")) pollStructures(player);
   if (snap && pending(player, "started_riding")) {
     let riding = false;
     try { riding = !!player.getComponent("minecraft:riding")?.entityRidingOn; } catch { }
     if (riding && !snap.riding) recordAchievementEvent(player, { type: "started_riding" });
     snap.riding = riding;
   }
+}
+
+/** Estruturas pedidas pelos critérios `structure` ainda abertos. */
+function pendingStructures(player: Player): string[] {
+  const done = getAchievements(player).d;
+  const out = new Set<string>();
+  for (const def of ADVANCEMENT_DEFS) {
+    if (done.includes(def.id)) continue;
+    for (const c of Object.values(def.criteria)) if (c.t === "structure" && Array.isArray(c.structures)) for (const id of c.structures as string[]) out.add(id);
+  }
+  return [...out];
+}
+
+/** Critério `structure` (minecraft:location): o registro de estruturas do port, com granularidade de chunk. */
+function pollStructures(player: Player) {
+  try {
+    const wanted = pendingStructures(player);
+    if (!wanted.length) return;
+    const here = getStructuresAt(player.dimension, player.location, wanted).filter(id => wanted.includes(id));
+    if (here.length) recordAchievementEvent(player, { type: "structure", structures: here });
+  }
+  catch { /* chunk descarregado */ }
 }
 
 function pollRare(player: Player) {

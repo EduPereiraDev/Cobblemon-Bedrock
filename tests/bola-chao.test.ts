@@ -12,7 +12,7 @@ import { Player, system, world } from "@minecraft/server";
 import { getAllPokeBalls } from "../scripts/catching/PokeBalls";
 import { CAPTURE_DUMMY_EVENT, captureDummyId, swapToCaptureDummy } from "../scripts/catching/CaptureDummy";
 import { groundBelow, isCaptureInProgress } from "../scripts/catching/CaptureSequence";
-import { bindCatchEvents } from "../scripts/catching";
+import { addBallHitHook, bindCatchEvents, clearBallHitHooksForTests } from "../scripts/catching";
 
 let passed = 0;
 async function test(name: string, fn: () => void | Promise<void>) {
@@ -257,6 +257,29 @@ await test("recusas (não selvagem, uncatchable) continuam no projétil: item + 
   assert.equal(drops.length, 2, "um item por recusa");
   assert.equal(owned.killed + refused.killed, 2);
   assert.equal(player.messages.length, 2);
+});
+
+await test("frente msd-fase6: gancho de acerto cancelável (THROWN_POKEBALL_HIT): item sem mensagem nem dummy; sem gancho, igual", () => {
+  drops.length = 0; spawned.length = 0;
+  const player = makePlayer();
+  const seen: unknown[][] = [];
+  addBallHitHook((thrower, target, ball) => { seen.push([thrower, target, ball]); return target.typeId === "cobblemon:ditto"; });
+  const canceledBall = fake("cobblemon:poke_ball", ["pokeball"]);
+  const ditto = fake("cobblemon:ditto", ["pokemon"], undefined, { "prop:cobblemon:wild": true });
+  fire("projectileHitEntity", entityHit(canceledBall, player, ditto));
+  assert.equal(seen.length, 1, "o gancho roda depois das validações");
+  assert.equal(seen[0][2], "cobblemon:poke_ball");
+  assert.equal(spawned.length, 0, "cancelado: sem dummy");
+  assert.equal(drops.length, 1, "cancelado: a bola volta a ser item (drop)");
+  assert.equal(player.messages.length, 0, "cancelado: sem mensagem (o Java só dá drop())");
+  assert.notEqual(canceledBall.props.activated, true);
+  // Recusa antes do gancho (não selvagem): o gancho nem roda.
+  fire("projectileHitEntity", entityHit(fake("cobblemon:poke_ball", ["pokeball"]), player, fake("cobblemon:ditto", ["pokemon"], undefined, { "prop:cobblemon:wild": false })));
+  assert.equal(seen.length, 1, "validações do base antes do gancho");
+  // Gancho que deixa (outra espécie): a captura começa como sempre.
+  fire("projectileHitEntity", entityHit(fake("cobblemon:poke_ball", ["pokeball"]), player, fake("cobblemon:eevee", ["pokemon"], undefined, { "prop:cobblemon:wild": true })));
+  assert.equal(spawned.length, 1, "não cancelado: dummy da captura");
+  clearBallHitHooksForTests();
 });
 
 console.log(`bola-chao: ${passed} ok`);

@@ -216,6 +216,57 @@ export function enumerateCombos(variations: Variation[], speciesData: any, defs:
 	return { combos: [...seen.values()], incomplete };
 }
 
+/**
+ * Frente msd-fase6: combinações que `enumerateCombos` perde quando um aspect pertence a MAIS de uma forma (ele liga
+ * cada aspect a uma forma só: no Ogerpon, `embody-aspect` e cada `*-mask` ficam presos à forma Tera, e somem o
+ * Teal-Tera e as máscaras sem Tera). Enumera de novo com o grupo "forma" contendo TODAS as formas de cada aspect e
+ * devolve só as combinações que ainda não estão em `combos`, para o chamador acrescentar NO FIM (índices existentes
+ * intactos). Não é chamada pelo import do base: o pack base não muda.
+ */
+export function supplementFormCombos(variations: Variation[], speciesData: any, defs: FeatureDefs, combos: readonly Combo[]): Combo[] {
+	const forms: string[][] = [];
+	for (const form of speciesData?.forms ?? []) {
+		const a: string[] = form.aspects ?? [];
+		if (a.length && !forms.some((f) => f.join("+") === a.join("+"))) forms.push(a);
+	}
+	const groups = new Map<string, string[][]>();
+	const addOption = (group: string, option: string[]) => {
+		const opts = groups.get(group) ?? [];
+		if (!opts.some((o) => o.join("+") === option.join("+"))) opts.push(option);
+		groups.set(group, opts);
+	};
+	let shared = false;
+	for (const v of variations) {
+		for (const a of v.aspects) {
+			const owners = forms.filter((f) => f.includes(a));
+			if (owners.length > 1) shared = true;
+			if (owners.length) for (const f of owners) addOption("form", f);
+			else addOption(defs.aspectGroup.get(a) ?? `own:${a}`, [a]);
+		}
+	}
+	if (!shared) return [];
+	const groupList = [...groups.values()];
+	if (groupList.reduce((n, g) => n * (g.length + 1), 1) > MAX_ENUMERATION) return [];
+	const seen = new Set(combos.map(comboKey));
+	const out: Combo[] = [];
+	const rec = (i: number, acc: string[]) => {
+		if (i < groupList.length) {
+			rec(i + 1, acc);
+			for (const opt of groupList[i]) rec(i + 1, [...acc, ...opt]);
+			return;
+		}
+		const r = resolveCombo(variations, acc);
+		if (!r.poser || !r.model || !r.texture) return;
+		const combo: Combo = { poser: r.poser, model: r.model, texture: r.texture, layers: r.layers };
+		const key = comboKey(combo);
+		if (seen.has(key)) return;
+		seen.add(key);
+		out.push(combo);
+	};
+	rec(0, []);
+	return out;
+}
+
 /** Código TypeScript da resolução em tempo de execução (copiado para generated/scripts/variants.ts). */
 export const RUNTIME_RESOLVER_SOURCE = `
 const comboIndexCache = new Map<string, Map<string, number>>();

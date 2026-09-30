@@ -165,6 +165,32 @@ function useItemOnPokemon(player: Player, pokemon: Entity, item: ItemStack): boo
   return useItemOnPokemonEntity(player, pokemon, item);
 }
 
+/**
+ * Gancho de interação com Pokémon (extensões; frente msd-fase6): roda depois das interações próprias da espécie
+ * (tesoura, stash, tingir) e antes do menu do Pokémon, do item usado no Pokémon e da batalha selvagem — o ponto em que
+ * o `Item.use` de um item com mira em entidade roda no Java quando o `mobInteract` passa. Devolve true para consumir a
+ * interação. Sem gancho registrado, nada muda.
+ */
+export type PokemonInteractHook = (player: Player, pokemon: Entity, heldItem: ItemStack | undefined) => boolean;
+const pokemonInteractHooks: PokemonInteractHook[] = [];
+
+export function addPokemonInteractHook(hook: PokemonInteractHook): void {
+  if (!pokemonInteractHooks.includes(hook)) pokemonInteractHooks.push(hook);
+}
+
+/** Só para os testes. */
+export function clearPokemonInteractHooksForTests(): void {
+  pokemonInteractHooks.length = 0;
+}
+
+function runPokemonInteractHooks(player: Player, pokemon: Entity, heldItem: ItemStack | undefined): boolean {
+  for (const hook of pokemonInteractHooks) {
+    try { if (hook(player, pokemon, heldItem)) return true; }
+    catch (e) { console.warn(`Gancho de interação com Pokémon: ${e}`); }
+  }
+  return false;
+}
+
 /** Jogador interagiu (botão de usar) com um Pokémon: item, menu do próprio Pokémon, troca de item ou batalha selvagem. */
 export function handlePokemonInteract(player: Player, pokemon: Entity, heldItem?: ItemStack) {
   // Ordem do PokemonEntity.mobInteract: tesoura (cauda do Slowpoke) e stash (Gimmighoul) antes do resto.
@@ -172,6 +198,7 @@ export function handlePokemonInteract(player: Player, pokemon: Entity, heldItem?
   if (tryPokemonInteraction(player, pokemon, heldItem)) return;
   if (!isInBattle(player) && tryStashItem(player, pokemon, heldItem)) return;
   if (!isInBattle(player) && pokemon.getProperty("cobblemon:in_battle") !== true && tryDyePokemon(player, pokemon, heldItem)) return;
+  if (pokemonInteractHooks.length && runPokemonInteractHooks(player, pokemon, heldItem)) return;
   cleanUpStaleBattleData(player);
   cleanUpStaleBattleData(pokemon);
   if (pokemon.getDynamicProperty("owner_name") === player.name) {

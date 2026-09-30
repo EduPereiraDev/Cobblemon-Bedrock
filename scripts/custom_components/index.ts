@@ -9,7 +9,10 @@ import StripLogComponent from "./StripLogComponent";
 import DropExpRewardComponent from "./DropExpRewardComponent";
 import PlantComponent from "./PlantComponent";
 import ApricornGeneratedComponent from "./ApricornGeneratedComponent";
-import SaplingComponent from "./SaplingComponent";
+import SaplingComponent, { perBedrockRandomTick } from "./SaplingComponent";
+
+/** ApricornBlock.randomTick: `nextInt(5) == 0` por tick aleatório do Java (idade 0..3). */
+const APRICORN_GROW_CHANCE = perBedrockRandomTick(1 / 5);
 import LeavesDecayComponent from "./LeavesDecayComponent";
 import SlabComponent from "./SlabComponent";
 import PressurePlateComponent from "./PressurePlateComponent";
@@ -32,13 +35,13 @@ const blockComponents: Record<string, BlockCustomComponent> = {
   "cobblemon:strip_apricorn_wood": new StripLogComponent("cobblemon:stripped_apricorn_wood"),
   "cobblemon:enforce_pc_top_half_component": new EnforceTopHalfComponent("cobblemon:pc_top", "minecraft:cardinal_direction"),
   "cobblemon:enforce_pc_bottom_half_component": new EnforceBottomHalfComponent("cobblemon:pc", "minecraft:cardinal_direction"),
-  "cobblemon:black_apricorn_growth_component": new PlantComponent("blocks/apricorns/black_apricorn"),
-  "cobblemon:blue_apricorn_growth_component": new PlantComponent("blocks/apricorns/blue_apricorn"),
-  "cobblemon:green_apricorn_growth_component": new PlantComponent("blocks/apricorns/green_apricorn"),
-  "cobblemon:pink_apricorn_growth_component": new PlantComponent("blocks/apricorns/pink_apricorn"),
-  "cobblemon:red_apricorn_growth_component": new PlantComponent("blocks/apricorns/red_apricorn"),
-  "cobblemon:white_apricorn_growth_component": new PlantComponent("blocks/apricorns/white_apricorn"),
-  "cobblemon:yellow_apricorn_growth_component": new PlantComponent("blocks/apricorns/yellow_apricorn"),
+  "cobblemon:black_apricorn_growth_component": new PlantComponent("blocks/apricorns/black_apricorn", APRICORN_GROW_CHANCE),
+  "cobblemon:blue_apricorn_growth_component": new PlantComponent("blocks/apricorns/blue_apricorn", APRICORN_GROW_CHANCE),
+  "cobblemon:green_apricorn_growth_component": new PlantComponent("blocks/apricorns/green_apricorn", APRICORN_GROW_CHANCE),
+  "cobblemon:pink_apricorn_growth_component": new PlantComponent("blocks/apricorns/pink_apricorn", APRICORN_GROW_CHANCE),
+  "cobblemon:red_apricorn_growth_component": new PlantComponent("blocks/apricorns/red_apricorn", APRICORN_GROW_CHANCE),
+  "cobblemon:white_apricorn_growth_component": new PlantComponent("blocks/apricorns/white_apricorn", APRICORN_GROW_CHANCE),
+  "cobblemon:yellow_apricorn_growth_component": new PlantComponent("blocks/apricorns/yellow_apricorn", APRICORN_GROW_CHANCE),
   "cobblemon:apricorn_generated_component": new ApricornGeneratedComponent(),
   "cobblemon:black_apricorn_seed_component": new SaplingComponent("cobblemon:black_apricorn_tree"),
   "cobblemon:blue_apricorn_seed_component": new SaplingComponent("cobblemon:blue_apricorn_tree"),

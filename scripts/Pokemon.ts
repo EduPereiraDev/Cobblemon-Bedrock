@@ -95,6 +95,24 @@ export const MOVE_COUNT = 4;
 /** Estágios máximos de PP Up por golpe (Move.raiseMaxPP). */
 export const MAX_PP_STAGES = 3;
 
+/**
+ * Formas do Cobblemon que o dex do Showdown não tem (o Java as injeta no Showdown com os atributos da forma). Sem o
+ * alias, "Zygarde-10%-C" (Power Construct) caía em "Zygarde" e entrava na batalha com os status do 50%. Só formas
+ * conferidas uma a uma: tirar o sufixo em geral trocaria Pikachu-Alola-Bias por Pikachu-Alola (outro Pokémon).
+ * "Zygarde-50%-C" já cai em "Zygarde", que é a forma 50%.
+ */
+export const SHOWDOWN_FORM_ALIASES: Readonly<Record<string, string>> = {
+  "Zygarde-10%-C": "Zygarde-10%",
+  "Zygarde-50%-C": "Zygarde",
+};
+
+/** Nome da espécie no Showdown para espécie + forma do Cobblemon; forma desconhecida do dex = a espécie. */
+export function showdownSpeciesName(speciesName: string, formName?: string): string {
+  const name = formName ? `${speciesName}-${formName}` : speciesName;
+  const species = Dex.species.get(SHOWDOWN_FORM_ALIASES[name] ?? name);
+  return species.exists ? species.name : speciesName;
+}
+
 /** Tag das entidades de clones de batalha (BattleCloneProperty): não interagem nem são capturadas. */
 export const BATTLE_CLONE_TAG = "cobblemon_battle_clone";
 
@@ -1323,11 +1341,7 @@ export class PokemonData implements PokemonSet {
 
   /** Nome da espécie no Showdown, incluindo a forma (ex.: "Raichu-Alola"). */
   getShowdownSpecies(): string {
-    const speciesData = this.getSpeciesData();
-    const form = this.getFormData();
-    const name = form ? `${speciesData.name}-${form.name}` : speciesData.name;
-    const species = Dex.species.get(name);
-    return species.exists ? species.name : speciesData.name;
+    return showdownSpeciesName(this.getSpeciesData().name, this.getFormData()?.name);
   }
 
   /** Identificador da entidade Bedrock desta espécie (ex.: cobblemon:pikachu). */

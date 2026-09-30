@@ -2,7 +2,7 @@
 // Cada teste pega a regressão de uma categoria do content log do cliente sem precisar do jogo
 // (docs/pendencias/cliente-log.md). API do Minecraft mockada.
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -294,6 +294,41 @@ test("client-log-summary agrupa o content log por categoria e mensagem", () => {
 	assert.deepEqual(json.subjects, ["sounds/pokemon/absol/absol_cry", "sounds/pokemon/aipom/aipom_cry"]);
 	const anim = j.groups.find((g: any) => g.key.startsWith("[Animation]"));
 	assert.match(anim.subjects[0], /^animations\/pokemon\/zubat\.animation\.json/); // caminho do pack tirado
+});
+
+// Regras extras opcionais (tools/client-log-rules/*.mjs; aqui por COBBLEMON_LOG_RULES_DIR): uma seção por módulo.
+test("client-log-summary carrega regras extras de uma pasta opcional", () => {
+	const dir = mkdtempSync(join(tmpdir(), "clog-rules-"));
+	const rules = join(dir, "rules");
+	mkdirSync(rules);
+	writeFileSync(join(rules, "demo.mjs"), [
+		`export const title = "Demo";`,
+		`export function rules({ root }) { return [`,
+		`  ["partícula demo", (e) => /^particles\\/demo_/.test(e.raw)],`,
+		`  ["caminho completo com o pack", (e) => /PackDemo/.test(e.full)],`,
+		`  ["raiz recebida", () => typeof root === "string" && root.length > 0],`,
+		`]; }`,
+	].join("\n"));
+	writeFileSync(join(rules, "quebrado.mjs"), "export const title = ;");
+	const f = join(dir, "ContentLog.txt");
+	writeFileSync(f, [
+		`05:39:58[Json][error]-%APPDATA%/x/resource_packs/PackDemo/particles/demo_a.json | particle_effect | erro`, "",
+		`05:39:58[Json][error]-particles/outra.json | particle_effect | erro`, "",
+	].join("\n"));
+	const run = (env: Record<string, string>) => spawnSync(process.execPath, [join(ROOT, "tools/client-log-summary.mjs"), f, "--json"], { encoding: "utf8", env: { ...process.env, ...env } });
+	const out = run({ COBBLEMON_LOG_RULES_DIR: rules });
+	assert.equal(out.status, 0, out.stderr);
+	const j = JSON.parse(out.stdout);
+	const demo = j.extra.find((x: any) => x.file === "demo.mjs");
+	assert.equal(demo.title, "Demo");
+	assert.deepEqual(demo.rules.map((r: any) => r.count), [1, 1, 2]);
+	assert.deepEqual(demo.rules[0].subjects, ["particles/demo_a.json | particle_effect"]);
+	assert.match(j.extra.find((x: any) => x.file === "quebrado.mjs").title, /não carregou/, "módulo quebrado não derruba a ferramenta");
+	// Sem a pasta: a saída não muda.
+	const none = JSON.parse(run({ COBBLEMON_LOG_RULES_DIR: join(dir, "nao-existe") }).stdout);
+	assert.equal(none.extra, undefined);
+	const text = spawnSync(process.execPath, [join(ROOT, "tools/client-log-summary.mjs"), f], { encoding: "utf8", env: { ...process.env, COBBLEMON_LOG_RULES_DIR: rules } }).stdout;
+	assert.match(text, /## Demo\n\s+1  partícula demo \(1 assuntos\)\n\s+- 1x particles\/demo_a\.json/);
 });
 
 if (failed) {

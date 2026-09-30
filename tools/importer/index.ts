@@ -21,7 +21,7 @@ import { SoundIndex } from "./sounds.ts";
 import { SpawnBuilder } from "./spawns.ts";
 import { gameplaySubset, loadSpecies, movementOf } from "./species.ts";
 import { ASSETS, HAND_BP, HAND_RP, OUT, OUT_FINAL, OUT_RP, UPSTREAM, copyFile, count, rel, report, splitId, warn, writeJson, writeStats } from "./util.ts";
-import { enumerateCombos, layerKey, loadFeatureDefs, loadResolvers } from "./variants.ts";
+import { enumerateCombos, layerKey, loadFeatureDefs, loadResolvers, supplementFormCombos } from "./variants.ts";
 import type { Combo } from "./variants.ts";
 import { BiomeResolver, BlockResolver } from "./worldgen.ts";
 import { BlockBuilder, emitBlockBehaviours } from "./blocks.ts";
@@ -135,7 +135,8 @@ for (const sp of selected) {
 	const enumerated = enumerateCombos(variations, sp.data, features);
 	const incomplete = enumerated.incomplete;
 	// Frente msd-infra: no import do Mega Showdown, as combinações do base vêm primeiro (índices de variante iguais).
-	const rawCombos = msdOrderCombos(sp.id, enumerated.combos);
+	// Frente msd-fase6: o filho do MSD pode acrescentar no fim as combinações de aspects compartilhados por formas.
+	const rawCombos = msdOrderCombos(sp.id, enumerated.combos, () => supplementFormCombos(variations, sp.data, features, enumerated.combos));
 	for (const msg of incomplete) warn("enumeração de variantes incompleta", `${sp.id}: ${msg}`);
 
 	// Descarta combinações com modelo/textura/poser ausentes (a 0 precisa sobreviver).

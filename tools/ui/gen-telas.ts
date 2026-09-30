@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
 import {
 	BATTLE_ACTION, BATTLE_MOVES, BATTLE_SWITCH, BATTLE_TARGET, CATEGORY_MARKERS, EXP_STEPS, GIMMICK_ON_MARKER, GUI, PC, PC_DIM_MARKER, POKEDEX_ENTRY,
 	POKEDEX_LIST, SELECTED_MARKER, STARTER, SUB, SUMMARY, SUMMARY_INFO, SUMMARY_INFO_LABELS, SUMMARY_MARKS, SUMMARY_MOVES, TYPE_DOUBLE, TYPE_HUES,
-	MOVE_TILE_LINES, TYPE_SINGLE, expStepText, typeKeyTexture,
+	MOVE_NAME, MOVE_TILE_LINES, TYPE_SINGLE, expStepText, typeKeyTexture,
 	RADAR_COLORS, RADAR_HEXAGON, RADAR_PENTAGON, STAT_BAR_LINES, STAT_FILL_COLORS, STAT_FILL_MARKERS, radarSectorBox,
 	BATTLE_FORFEIT, DIALOGUE, DIALOGUE_DISABLED_MARKER, DIALOGUE_MAX_HORIZONTAL,
 } from "../../scripts/GUI/layoutSpec.ts";
@@ -325,10 +325,13 @@ function battleFile(): Json {
 		{ "tints@battle.move_tints": {} },
 		img(`${GUI}/battle/battle_move_overlay`, [0, 0], [92, 24], { layer: 2 }),
 		typeIcon([-9, 2]),
-		clipLine(MOVE_TILE_LINES.NAME, [17, 3], [73, 7.5], { scale: 0.75 }),
+		clipLine(MOVE_TILE_LINES.NAME, [17, 3], [MOVE_NAME.WIDTH, 7.5], { scale: MOVE_NAME.SCALE }),
 		...categoryIcons([48, 14.5], [12, 8]),
 		clipLine(MOVE_TILE_LINES.PP, [64, 14.5], [22, 6.5], { scale: 0.65, align: "center" }),
 		clipLine(MOVE_TILE_LINES.HINT, [16, 15.5], [31, 4.5], { scale: 0.45 }),
+		// Frente msd-beta: nome longo (o script o põe na linha NAME_LONG) em até 2 linhas, menor, no alto do tile (depois
+		// dos outros painéis: os índices deles são os do mapa de campos do Java, tools/ui/javaFields.mjs).
+		clipLine(MOVE_TILE_LINES.NAME_LONG, [17, 1.5], [MOVE_NAME.WIDTH, 2 * 10 * MOVE_NAME.LONG_SCALE], { scale: MOVE_NAME.LONG_SCALE }),
 		hit(),
 	]));
 	// BattleBackButton: 58×34 a 0,5 (x − 11, y = altura − 22), 2 quadros na vertical.

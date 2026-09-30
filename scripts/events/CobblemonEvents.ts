@@ -71,6 +71,11 @@ export type EventTypes = {
    * ir para o time/PC (o que um ouvinte mudar nele é gravado). O Mega Showdown fixa aqui o tipo Tera do Ogerpon/Terapagos.
    */
   "POKEMON_CAPTURED": [PokemonData, thrower: Player]
+  /**
+   * Frente msd-fase6: linha `-ability` do Showdown já processada (o AbilityInstruction do Cobblemon). `ability` = id do
+   * efeito anunciado (sem namespace).
+   */
+  "ABILITY_REVEALED": [PokemonBattle, ActivePokemon, ability: string]
 }
 
 export const CobblemonEvents = new TypedEventEmitter<EventTypes>()

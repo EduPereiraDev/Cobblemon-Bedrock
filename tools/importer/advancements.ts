@@ -38,6 +38,10 @@ const BLOCK_RENAMES: Record<string, string> = { "minecraft:note_block": "minecra
 const VANILLA_ICONS: Record<string, string> = {
 	"minecraft:shears": "items/shears",
 	"minecraft:note_block": "blocks/noteblock",
+	// Frente msd-beta: ícones vanilla de conquistas de pacotes de extensão (antes caíam na Poké Ball).
+	"minecraft:glowstone_dust": "items/glowstone_dust",
+	"minecraft:iron_pickaxe": "items/iron_pickaxe",
+	"minecraft:spyglass": "items/spyglass",
 };
 
 const stripNs = (id: string) => (id.includes(":") ? id.slice(id.indexOf(":") + 1) : id);
@@ -198,7 +202,7 @@ function normalize(id: string, name: string, raw: any, tags: ItemTags): Criterio
 }
 
 /** Ícone: textura do item no RP gerado (via minecraft:icon do item do BP), sprite da espécie ou ícone vanilla. */
-class IconResolver {
+export class IconResolver {
 	private itemIcons = new Map<string, string>();
 	private itemTextures: Record<string, any> = {};
 	private terrain: Record<string, any> = {};

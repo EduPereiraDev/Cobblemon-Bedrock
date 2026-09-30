@@ -4,7 +4,9 @@
 // JÁ MESCLADOS em dist/ (generated/ + escritos à mão, a mesma coisa que vai para o mundo) e o plugin do esbuild troca o
 // conteúdo de scripts/debug/selfTestManifest.ts (stub vazio, usado pelo tsc e pelos testes) pelos dados reais.
 //
-// Só o pack base (CobblemonBedrock): nada do Mega Showdown entra no main.js (guarda do build público).
+// Por padrão, o pack base (CobblemonBedrock). Um módulo `selfTestManifest.ts` de outra pasta (ex.: o de uma extensão
+// opcional) pode pedir outro pack com a marca `@selftest-pack <pasta do pack>` no texto; sem esse pack em dist/, o
+// módulo fica como está (o stub). O build público não tem os packs das extensões, então nada delas entra no main.js.
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
@@ -76,18 +78,25 @@ export function locomotionFlags(entity) {
 	return flags;
 }
 
+/** Pack pedido por um módulo de manifesto (`@selftest-pack <pasta>`), ou o base. */
+export function manifestPackOf(source) {
+	const m = /@selftest-pack\s+([A-Za-z0-9_.-]+)/.exec(source ?? "");
+	return m ? m[1] : PACK;
+}
+
 /**
- * Lê os packs em `dist` e devolve o manifesto:
+ * Lê os packs em `dist` (o `pack`, padrão o base) e devolve o manifesto:
  * - `entities`: entidades que não são Pokémon (NPC, bolas, barcos, exibições) com as propriedades inteiras
  *   (valor máximo) e as animações `animation.*` da entidade cliente;
  * - `blocks`: blocos com os estados próprios (valores em ordem; o primeiro é o padrão);
  * - `particles`: identificadores das partículas;
  * - `sounds`: eventos do sound_definitions.json;
- * - `locomotion`: espécie → capacidades (`w`/`s`/`f`, ver `locomotionFlags`) dos Pokémon do pack.
+ * - `locomotion`: espécie → capacidades (`w`/`s`/`f`, ver `locomotionFlags`) dos Pokémon do pack;
+ * - `items`: identificadores dos itens do BP (o esbuild descarta o export quando ninguém o usa).
  */
-export function readSelfTestManifest(dist) {
-	const bp = join(dist, "behavior_packs", PACK);
-	const rp = join(dist, "resource_packs", PACK);
+export function readSelfTestManifest(dist, pack = PACK) {
+	const bp = join(dist, "behavior_packs", pack);
+	const rp = join(dist, "resource_packs", pack);
 	const animationsById = new Map();
 	for (const file of walk(join(rp, "entity"))) {
 		const desc = readJson(file)?.["minecraft:client_entity"]?.description;
@@ -135,7 +144,12 @@ export function readSelfTestManifest(dist) {
 	}
 	const soundFile = readJson(join(rp, "sounds", "sound_definitions.json")) ?? {};
 	const sounds = Object.keys(soundFile.sound_definitions ?? soundFile).filter((k) => k !== "format_version");
-	return { entities, blocks, particles: [...particles].sort(), sounds: sounds.sort(), locomotion };
+	const items = new Set();
+	for (const file of walk(join(bp, "items"))) {
+		const id = readJson(file)?.["minecraft:item"]?.description?.identifier;
+		if (typeof id === "string") items.add(id);
+	}
+	return { entities, blocks, particles: [...particles].sort(), sounds: sounds.sort(), locomotion, items: [...items].sort() };
 }
 
 /** Conteúdo TS do módulo do manifesto (mesmos exports do stub). */
@@ -149,18 +163,25 @@ export function manifestModuleSource(manifest) {
 		`export const SELFTEST_PARTICLES = ${json(manifest.particles)};`,
 		`export const SELFTEST_SOUNDS = ${json(manifest.sounds)};`,
 		`export const SELFTEST_LOCOMOTION = ${json(manifest.locomotion ?? {})};`,
+		`export const SELFTEST_ITEMS = ${json(manifest.items ?? [])};`,
 		"",
 	].join("\n");
 }
 
-/** Plugin do esbuild: troca scripts/debug/selfTestManifest.ts pelos dados de `dist`. Sem os packs, fica o stub. */
+/**
+ * Plugin do esbuild: troca cada `selfTestManifest.ts` de scripts/ (qualquer pasta) pelos dados de `dist` (o pack da marca
+ * `@selftest-pack`, ou o base). Sem o pack em dist/, fica o stub.
+ */
 export function selfTestManifestPlugin({ dist }) {
 	return {
 		name: "selftest-manifest",
 		setup(b) {
-			b.onLoad({ filter: /[\\/]scripts[\\/]debug[\\/]selfTestManifest\.ts$/ }, () => {
-				if (!existsSync(join(dist, "resource_packs", PACK))) return undefined;
-				return { contents: manifestModuleSource(readSelfTestManifest(dist)), loader: "ts" };
+			b.onLoad({ filter: /[\\/]scripts[\\/](.+[\\/])?selfTestManifest\.ts$/ }, (args) => {
+				let source = "";
+				try { source = readFileSync(args.path, "utf8"); } catch { }
+				const pack = manifestPackOf(source);
+				if (!existsSync(join(dist, "resource_packs", pack))) return undefined;
+				return { contents: manifestModuleSource(readSelfTestManifest(dist, pack)), loader: "ts" };
 			});
 		},
 	};

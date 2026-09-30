@@ -10,6 +10,7 @@ import { renderMove } from "../language";
 import { message } from "../language";
 import { K, isInBattle, savePokemon, tr } from "./common";
 import { PCLocation } from "../pokemonStorage";
+import { notifyMovesShown } from "./summaryExtras";
 
 export const MAX_MOVES = MOVE_COUNT;
 
@@ -64,6 +65,8 @@ export async function showMovesMenu(player: Player, location: PCLocation, pokemo
       player.sendMessage(message.error(tr(K.inBattle)));
       return;
     }
+    // Frente msd-fase6: a lista de golpes vai ser mostrada (também depois de cada troca); o ouvinte muda `pokemon` no lugar.
+    notifyMovesShown(player, pokemon);
     const learnable = getRelearnableMoves(pokemon);
     const slots = Math.min(MAX_MOVES, pokemon.moves.length + (learnable.length > 0 ? 1 : 0));
     const form = new ActionFormData()

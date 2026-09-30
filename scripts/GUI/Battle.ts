@@ -19,8 +19,9 @@ import { ActorType } from "../battle/BattleActor";
 import { CATEGORY_GLYPHS, typeGlyph } from "../ui/glyphs";
 import { SCREEN } from "../ui/screens";
 import {
-  BATTLE_FORFEIT, BATTLE_MOVES, BATTLE_SWITCH, BATTLE_TARGET, BLANK, CATEGORY_MARKERS, CellForm, GIMMICK_ON_MARKER, SUB, barTexture, battleMenuTexture, layoutTitle, typeKeyTexture,
+  BATTLE_FORFEIT, BATTLE_MOVES, BATTLE_SWITCH, BATTLE_TARGET, BLANK, CATEGORY_MARKERS, CellForm, GIMMICK_ON_MARKER, MOVE_NAME, SUB, barTexture, battleMenuTexture, layoutTitle, typeKeyTexture,
 } from "./layout";
+import { MOVE_NAME_WIDTHS } from "./moveNameWidths"; // frente msd-beta: nomes de golpe mais largos que a linha
 import {
   GIMMICK_CHOICE, Gimmick, MoveTileInfo, availableGimmicks, gimmickLabelKey, gimmickTexture, moveTileInfo,
 } from "../battle/Gimmicks";
@@ -219,7 +220,7 @@ async function showMoveMenu(context: MenuContext): Promise<MenuResult<ActionResp
       let tile = moveTileInfo(moveset!, i, toggled);
       let plain = tile.displayId === tile.baseId && !tile.zStatus;
       form.cell(BATTLE_MOVES.MOVES + i, moveTileText(tile.baseId, tile.pp, tile.maxpp, tile.disabled, self, foes,
-        plain ? undefined : { name: tileName(tile), type: tile.type, category: tile.category }), tileTypeKey(tile, self), { kind: "move", index: i });
+        plain ? undefined : { name: tileName(tile), type: tile.type, category: tile.category, nameId: tile.zStatus ? tile.baseId : tile.displayId, namePrefix: tile.zStatus ? "Z-" : "" }), tileTypeKey(tile, self), { kind: "move", index: i });
     });
     gimmicks.forEach((gimmick, i) => form.cell(BATTLE_MOVES.GIMMICKS + i, gimmickButtonText(gimmick, toggled === gimmick), gimmickTexture(gimmick), { kind: "gimmick", gimmick }));
     let response = await show(context, form.build());
@@ -348,7 +349,7 @@ export function renderMoveButton(
  */
 export function moveTileText(
   moveId: string, pp: number | undefined, maxpp: number | undefined, disabled: boolean, self: SimPokemon | undefined, foes: SimPokemon[],
-  shown?: { name: RawMessage; type: string; category: string },
+  shown?: { name: RawMessage; type: string; category: string; nameId?: string; namePrefix?: string },
 ): RawMessage {
   let move = Dex.moves.get(moveId);
   let category = shown?.category ?? move.category;
@@ -356,14 +357,29 @@ export function moveTileText(
   let color = pp === undefined || maxpp === undefined ? "§f" : pp === 0 ? "§c" : pp <= Math.floor(maxpp / 2) ? "§6" : "§f";
   let ppText = pp !== undefined && maxpp !== undefined ? (pp === 100 && maxpp === 100 ? "—/—" : `${pp}/${maxpp}`) : " ";
   let hint = effectivenessHint(move.id, category, shown?.type ?? displayedMoveType(moveId, self), foes);
+  // Frente msd-beta: nome mais largo que a linha vai para a linha NAME_LONG (escala menor, até 2 linhas; layoutSpec.ts).
+  let long = moveNameIsLong(shown ? shown.nameId : move.id, shown?.namePrefix);
   return {
     rawtext: [
       { text: `${disabled || empty ? "§8" : ""}${CATEGORY_MARKERS[category] ?? CATEGORY_MARKERS.Status}${color}${ppText}§r\n` },
       hint ?? { text: " " },
-      { text: `§r\n${disabled || empty ? "§8" : "§f"}` },
+      { text: `§r\n${long ? "\n" : ""}${disabled || empty ? "§8" : "§f"}` },
       shown?.name ?? getMoveTranslation(move.id),
     ],
   };
+}
+
+/**
+ * O nome do golpe (com o prefixo, ex. "Z-") passa de uma linha do tile? Largura medida no build nos .lang dos packs
+ * (moveNameWidths.ts); sem a medida (stub, nome sem id), fica na linha normal.
+ */
+export function moveNameIsLong(nameId: string | undefined, prefix = "", widths: Readonly<Record<string, number>> = MOVE_NAME_WIDTHS): boolean {
+  if (!nameId) return false;
+  let width = widths[toID(nameId)];
+  if (width === undefined) return false;
+  // Prefixo curto (Z-): ~6 px por caractere na fonte do Minecraft. Folga de 2 px para a medida da fonte (o cliente quebrou
+  // "Dança das Espadas", medida em 98 px contra 97,3 px da linha).
+  return width + prefix.length * 6 > MOVE_NAME.WIDTH / MOVE_NAME.SCALE - 2;
 }
 
 /** Dica de efetividade contra os inimigos em campo (não considera habilidades). */

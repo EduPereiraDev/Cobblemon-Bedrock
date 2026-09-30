@@ -9,6 +9,7 @@
 import { Dimension, GameMode, ItemStack, Player, RawMessage, Vector3 } from "@minecraft/server";
 import { ITEM_TAGS } from "./data";
 import type { RecipeOption } from "../../generated/scripts/recipes";
+import { providedItemName } from "../items/itemNames"; // frente msd-fase6: nome de item de outro namespace
 
 export interface SlotItem {
   id: string;
@@ -186,5 +187,5 @@ export function removeFromInventory(player: Player, id: string, amount: number):
 export function itemNameOf(id: string): RawMessage {
   const [ns, path] = id.includes(":") ? id.split(":", 2) : ["minecraft", id];
   if (ns === "cobblemon") return { translate: `item.cobblemon.${path}` };
-  return { translate: `item.${path}.name` };
+  return providedItemName(ns, path) ?? { translate: `item.${path}.name` };
 }

@@ -347,11 +347,21 @@ export function setHeldItem(pokemon: PokemonData, itemId: string | undefined) {
   }
 }
 
+/**
+ * Jogadores com o menu do Pokémon (aberto pela entidade) em andamento. Cada clique no Pokémon chega como uma
+ * interação; sem isso, cliques repetidos antes de a tela aparecer abriam um menu por clique, e o cliente os
+ * empilhava visíveis uns por baixo dos outros (force_render_below). No Cobblemon só existe uma tela por vez.
+ */
+const entityMenuOpen = new Set<string>();
+
 /** Menu do Pokémon a partir da entidade (interagir com o próprio Pokémon fora da bola). */
 export async function showPokemonMenuFromEntity(player: Player, uuid: string) {
   const slot = getSafeTeam(player).findIndex(x => x?.uuid === uuid);
   if (slot === -1) return;
-  await showPartyPokemonMenu(player, slot);
+  if (entityMenuOpen.has(player.id)) return;
+  entityMenuOpen.add(player.id);
+  try { await showPartyPokemonMenu(player, slot); }
+  finally { entityMenuOpen.delete(player.id); }
 }
 
 /** Versão atual do Pokémon no local (dados vivos se estiver fora), ou undefined se ele saiu de lá. */

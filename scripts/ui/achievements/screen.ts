@@ -72,7 +72,8 @@ function status(player: Player, def: AdvancementDef): RawMessage {
   return { text: p.total > 1 ? `§8${p.met}/${p.total} §r` : "§8• §r" };
 }
 
-async function showTab(player: Player, tab: string): Promise<boolean> {
+/** Lista de uma aba (também usada pelo autoteste para abrir uma aba direto). Devolve true se o jogador voltou. */
+export async function showTab(player: Player, tab: string): Promise<boolean> {
   const state = getAchievements(player);
   const entries = tabEntries(tab).filter(def => isVisible(state, def, ADVANCEMENTS_BY_ID));
   const root = tabRoot(tab);

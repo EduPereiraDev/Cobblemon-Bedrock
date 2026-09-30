@@ -67,7 +67,15 @@ export type AchievementEvent =
   | { type: "pasture_use" }
   | { type: "reel_in"; bait: string; species: string }
   | { type: "plant_tumblestone" }
-  | { type: "plant_type_gem" };
+  | { type: "plant_type_gem" }
+  /**
+   * Frente msd-fase6: concessão direta (PlayerAdvancements.award de todos os critérios restantes, como o
+   * `/advancement grant` e o AdvancementHelper de extensões do Java). Vale para qualquer critério, inclusive
+   * `impossible`, que nenhum outro evento cumpre.
+   */
+  | { type: "grant"; id: string }
+  /** Frente msd-fase6: o jogador está dentro destas estruturas (minecraft:location com `structures`). */
+  | { type: "structure"; structures: string[] };
 
 const list = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
 const str = (v: unknown, fallback = "any") => (typeof v === "string" ? v : fallback);
@@ -175,6 +183,8 @@ export function criterionMatches(criterion: AdvancementCriterion, event: Achieve
       return event.type === "plant_tumblestone";
     case "plant_type_gem":
       return event.type === "plant_type_gem";
+    case "structure":
+      return event.type === "structure" && list(c.structures).some(id => event.structures.includes(id));
   }
   return false;
 }
@@ -191,11 +201,13 @@ export function requirementsMet(def: AdvancementDef, met: readonly string[]): bo
 export function applyEvent(state: AchievementState, defs: readonly AdvancementDef[], event: AchievementEvent): { completed: AdvancementDef[]; changed: boolean } {
   const completed: AdvancementDef[] = [];
   let changed = false;
+  const grant = event.type === "grant" ? event.id.replace(/^cobblemon:/, "") : undefined;
   for (const def of defs) {
     if (state.d.includes(def.id)) continue;
+    if (grant !== undefined && def.id !== grant) continue;
     let met = state.c[def.id];
     for (const [name, criterion] of Object.entries(def.criteria)) {
-      if (met?.includes(name) || !criterionMatches(criterion, event)) continue;
+      if (met?.includes(name) || (grant === undefined && !criterionMatches(criterion, event))) continue;
       if (!met) met = state.c[def.id] = [];
       met.push(name);
       changed = true;

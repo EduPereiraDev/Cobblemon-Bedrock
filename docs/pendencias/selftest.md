@@ -177,6 +177,27 @@ Watchdog: nenhum aviso de script lento/travado (nem ERROR/WARN de script) em ~1 
 | Resposta do cliente ao `closeAllForms` | A CONFERIR NO CLIENTE | o bot não responde ao fechamento; o cenário E2E responde "cancelado" como um cliente. Sem resposta, a promessa da tela só fica pendente (sem efeito) |
 | Resultado visual no cliente real | A CONFERIR | o BDS não desenha; o ContentLog do Windows/celular é o objetivo do comando |
 
+## Fases de extensões (gancho neutro)
+
+Pacotes opcionais que ficam acima do base no mundo podem acrescentar uma fase própria sem mexer no autoteste
+(`scripts/debug/selfTestExtensions.ts`):
+
+- a extensão registra, no carregamento do script (antes do `startup`, para entrar no enum do comando), um modo
+  (`/cobblemon:selftest <modo>`), um nome, se entra no `full` (no fim, cobertura completa) e se está ligada no mundo
+  (sem o pacote, o modo avisa e o `full` a pula);
+- a fase recebe um `SelfTestContext`: a área, o journal, as âncoras, a limpeza e a restauração do jogador continuam do
+  autoteste; a extensão usa os mesmos ajudantes das fases do base (Pokémon de exibição, blocos anotados, páginas de
+  blocos, partículas e sons só para o jogador, telas com fechamento automático, log `[selftest] <modo> ...`, progresso
+  e linhas no resumo);
+- paradas extras do `telas` entram depois das do base (chave `<modo>.<tela>`);
+- blocos da extensão entram na limpeza de um teste interrompido (`leftoverBlock`);
+- o manifesto do build (`tools/selftest/manifest.mjs`) serve a qualquer `selfTestManifest.ts` de `scripts/`: a marca
+  `@selftest-pack <pasta>` no arquivo escolhe o pack lido de dist/ (sem a marca, o base; sem o pack em dist/, fica o
+  stub). O manifesto passou a ter também os itens do BP (`SELFTEST_ITEMS`; o esbuild descarta quando ninguém usa).
+
+Sem extensão registrada (build público), `quick`/`full`/`telas` ficam iguais. Testes: `tests/selftest.test.ts`
+("extensões: modo próprio, entra no full, blocos da limpeza e manifesto de outro pack").
+
 ## Pedidos a outras frentes
 
 - (ui-base, opcional; contornado) `forgetAchievements(playerId)` exportado em `scripts/ui/achievements/tracker.ts`. Sem

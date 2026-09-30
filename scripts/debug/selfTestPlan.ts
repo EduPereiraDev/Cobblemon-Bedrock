@@ -6,14 +6,19 @@
 
 /** Modos aceitos pelo comando (`status` e `stop` não rodam fases). */
 export const SELFTEST_MODES = ["quick", "full", "ui", "entities", "movement", "blocks", "particles", "sounds", "battle", "telas", "stop", "status"] as const;
-export type SelfTestMode = (typeof SELFTEST_MODES)[number];
+export type BaseSelfTestMode = (typeof SELFTEST_MODES)[number];
+/** Um modo do autoteste ou o de uma extensão registrada (scripts/debug/selfTestExtensions.ts). */
+export type SelfTestMode = BaseSelfTestMode | (string & {});
 /** Outros nomes aceitos (também vão para o enum do comando). */
 export const SELFTEST_MODE_ALIASES: Readonly<Record<string, SelfTestMode>> = { screens: "telas" };
 
 /** Fases automáticas (as do quick/full, nesta ordem). */
 export const SELFTEST_PHASES = ["entities", "movement", "blocks", "particles", "sounds", "ui", "battle"] as const;
-/** Todas as fases: as automáticas + `screens` (roteiro de telas para prints, só no modo `telas`). */
-export type SelfTestPhase = (typeof SELFTEST_PHASES)[number] | "screens";
+/**
+ * Todas as fases: as automáticas + `screens` (roteiro de telas para prints, só no modo `telas`) + as de extensões
+ * (a fase de uma extensão tem o nome do modo dela).
+ */
+export type SelfTestPhase = (typeof SELFTEST_PHASES)[number] | "screens" | (string & {});
 
 /** `sample` = amostra representativa (quick); `all` = tudo. */
 export type Coverage = "sample" | "all";
@@ -23,18 +28,34 @@ export interface PhasePlan {
   coverage: Coverage;
 }
 
-/** Modo digitado (maiúsculas/espaços ignorados; vazio = quick) ou undefined se não existe. */
-export function parseSelfTestMode(raw: string | undefined): SelfTestMode | undefined {
+/**
+ * Modo digitado (maiúsculas/espaços ignorados; vazio = quick) ou undefined se não existe. `extensionModes`: modos das
+ * extensões registradas (valem como os do autoteste).
+ */
+export function parseSelfTestMode(raw: string | undefined, extensionModes: readonly string[] = []): SelfTestMode | undefined {
   const value = (raw ?? "").trim().toLowerCase() || "quick";
   if (SELFTEST_MODE_ALIASES[value]) return SELFTEST_MODE_ALIASES[value];
-  return (SELFTEST_MODES as readonly string[]).includes(value) ? value as SelfTestMode : undefined;
+  if ((SELFTEST_MODES as readonly string[]).includes(value)) return value as SelfTestMode;
+  return extensionModes.includes(value) ? value : undefined;
 }
 
-/** Fases de um modo, na ordem de execução. */
-export function planFor(mode: SelfTestMode): PhasePlan[] {
+/** O que o plano precisa saber de uma extensão ligada neste mundo. */
+export interface ExtensionPlanInfo {
+  mode: string;
+  inFull: boolean;
+}
+
+/**
+ * Fases de um modo, na ordem de execução. `extensions`: extensões LIGADAS neste mundo; as com `inFull` entram no fim
+ * do `full` (cobertura completa); o modo de uma extensão roda só a fase dela.
+ */
+export function planFor(mode: SelfTestMode, extensions: readonly ExtensionPlanInfo[] = []): PhasePlan[] {
   switch (mode) {
     case "quick": return SELFTEST_PHASES.map(phase => ({ phase, coverage: "sample" as const }));
-    case "full": return SELFTEST_PHASES.map(phase => ({ phase, coverage: "all" as const }));
+    case "full": return [
+      ...SELFTEST_PHASES.map(phase => ({ phase, coverage: "all" as const })),
+      ...extensions.filter(e => e.inFull).map(e => ({ phase: e.mode, coverage: "all" as const })),
+    ];
     case "stop": case "status": return [];
     case "telas": return [{ phase: "screens", coverage: "all" }];
     default: return [{ phase: mode, coverage: "all" }];
@@ -408,9 +429,13 @@ export function isLeftoverWorldKey(key: string, dimensionId: string, region: Reg
   return regionContains(region, { x: Number(match[1]), y: Number(match[2]), z: Number(match[3]) });
 }
 
-/** Blocos que o selftest pode ter deixado na área (a área começa só com ar): do Cobblemon ou os de apoio. */
-export function isSelfTestLeftoverBlock(typeId: string): boolean {
-  return typeId.startsWith("cobblemon:") || typeId === "minecraft:barrier" || typeId === "minecraft:grass_block" || isWaterBlock(typeId);
+/**
+ * Blocos que o selftest pode ter deixado na área (a área começa só com ar): do Cobblemon, os de apoio ou os que uma
+ * extensão declara (`extension`, ex.: os blocos do pacote dela).
+ */
+export function isSelfTestLeftoverBlock(typeId: string, extension?: (typeId: string) => boolean): boolean {
+  return typeId.startsWith("cobblemon:") || typeId === "minecraft:barrier" || typeId === "minecraft:grass_block" || isWaterBlock(typeId)
+    || extension?.(typeId) === true;
 }
 
 /** Água (piscina da fase de movimento). Na limpeza vira barreira antes de virar ar: assim nunca escorre para fora. */

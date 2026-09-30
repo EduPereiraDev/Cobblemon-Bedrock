@@ -232,6 +232,33 @@ export function playerBattleLead(player: Player): string | undefined {
   return undefined;
 }
 
+/**
+ * Veto do início de batalha (o `cancel()` do CobblemonEvents.BATTLE_STARTED_PRE; frente msd-fase6). Recebe os atores
+ * já montados, antes do BATTLE_STARTED_PRE; devolve true (mensagem padrão), um motivo, ou undefined/false para deixar.
+ */
+export type BattleStartVeto = (actors: BattleActor[]) => boolean | RawMessage | undefined;
+const battleStartVetoes: BattleStartVeto[] = [];
+
+export function addBattleStartVeto(veto: BattleStartVeto): void {
+  if (!battleStartVetoes.includes(veto)) battleStartVetoes.push(veto);
+}
+
+/** Só para os testes. */
+export function clearBattleStartVetoesForTests(): void {
+  battleStartVetoes.length = 0;
+}
+
+function battleStartVetoed(actors: BattleActor[]): true | RawMessage | undefined {
+  for (const veto of battleStartVetoes) {
+    try {
+      const result = veto(actors);
+      if (result) return result;
+    }
+    catch (e) { console.warn(`Veto de batalha: ${e}`); }
+  }
+  return undefined;
+}
+
 export interface StartBattleOptions extends BattleOptions {
   /** Mensagem de erro para os jogadores envolvidos (padrão: true). */
   notify?: boolean;
@@ -255,6 +282,10 @@ export function startBattle(format: BattleFormat, side1: BattleActor[], side2: B
     if (usable < format.battleType.slotsPerActor)
       return new BattleStartError(message.With("cobblemon.battle.error.insufficient_pokemon", [actor.getName(), usable.toString(), format.battleType.slotsPerActor.toString()]));
   }
+  // Frente msd-fase6: BATTLE_STARTED_PRE cancelável (BattleRegistry.startBattle → CanceledError: o motivo ou
+  // `cobblemon.battle.error.canceled`). Sem veto registrado, nada muda.
+  const vetoed = battleStartVetoes.length ? battleStartVetoed([...side1, ...side2]) : undefined;
+  if (vetoed) return new BattleStartError(vetoed === true ? { translate: "cobblemon.battle.error.canceled" } : vetoed);
   // Frente msd-fase2: BATTLE_STARTED_PRE (ouvinte com erro não impede a batalha).
   try { CobblemonEvents.emit("BATTLE_STARTED_PRE", [...side1, ...side2]); }
   catch (e) { console.warn(`BATTLE_STARTED_PRE: ${e}`); }

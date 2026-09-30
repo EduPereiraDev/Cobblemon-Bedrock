@@ -23,6 +23,8 @@ scripts/extensions/megaShowdown/
 tools/importer/megaShowdown.ts
 tools/importer/msd*.ts
 tools/importer/validateMsd.ts
+tools/client-log-rules/msd*.mjs
+tools/msd-version.json
 tools/pesquisa/mega-showdown-*
 tools/pesquisa/msd-*
 tests/msd*.test.ts

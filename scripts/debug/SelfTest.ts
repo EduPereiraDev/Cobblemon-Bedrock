@@ -4,6 +4,8 @@
  * ContentLog registrar os erros de recursos. O cliente só acusa um recurso (modelo, animação, render controller,
  * partícula, som, bloco, tela JSON UI) quando ele é usado, então o teste força o uso de cada um. `telas` (alias `screens`)
  * é o roteiro para prints: cada tela custom com dados de exemplo, `[segundos]` cada (3..60, padrão 10) ou até fechar.
+ * Extensões opcionais podem registrar um modo próprio (scripts/debug/selfTestExtensions.ts): a fase delas roda na mesma
+ * área, com o mesmo journal e a mesma limpeza, entra no `full` se pedir e acrescenta paradas ao `telas`.
  *
  * Segurança (nada roda sem o comando; ao terminar não sobra nada):
  *  - área temporária no céu, acima do jogador, que precisa estar TODA vazia (só ar): nenhuma construção é tocada; o
@@ -78,6 +80,10 @@ import {
   movementTargets, nudgeVector, parseScreenSeconds, parseSelfTestMode, planFor, pokemonTargets, regionCells, rideZone, runInBatches,
   sampleEvenly, sampleSounds, screenTour, splitChunks, zoneSlots,
 } from "./selfTestPlan";
+import type { SelfTestBlockInfo } from "./selfTestManifest";
+import {
+  SelfTestContext, SelfTestExtension, findSelfTestExtension, isExtensionLeftoverBlock, selfTestExtensions,
+} from "./selfTestExtensions";
 
 /** Tag das entidades criadas pelo teste (sem ":" para funcionar em seletores). */
 export const SELFTEST_TAG = "cobblemon_selftest";
@@ -183,6 +189,10 @@ interface Session {
   /** Modo `telas`: segundos com cada tela aberta e as telas mostradas, na ordem (chaves de SCREEN_TOUR). */
   screenSeconds: number;
   screensShown: string[];
+  /** Nomes das paradas de extensões no roteiro `telas` (as do base usam `cobblemon.selftest.screen.<key>`). */
+  screenNames: Map<string, RawMessage>;
+  /** Linhas do resumo pedidas pelas fases de extensões. */
+  extensionSummary: RawMessage[];
 }
 
 /** Um teste por vez no mundo. */
@@ -241,7 +251,12 @@ function closeForms(player: Player) {
 }
 
 function phaseName(phase: SelfTestPhase): RawMessage {
-  return { translate: `cobblemon.selftest.phase.${phase}` };
+  return findSelfTestExtension(phase)?.name ?? { translate: `cobblemon.selftest.phase.${phase}` };
+}
+
+/** Extensões ligadas neste mundo (as que não respondem são tratadas como desligadas). */
+function availableExtensions(): SelfTestExtension[] {
+  return selfTestExtensions().filter(e => { try { return e.available(); } catch { return false; } });
 }
 
 function report(s: Session, phase: SelfTestPhase): PhaseReport {
@@ -590,7 +605,7 @@ async function restoreBlocks(dimension: Dimension, region: Region, changes?: Blo
     for (const cell of regionCells(region)) {
       try {
         const block = dimension.getBlock(cell);
-        if (block && !block.isAir && isSelfTestLeftoverBlock(block.typeId)) block.setType("minecraft:air");
+        if (block && !block.isAir && isSelfTestLeftoverBlock(block.typeId, isExtensionLeftoverBlock)) block.setType("minecraft:air");
       } catch { }
       yield;
     }
@@ -780,6 +795,14 @@ async function throwBalls(s: Session, balls: SelfTestEntityInfo[]) {
   }
 }
 
+/** Pokémon de exibição em lotes (grade 4×4, poses): a fase `entities` e as fases de extensões. */
+async function showPokemonTargets(s: Session, targets: readonly PokemonTarget[], onProgress: (processed: number) => void) {
+  return runInBatches(targets, POKEMON_BATCH, s.signal, async batch => {
+    if (stopped(s)) return;
+    await pokemonBatch(s, batch);
+  }, async () => { }, processed => onProgress(processed));
+}
+
 async function entitiesPhase(s: Session, coverage: Coverage) {
   const counts = comboCounts();
   const species = Object.keys(counts);
@@ -801,10 +824,7 @@ async function entitiesPhase(s: Session, coverage: Coverage) {
   console.info(`[selftest] entidades: ${targets.length} de ${everything.length} combinações de Pokémon (cobertura de modelos, texturas, camadas e posers)`);
   const total = targets.length + others.length + thrown.length;
   let done = 0;
-  const pokemon = await runInBatches(targets, POKEMON_BATCH, s.signal, async batch => {
-    if (stopped(s)) return;
-    await pokemonBatch(s, batch);
-  }, async () => { }, processed => { done = processed; rep.done = processed; setProgress(s, done, total); });
+  const pokemon = await showPokemonTargets(s, targets, processed => { done = processed; rep.done = processed; setProgress(s, done, total); });
   rep.extra.pokemon = pokemon.processed;
   if (stopped(s)) return;
   const base = done;
@@ -1146,6 +1166,11 @@ async function blocksPhase(s: Session, coverage: Coverage) {
   const rep = report(s, "blocks");
   rep.total = targets.length;
   rep.extra.blocks = SELFTEST_BLOCKS.length;
+  rep.extra.placed = await placeBlockPages(s, targets, processed => { rep.done = processed; setProgress(s, processed, targets.length); });
+}
+
+/** Blocos em páginas (grade 8×8, espaço 2), cada um sobre terra; a página seguinte ocupa o mesmo lugar. */
+async function placeBlockPages(s: Session, targets: readonly BlockTarget[], onProgress: (processed: number) => void): Promise<number> {
   const offsets = gridOffsets(BLOCK_PAGE, 8, 2);
   let placed = 0;
   await runInBatches(targets, BLOCK_PAGE, s.signal, async page => {
@@ -1180,8 +1205,8 @@ async function blocksPhase(s: Session, coverage: Coverage) {
     // Itens que caíram (planta sem apoio, onBreak) somem.
     await waitTicks(2);
     sweepLoose(s);
-  }, async () => { }, processed => { rep.done = processed; setProgress(s, processed, targets.length); });
-  rep.extra.placed = placed;
+  }, async () => { }, onProgress);
+  return placed;
 }
 
 /** Só itens/xp soltos na área. */
@@ -1205,13 +1230,18 @@ async function particlesPhase(s: Session, coverage: Coverage) {
   const rep = report(s, "particles");
   rep.total = list.length;
   rep.extra.of = SELFTEST_PARTICLES.length;
+  await spawnParticleList(s, list, processed => { rep.done = processed; setProgress(s, processed, list.length); });
+}
+
+/** Partículas só para o jogador, `PARTICLES_PER_TICK` por tick numa grade de 16 pontos. */
+async function spawnParticleList(s: Session, list: readonly string[], onProgress: (processed: number) => void) {
   const spots = gridOffsets(16, 4, 3).map(o => add(s.origin, { x: o.dx + 0.5, y: 1.5, z: o.dz + 3.5 }));
   await runInBatches(list, PARTICLES_PER_TICK, s.signal, (batch, index) => {
     for (const [i, id] of batch.entries()) {
       try { s.player.spawnParticle(id, spots[(index * PARTICLES_PER_TICK + i) % spots.length]); }
       catch (e) { fail(s, `particle ${id}`, e); }
     }
-  }, () => waitTicks(1), processed => { rep.done = processed; setProgress(s, processed, list.length); });
+  }, () => waitTicks(1), onProgress);
   if (!stopped(s)) await waitTicks(40);
 }
 
@@ -1220,6 +1250,11 @@ async function soundsPhase(s: Session, coverage: Coverage) {
   const rep = report(s, "sounds");
   rep.total = list.length;
   rep.extra.of = SELFTEST_SOUNDS.length;
+  await playSoundList(s, list, processed => { rep.done = processed; setProgress(s, processed, list.length); });
+}
+
+/** Sons só para o jogador, `SOUNDS_PER_TICK` por tick, em volume baixo; corta tudo a cada ~5 s e no fim. */
+async function playSoundList(s: Session, list: readonly string[], onProgress: (processed: number) => void) {
   const where = add(s.origin, { x: 0.5, y: 1, z: 2.5 });
   await runInBatches(list, SOUNDS_PER_TICK, s.signal, batch => {
     for (const id of batch) {
@@ -1229,8 +1264,7 @@ async function soundsPhase(s: Session, coverage: Coverage) {
   }, async () => {
     await waitTicks(1);
   }, processed => {
-    rep.done = processed;
-    setProgress(s, processed, list.length);
+    onProgress(processed);
     // Músicas longas não se acumulam: corta tudo a cada ~5 s.
     if (processed % (SOUNDS_PER_TICK * 100) === 0) { try { s.player.runCommand("stopsound @s"); } catch { } }
   });
@@ -1250,9 +1284,9 @@ function samplePokemon(species: string, options: { level?: number; shiny?: boole
  * Abre uma tela e fecha depois de `ticks` (uiManager.closeAllForms, estável na server-ui 2.2.0). Espera a função
  * terminar (as telas resolvem ao fechar); insiste no fechamento se a tela reabrir sozinha.
  */
-async function showFor(s: Session, label: string, open: () => unknown, onClose?: () => void, ticks = UI_HOLD_TICKS) {
+async function showFor(s: Session, label: string, open: () => unknown, onClose?: () => void, ticks = UI_HOLD_TICKS, phase: SelfTestPhase = "ui") {
   if (stopped(s)) return;
-  const rep = report(s, "ui");
+  const rep = report(s, phase);
   let settled = false;
   Promise.resolve().then(open).catch(e => {
     // Jogador saiu com a tela aberta (FormRejectError), ou o teste já acabou: não é falha da tela.
@@ -1270,6 +1304,7 @@ async function showFor(s: Session, label: string, open: () => unknown, onClose?:
     rep.extra.unanswered = (rep.extra.unanswered ?? 0) + 1;
     closeForms(s.player);
   }
+  if (phase !== "ui") return;
   rep.done++;
   setProgress(s, rep.done, rep.total);
 }
@@ -1447,8 +1482,8 @@ interface ScreenRun {
   close?: () => void;
 }
 
-function screenName(key: string): RawMessage {
-  return { translate: `cobblemon.selftest.screen.${key}` };
+function screenName(key: string, names?: ReadonlyMap<string, RawMessage>): RawMessage {
+  return names?.get(key) ?? { translate: `cobblemon.selftest.screen.${key}` };
 }
 
 /** Time como no /cobblemon:party (Party.openPartyMenu), com o time de exemplo. */
@@ -1603,7 +1638,7 @@ function screenRuns(s: Session, team: PokemonData[], hud: { party?: string; batt
 /** Mostra uma parada: aviso, abre, espera (fechar, tempo ou stop) e fecha. */
 async function showScreen(s: Session, step: ScreenStep, run: ScreenRun, index: number, total: number): Promise<ScreenOutcome> {
   const player = s.player;
-  const name = screenName(step.key);
+  const name = screenName(step.key, s.screenNames);
   const n = index + 1;
   try { player.onScreenDisplay.setActionBar(tr("cobblemon.selftest.screens.announce", n, total, name)); } catch { }
   tell(player, tr("cobblemon.selftest.screens.now", n, total, name));
@@ -1649,11 +1684,22 @@ async function screensPhase(s: Session) {
   const player = s.player;
   const team = sampleTeam();
   const rep = report(s, "screens");
-  const steps = screenTour({ starter: getStarterCategories().length > 0, dex: getDexes().length > 0 });
-  rep.total = steps.length;
+  const steps: ScreenStep[] = screenTour({ starter: getStarterCategories().length > 0, dex: getDexes().length > 0 });
   try { player.camera.clear(); } catch { }
   const hud = { party: getHudChannel(player, CHANNEL.PARTY), battle: getHudChannel(player, CHANNEL.BATTLE) };
   const runs = screenRuns(s, team, hud);
+  // Paradas das extensões ligadas, depois das do base (chave com o modo da extensão na frente: sem colisão).
+  for (const extension of availableExtensions()) {
+    let extra: ReturnType<NonNullable<SelfTestExtension["screens"]>> = [];
+    try { extra = extension.screens?.(player) ?? []; } catch (e) { fail(s, `telas ${extension.mode}`, e); }
+    for (const screen of extra) {
+      const key = `${extension.mode}.${screen.key}`;
+      steps.push({ key, kind: screen.kind, actionbar: screen.actionbar });
+      runs[key] = { open: screen.open, refresh: screen.refresh, close: screen.close };
+      s.screenNames.set(key, screen.name);
+    }
+  }
+  rep.total = steps.length;
   tell(player, tr("cobblemon.selftest.screens.intro", steps.length, s.screenSeconds, "Win+Alt+PrtScn", "Videos\\Captures"));
   const outcomes: Record<ScreenOutcome, number> = { closed: 0, timeout: 0, stopped: 0 };
   try {
@@ -1773,6 +1819,78 @@ async function battlePhase(s: Session) {
 }
 
 // ---------------------------------------------------------------------------------------------
+// Fases de extensões (scripts/debug/selfTestExtensions.ts)
+
+/** Vista padrão da área (a mesma do início do teste). */
+function defaultCamera(s: Session) {
+  if (!s.player.isValid) return;
+  try { s.player.camera.setCamera("minecraft:free", { location: add(s.origin, CAMERA), facingLocation: add(s.origin, CAMERA_TARGET) }); } catch { }
+}
+
+function extensionContext(s: Session, extension: SelfTestExtension, coverage: Coverage): SelfTestContext {
+  const phase = extension.mode;
+  const rep = report(s, phase);
+  return {
+    player: s.player,
+    dimension: s.dimension,
+    origin: s.origin,
+    coverage,
+    plan: s.plan.map(p => p.phase),
+    stopped: () => stopped(s),
+    waitTicks,
+    job,
+    fail: (what, e) => fail(s, `${phase} ${what}`, e),
+    log: line => { try { console.info(`[selftest] ${phase} ${line}`); } catch { } },
+    progress: (done, total) => { rep.done = done; rep.total = total; setProgress(s, done, total); },
+    count: (key, n = 1) => { rep.extra[key] = (rep.extra[key] ?? 0) + n; },
+    summary: line => { s.extensionSummary.push(line); },
+    spawnPokemon: (species, variant, location) => spawnDisplayPokemon(s, { species, variant }, location),
+    despawn: entity => {
+      const id = entity.id;
+      try { if (entity.isValid) entity.remove(); } catch { }
+      s.entityIds.delete(id);
+    },
+    track: entity => {
+      try { entity.addTag(SELFTEST_TAG); } catch { }
+      s.entityIds.add(entity.id);
+    },
+    setBlock: (pos, permutation) => {
+      try { return setBlock(s, pos, permutation); }
+      catch (e) { fail(s, `${phase} bloco ${typeof permutation === "string" ? permutation : permutation.type.id}`, e); return false; }
+    },
+    sweepLoose: () => sweepLoose(s),
+    showPokemon: async targets => {
+      const before = s.failures.length;
+      await showPokemonTargets(s, targets, processed => setProgress(s, processed, targets.length));
+      return s.failures.length - before;
+    },
+    showBlocks: (blocks: readonly SelfTestBlockInfo[]) => {
+      const targets = blockTargets(blocks, "all");
+      return placeBlockPages(s, targets, processed => setProgress(s, processed, targets.length));
+    },
+    showParticles: ids => spawnParticleList(s, ids, processed => setProgress(s, processed, ids.length)),
+    playSounds: ids => playSoundList(s, ids, processed => setProgress(s, processed, ids.length)),
+    showScreen: (label, open, onClose, ticks) => showFor(s, `${phase} ${label}`, open, onClose, ticks ?? UI_HOLD_TICKS, phase),
+    resetCamera: () => defaultCamera(s),
+  };
+}
+
+async function extensionPhase(s: Session, extension: SelfTestExtension, coverage: Coverage) {
+  try { s.player.teleport(add(s.origin, STAND), { dimension: s.dimension, facingLocation: add(s.origin, CAMERA_TARGET) }); } catch { }
+  defaultCamera(s);
+  try { await extension.run(extensionContext(s, extension, coverage)); }
+  finally {
+    // O que a fase deixou para trás (entidades marcadas continuam na lista da limpeza do fim).
+    sweepLoose(s);
+    if (s.player.isValid) {
+      closeForms(s.player);
+      try { s.player.onScreenDisplay.setActionBar(" "); } catch { }
+      defaultCamera(s);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
 // Sessão
 
 async function runPhase(s: Session, plan: PhasePlan) {
@@ -1789,6 +1907,11 @@ async function runPhase(s: Session, plan: PhasePlan) {
       case "ui": await uiPhase(s); break;
       case "battle": await battlePhase(s); break;
       case "screens": await screensPhase(s); break;
+      default: {
+        const extension = findSelfTestExtension(plan.phase);
+        if (extension) await extensionPhase(s, extension, plan.coverage);
+        else fail(s, `fase ${plan.phase}: desconhecida`);
+      }
     }
   }
   catch (e) { fail(s, `fase ${plan.phase}`, e instanceof Error ? `${e.message}\n${e.stack ?? ""}` : e); }
@@ -1802,7 +1925,7 @@ async function startSession(player: Player, mode: SelfTestMode, screenSeconds: n
   if ([...pending.values()].some(p => !p.journal.regionClean) || pendingOf(player)) { tell(player, tr("cobblemon.selftest.recovering")); return; }
   if (isPlayerInAnyBattle(player)) { tell(player, tr("cobblemon.selftest.in_battle")); return; }
   try { if (player.getComponent("minecraft:riding")?.entityRidingOn) { tell(player, tr("cobblemon.selftest.riding")); return; } } catch { }
-  const plan = planFor(mode);
+  const plan = planFor(mode, availableExtensions());
   const origin = await findArea(player);
   if (!player.isValid) return;
   if (!origin) { tell(player, tr("cobblemon.selftest.no_space")); return; }
@@ -1830,7 +1953,7 @@ async function startSession(player: Player, mode: SelfTestMode, screenSeconds: n
     player, playerId: player.id, playerName: player.name, mode, plan, signal: new StopSignal(), startedAt: Date.now(),
     dimension: player.dimension, origin, journal, changes: new BlockChangeLog<BlockPermutation>(), entityIds: new Set(), snapshot,
     inventory: snapshotInventory(player), progress: { done: 0, total: 0 }, reports: {}, failures: [],
-    worldIds, worldValues, screenSeconds, screensShown: [],
+    worldIds, worldValues, screenSeconds, screensShown: [], screenNames: new Map(), extensionSummary: [],
   };
   active = s;
   console.info(`[selftest] ${player.name}: modo ${mode}, área ${JSON.stringify(journal.region)}`);
@@ -1893,7 +2016,7 @@ async function finishSession(s: Session) {
   clearJournal(s.journal);
   markDone(s.journal);
   active = undefined;
-  const unanswered = s.reports.ui?.extra.unanswered ?? 0;
+  const unanswered = Object.values(s.reports).reduce((n, r) => n + (r?.extra.unanswered ?? 0), 0);
   console.info(`[selftest] fim (${s.signal.why ?? "ok"}) em ${elapsed}; restaurado(s) no jogador: ${changed.length ? changed.join(", ") : "nada"}; ${s.failures.length} falha(s)${unanswered ? `; ${unanswered} tela(s) fechada(s) sem resposta do cliente` : ""}`);
   sendReport(s, elapsed);
   await verifyCleanup(s);
@@ -1957,8 +2080,9 @@ function sendReport(s: Session, elapsed: string) {
     tell(player, tr("cobblemon.selftest.summary.screens", r.screens.done, r.screens.total, r.screens.extra.closed ?? 0, r.screens.extra.timeout ?? 0));
     // Ordem das telas, para casar com os prints (Win+Alt+PrtScn numera os arquivos na mesma ordem).
     tell(player, tr("cobblemon.selftest.screens.order"));
-    s.screensShown.forEach((key, i) => tell(player, { rawtext: [{ text: `§7${i + 1}. ` }, screenName(key)] }));
+    s.screensShown.forEach((key, i) => tell(player, { rawtext: [{ text: `§7${i + 1}. ` }, screenName(key, s.screenNames)] }));
   }
+  for (const line of s.extensionSummary) tell(player, line);
   const times = s.plan.map(p => `${p.phase} ${formatDuration(r[p.phase]?.extra.ms ?? 0)}`).join(", ");
   tell(player, { text: `§7${times}` });
   if (s.failures.length) tell(player, tr("cobblemon.selftest.summary.failures", s.failures.length));
@@ -2076,11 +2200,17 @@ function statusOf(player: Player | undefined) {
  * @param seconds Modo `telas`: segundos com cada tela aberta (3..60, padrão 10).
  */
 export function runSelfTestCommand(player: Player | undefined, raw: string | undefined, seconds?: number | string) {
-  const mode = parseSelfTestMode(raw);
-  if (!mode) { tell(player, tr("cobblemon.selftest.usage", SELFTEST_MODES.join("|"))); return; }
+  const extensionModes = selfTestExtensions().map(e => e.mode);
+  const mode = parseSelfTestMode(raw, extensionModes);
+  if (!mode) { tell(player, tr("cobblemon.selftest.usage", [...SELFTEST_MODES, ...extensionModes].join("|"))); return; }
   if (mode === "stop") return stopSession(player);
   if (mode === "status") return statusOf(player);
   if (!player) { console.info("[selftest] só jogadores podem rodar o teste (use o comando no jogo)"); return; }
+  const extension = findSelfTestExtension(mode);
+  if (extension && !availableExtensions().includes(extension)) {
+    tell(player, extension.unavailable ?? tr("cobblemon.selftest.usage", SELFTEST_MODES.join("|")));
+    return;
+  }
   startSession(player, mode, parseScreenSeconds(seconds)).catch(e => {
     console.info(`[selftest] erro: ${e}`);
     if (active?.player === player) active = undefined;
@@ -2091,7 +2221,8 @@ export function runSelfTestCommand(player: Player | undefined, raw: string | und
 export function registerSelfTestCommand(event: StartupEvent) {
   const registry = event.customCommandRegistry;
   try {
-    registry.registerEnum(MODE_ENUM, [...SELFTEST_MODES, ...Object.keys(SELFTEST_MODE_ALIASES)]);
+    // Modos das extensões registradas no carregamento do script (antes do startup).
+    registry.registerEnum(MODE_ENUM, [...SELFTEST_MODES, ...Object.keys(SELFTEST_MODE_ALIASES), ...selfTestExtensions().map(e => e.mode)]);
     registry.registerCommand({
       name: COMMAND_NAME,
       description: "Exercises the add-on in-world to fill the client ContentLog / Testa o add-on no mundo para gerar o ContentLog (admin).",
@@ -2102,7 +2233,7 @@ export function registerSelfTestCommand(event: StartupEvent) {
     }, (origin: CustomCommandOrigin, value?: string, seconds?: number): CustomCommandResult => {
       const source = origin.initiator ?? origin.sourceEntity;
       const player = source instanceof Player ? source : undefined;
-      const mode = parseSelfTestMode(value);
+      const mode = parseSelfTestMode(value, selfTestExtensions().map(e => e.mode));
       if (!player && origin.sourceType !== CustomCommandSource.Server)
         return { status: CustomCommandStatus.Failure, message: "Only players / Só jogadores" };
       if (!player && mode !== "stop" && mode !== "status")

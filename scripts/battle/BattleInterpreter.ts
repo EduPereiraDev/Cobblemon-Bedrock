@@ -956,6 +956,8 @@ function handleAbilityInstruction(battle: PokemonBattle, message: BattleMessage,
   battle.dispatcher.dispatch(() => {
     lastCauser.set(battle.battleId, message);
     battle.minorBattleActions.set(pokemon.data.uuid, message);
+    // Frente msd-fase6: `-ability` processado (o fim do AbilityInstruction.invoke do Java).
+    emitSafely(() => CobblemonEvents.emit("ABILITY_REVEALED", battle, pokemon, effect.id));
 
     if (optionalEffect)
       broadcastAbility(battle, optionalEffect, pokemonName);

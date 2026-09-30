@@ -71,7 +71,15 @@ export const BATTLE_MOVES = { MOVES: 0, BACK: 4, COUNT: 5, GIMMICKS: 5, GIMMICK_
  * e o layout mostra cada linha no lugar do MoveTile (nome em x 17, PP centrado em x 75, categoria em x 48) com um rótulo
  * cortado por linha. Sem células extras: o form continua com 5 células + gimmicks (contrato da frente msd-fase1).
  */
-export const MOVE_TILE_LINES = { PP: 0, HINT: 1, NAME: 2 } as const;
+export const MOVE_TILE_LINES = { PP: 0, HINT: 1, NAME: 2, NAME_LONG: 3 } as const;
+/**
+ * Frente msd-beta (prints do 1º teste no cliente: "Dança das", "Devastação de", "Z-Dança das"): o nome ocupa uma linha
+ * de 73 px na escala 0,75 (97 px de texto) e o rótulo quebra na palavra, então a linha de baixo (a última palavra)
+ * sumia. Nome mais largo que isso (medido nos .lang dos packs no build: scripts/GUI/moveNameWidths.ts) vai para a linha
+ * NAME_LONG (a NAME fica vazia), que o layout mostra na escala 0,6 em até duas linhas (121 px cada; o maior nome, 156 px,
+ * quebra em duas), no alto do tile, acima do PP e da dica.
+ */
+export const MOVE_NAME = { WIDTH: 73, SCALE: 0.75, LONG_SCALE: 0.6 } as const;
 /**
  * Frente msd-fase1: prefixo invisível no texto do botão de gimmick LIGADO (o JSON UI mostra o quadro de baixo da
  * textura, como o `toggled` do BattleGimmickButton).

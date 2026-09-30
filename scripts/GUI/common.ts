@@ -10,6 +10,7 @@ import { hasPortrait, portraitIconTexture, portraitTexture, profileTexture } fro
 import { toID } from "../utils";
 import { PCLocation, PCPlace, setPokemonToPCLocation } from "../pokemonStorage";
 import { tryGetBattleFromEntity } from "../battle";
+import { providedItemName } from "../items/itemNames"; // frente msd-fase6: nome de item de outro namespace
 
 /** Argumento aceito por `tr`: texto literal, número, mensagem pronta ou Pokémon (vira o nome traduzido). */
 export type TrArg = string | number | RawMessage | PokemonData;
@@ -195,7 +196,7 @@ export function itemName(itemId: string | undefined): RawMessage {
   if (!itemId) return tr(K.heldNone);
   const [namespace, id] = itemId.includes(":") ? itemId.split(":", 2) : ["cobblemon", itemId];
   if (namespace === "cobblemon") return { translate: `item.cobblemon.${id}` };
-  return { translate: `item.${id}.name` };
+  return providedItemName(namespace, id) ?? { translate: `item.${id}.name` };
 }
 
 /** Nome traduzido de uma natureza ("Adamant" / "adamant"). */

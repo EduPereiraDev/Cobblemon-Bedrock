@@ -13,7 +13,13 @@
 //  --no-ui      esconde a categoria [UI] (frente de JSON UI separada)
 //  --examples N quantos arquivos/objetos de exemplo mostrar por grupo (padrão 6)
 //  --json       saída em JSON (para comparar execuções)
-import { readFileSync } from "node:fs";
+//  Regras extras (opcionais): cada `tools/client-log-rules/*.mjs` (ou a pasta de COBBLEMON_LOG_RULES_DIR) exporta
+//  `title` e `rules` — lista `[rótulo, (entrada) => boolean]` ou função `({ root }) => lista` — e ganha uma seção própria
+//  com a contagem e exemplos. Serve para pacotes opcionais que não ficam neste repositório; sem a pasta, nada muda.
+//  A entrada tem `category`, `level`, `raw` (sem o caminho do pack), `full` (com o caminho) e `extra` (linhas seguintes).
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const args = process.argv.slice(2);
 const valued = new Set(["--level", "--category", "--examples", "--session"]);
@@ -81,7 +87,7 @@ for (const line of text.split("\n")) {
 			if (!packs.some((p) => p.name === plugin[1] && p.version === plugin[3])) packs.push({ name: plugin[1], uuid: plugin[2], version: plugin[3] });
 		}
 		lastWasPlugin = !!plugin;
-		cur = { category: m[2], level: m[3], raw: stripPackPath(m[4]), extra: [], session: sessions.length };
+		cur = { category: m[2], level: m[3], raw: stripPackPath(m[4]), full: m[4], extra: [], session: sessions.length };
 		allEntries.push(cur);
 	} else if (cur && line.trim() && !/^-+$/.test(line.trim())) {
 		cur.extra.push(line.trim());
@@ -110,12 +116,42 @@ for (const e of entries) {
 }
 
 const sorted = [...groups.values()].sort((a, b) => b.count - a.count);
+
+// Regras extras (pacotes opcionais): carregadas da pasta, cada módulo vira uma seção.
+const toolRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const rulesDir = process.env.COBBLEMON_LOG_RULES_DIR ?? join(toolRoot, "tools", "client-log-rules");
+const extraSections = [];
+if (existsSync(rulesDir)) {
+	for (const name of readdirSync(rulesDir).filter((f) => f.endsWith(".mjs")).sort()) {
+		try {
+			const mod = await import(pathToFileURL(join(rulesDir, name)).href);
+			const list = typeof mod.rules === "function" ? await mod.rules({ root: toolRoot }) : mod.rules;
+			if (!Array.isArray(list)) continue;
+			const rules = list.map(([label, match]) => {
+				const hit = entries.filter((e) => { try { return match(e); } catch { return false; } });
+				const subjects = new Map();
+				for (const e of hit) {
+					const subject = e.raw.split(" | ").slice(0, -1).join(" | ") || e.raw;
+					subjects.set(subject, (subjects.get(subject) ?? 0) + 1);
+				}
+				return { label, count: hit.length, subjects: [...subjects].sort((a, b) => b[1] - a[1]) };
+			});
+			extraSections.push({ file: name, title: String(mod.title ?? name), rules });
+		} catch (e) {
+			extraSections.push({ file: name, title: `${name}: não carregou (${e instanceof Error ? e.message : e})`, rules: [] });
+		}
+	}
+}
+
 if (args.includes("--json")) {
 	console.log(JSON.stringify({
 		file,
 		sessions: sessions.map((s) => ({ ...s, summarized: wanted === null || wanted === s.index })),
 		totals: Object.fromEntries(totals),
 		groups: sorted.map((g) => ({ key: g.key, count: g.count, distinct: g.subjects.size, sample: g.sample, subjects: [...g.subjects.keys()], values: [...g.values.keys()] })),
+		...(extraSections.length ? {
+			extra: extraSections.map((x) => ({ file: x.file, title: x.title, rules: x.rules.map((r) => ({ label: r.label, count: r.count, distinct: r.subjects.length, subjects: r.subjects.map(([k]) => k) })) })),
+		} : {}),
 	}, null, 2));
 } else {
 	console.log(`# ${file}`);
@@ -215,5 +251,17 @@ if (!args.includes("--json")) {
 		const hit = entries.filter(match);
 		const subjects = new Set(hit.map((e) => e.raw.split(" | ").slice(0, -1).join(" | ") || e.raw));
 		console.log(`${String(hit.length).padStart(7)}  ${label} (${subjects.size} assuntos)`);
+	}
+}
+
+// Seções das regras extras (tools/client-log-rules/*.mjs), com até 3 exemplos por regra.
+if (!args.includes("--json")) {
+	for (const section of extraSections) {
+		console.log(`\n## ${section.title}`);
+		for (const rule of section.rules) {
+			console.log(`${String(rule.count).padStart(7)}  ${rule.label} (${rule.subjects.length} assuntos)`);
+			for (const [subject, n] of rule.subjects.slice(0, 3)) console.log(`           - ${n}x ${subject.slice(0, 220)}`);
+			if (rule.subjects.length > 3) console.log(`           … +${rule.subjects.length - 3} assuntos`);
+		}
 	}
 }

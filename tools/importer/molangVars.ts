@@ -279,7 +279,125 @@ export function particleVariableProblems(json: any): string[] {
 	if (early.length) problems.push(`lê variável sem guarda no tempo de vida do emissor (${[...PARTICLE_PRE_INIT_COMPONENTS].filter((c) => pe.components?.[c]).join(", ")}), avaliado antes do creation_expression: o cliente acusa "unknown variable" mesmo com o padrão lá; use (v.x ?? padrão) na própria expressão: ${early.map((n) => `v.${n}`).join(", ")}`);
 	const structs = particleStructReads(pe);
 	if (structs.length) problems.push(`struct em variável de partícula (o cliente acusa "unable to find member variable"; use variáveis escalares): ${structs.join(", ")}`);
+	const scoped = particleScopeReadsInEmitter(pe);
+	if (scoped.length) problems.push(`lê variável da partícula no escopo do emissor (o cliente acusa "unhandled request for unknown variable"; v.particle_* só existe na partícula, use minecraft:particle_initialization): ${scoped.join(", ")}`);
+	const bare = [...new Set(particleExpressions(pe).flatMap((e) => bareMolangCalls(e.expr)))];
+	if (bare.length) problems.push(`função que não existe no Molang do Bedrock (o cliente acusa "unknown token"; use math.*): ${bare.map((n) => `${n}(...)`).join(", ")}`);
 	return problems;
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Frente msd-beta (1º teste de uma extensão no cliente real): Molang de partícula que o Snowstorm/Java aceita e o
+// Bedrock não.
+//  - `v.particle_age`, `v.particle_lifetime` e `v.particle_random_1..4` só existem para a PARTÍCULA. No
+//    creation_expression/per_update_expression do emissor e nos componentes de taxa e de tempo de vida do emissor o
+//    cliente acusa "unhandled request for unknown variable 'variable.particle_age'". As formas do emissor
+//    (emitter_shape_*) são avaliadas por partícula e aceitam (centenas no base, sem erro no cliente).
+//  - chamada sem prefixo (`rand(-0.3, 0.3)`): o Bedrock só conhece math.*, query.*, loop e for_each ("unknown token").
+
+/** Variáveis que só existem no escopo da partícula. */
+const PARTICLE_SCOPE_VARS: ReadonlySet<string> = new Set([
+	"particle_age", "particle_lifetime", "particle_random_1", "particle_random_2", "particle_random_3", "particle_random_4",
+]);
+
+/** Componentes avaliados no escopo do EMISSOR (sem v.particle_*). */
+export function isEmitterScopeComponent(component: string): boolean {
+	return /^minecraft:emitter_(initialization|rate_|lifetime_)/.test(component);
+}
+
+/** `componente: v.x` de cada leitura de variável da partícula num componente do emissor. */
+export function particleScopeReadsInEmitter(pe: any): string[] {
+	const out = new Set<string>();
+	for (const [component, value] of Object.entries<any>(pe?.components ?? {})) {
+		if (!isEmitterScopeComponent(component)) continue;
+		for (const { expr } of molangStrings(value, PARTICLE_NAME_KEYS)) {
+			for (const u of molangVarUses(expr)) if (!u.write && PARTICLE_SCOPE_VARS.has(u.name)) out.add(`${component}: v.${u.name}`);
+		}
+	}
+	return [...out];
+}
+
+/** Comandos de uma expressão Molang (separados por `;` fora de parênteses e chaves), sem os vazios. */
+export function molangStatements(expr: string): string[] {
+	const out: string[] = [];
+	let depth = 0;
+	let quote = false;
+	let start = 0;
+	for (let i = 0; i < expr.length; i++) {
+		const c = expr[i];
+		if (c === "'") quote = !quote;
+		if (quote) continue;
+		if (c === "(" || c === "{" || c === "[") depth++;
+		else if (c === ")" || c === "}" || c === "]") depth = Math.max(0, depth - 1);
+		else if (c === ";" && depth === 0) {
+			out.push(expr.slice(start, i));
+			start = i + 1;
+		}
+	}
+	out.push(expr.slice(start));
+	return out.map((s) => s.trim()).filter(Boolean);
+}
+
+/**
+ * Tira do creation_expression/per_update_expression do emissor os comandos que leem variáveis da partícula e os põe no
+ * começo do `minecraft:particle_initialization.per_update_expression` (onde elas existem: o valor passa a ser o de cada
+ * partícula, como o Snowstorm avalia). Devolve quantos comandos mudaram de lugar.
+ */
+export function moveParticleScopeStatements(json: any): number {
+	const comps = json?.particle_effect?.components;
+	const init = comps?.["minecraft:emitter_initialization"];
+	if (!init || typeof init !== "object") return 0;
+	const moved: string[] = [];
+	for (const key of ["creation_expression", "per_update_expression"]) {
+		if (typeof init[key] !== "string") continue;
+		const keep: string[] = [];
+		for (const st of molangStatements(init[key])) {
+			if (molangVarUses(st).some((u) => !u.write && PARTICLE_SCOPE_VARS.has(u.name))) moved.push(st);
+			else keep.push(st);
+		}
+		if (keep.length === molangStatements(init[key]).length) continue;
+		if (keep.length) init[key] = `${keep.join("; ")};`;
+		else delete init[key];
+	}
+	if (!moved.length) return 0;
+	if (!Object.keys(init).length) delete comps["minecraft:emitter_initialization"];
+	const particle = (comps["minecraft:particle_initialization"] ??= {});
+	const prev = typeof particle.per_update_expression === "string" ? particle.per_update_expression.trim() : "";
+	particle.per_update_expression = `${moved.join("; ")};${prev ? ` ${prev}${prev.endsWith(";") ? "" : ";"}` : ""}`;
+	return moved.length;
+}
+
+/** Funções sem prefixo que o Bedrock conhece (palavras-chave com parênteses). */
+const MOLANG_KEYWORD_CALLS: ReadonlySet<string> = new Set(["loop", "for_each"]);
+/** Nomes do Java/Snowstorm → função do Bedrock. */
+const BARE_CALL_FIXES: Readonly<Record<string, string>> = { rand: "math.random", random: "math.random", randomi: "math.random_integer", rand_int: "math.random_integer" };
+
+/** Chamadas sem prefixo (`rand(...)`) numa expressão (nomes em minúsculas). */
+export function bareMolangCalls(expr: unknown): string[] {
+	if (typeof expr !== "string" || !expr.includes("(")) return [];
+	const toks = tokenizeMolang(expr);
+	const out: string[] = [];
+	for (let i = 0; i < toks.length - 1; i++) {
+		const t = toks[i];
+		if (t.type !== "name" || t.text.includes(".") || toks[i + 1].type !== "op" || toks[i + 1].text !== "(") continue;
+		const name = t.text.toLowerCase();
+		if (!MOLANG_KEYWORD_CALLS.has(name)) out.push(name);
+	}
+	return out;
+}
+
+/** Troca as chamadas sem prefixo conhecidas (`rand(a, b)` → `math.random(a, b)`). */
+export function fixBareMolangCalls(expr: string): string {
+	if (!expr.includes("(")) return expr;
+	const toks = tokenizeMolang(expr);
+	let out = expr;
+	for (let i = toks.length - 2; i >= 0; i--) {
+		const t = toks[i];
+		if (t.type !== "name" || t.text.includes(".") || toks[i + 1].type !== "op" || toks[i + 1].text !== "(") continue;
+		const fix = BARE_CALL_FIXES[t.text.toLowerCase()];
+		if (fix) out = `${out.slice(0, t.pos)}${fix}${out.slice(t.pos + t.text.length)}`;
+	}
+	return out;
 }
 
 // ---------------------------------------------------------------------------------------------------------------

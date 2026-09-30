@@ -17,7 +17,10 @@ import { readFileSync } from "node:fs";
 import { VARIANTS } from "../generated/scripts/variants";
 import * as stub from "../scripts/debug/selfTestManifest";
 // @ts-ignore módulo .mjs de ferramenta (sem tipos)
-import { locomotionFlags, manifestModuleSource, readSelfTestManifest, selfTestManifestPlugin, stateValues } from "../tools/selftest/manifest.mjs";
+import { locomotionFlags, manifestModuleSource, manifestPackOf, readSelfTestManifest, selfTestManifestPlugin, stateValues } from "../tools/selftest/manifest.mjs";
+import {
+  clearSelfTestExtensionsForTests, findSelfTestExtension, isExtensionLeftoverBlock, registerSelfTestExtension, selfTestExtensions,
+} from "../scripts/debug/selfTestExtensions";
 
 let passed = 0;
 async function test(name: string, fn: () => void | Promise<void>) {
@@ -462,6 +465,54 @@ await test("entidades: cobertura mínima das combinações mostra 100% dos model
     id => id === "spinda" ? coverCombos(VARIANTS.spinda.combos) : undefined);
   assert.equal(targets.filter(t => t.species === "spinda").length, coverCombos(VARIANTS.spinda.combos).length);
   assert.equal(targets.filter(t => t.species === "bulbasaur").length, 8, "sem cobertura: todas");
+});
+
+await test("extensões: modo próprio, entra no full, blocos da limpeza e manifesto de outro pack", () => {
+  clearSelfTestExtensionsForTests();
+  assert.equal(parseSelfTestMode("demo"), undefined, "sem extensão registrada o modo não existe");
+  assert.deepEqual(planFor("full").map(p => p.phase), [...SELFTEST_PHASES], "full sem extensões: igual ao de sempre");
+  let available = false;
+  registerSelfTestExtension({
+    mode: " Demo ", name: { text: "Demo" }, inFull: true, available: () => available, run: async () => { },
+    leftoverBlock: id => id.startsWith("demo:"),
+  });
+  assert.throws(() => registerSelfTestExtension({ mode: "quick", name: { text: "x" }, inFull: false, available: () => true, run: async () => { } }), /inválido/);
+  assert.throws(() => registerSelfTestExtension({ mode: "tem espaço", name: { text: "x" }, inFull: false, available: () => true, run: async () => { } }), /inválido/);
+  assert.throws(() => registerSelfTestExtension({ mode: "screens", name: { text: "x" }, inFull: false, available: () => true, run: async () => { } }), /inválido/, "apelido também é reservado");
+  assert.deepEqual(selfTestExtensions().map(e => e.mode), ["demo"]);
+  assert.equal(findSelfTestExtension("demo")?.mode, "demo");
+  const modes = selfTestExtensions().map(e => e.mode);
+  assert.equal(parseSelfTestMode(" DEMO ", modes), "demo");
+  assert.equal(parseSelfTestMode("quick", modes), "quick", "os do base continuam");
+  assert.deepEqual(planFor("demo", selfTestExtensions()), [{ phase: "demo", coverage: "all" }]);
+  const full = planFor("full", [{ mode: "demo", inFull: true }, { mode: "outra", inFull: false }]);
+  assert.deepEqual(full.map(p => p.phase), [...SELFTEST_PHASES, "demo"], "no fim do full, só as que pedem");
+  assert.ok(full.every(p => p.coverage === "all"));
+  assert.ok(!planFor("quick", [{ mode: "demo", inFull: true }]).some(p => p.phase === "demo"), "quick continua igual");
+  assert.ok(isExtensionLeftoverBlock("demo:bloco") && !isExtensionLeftoverBlock("minecraft:stone"));
+  assert.ok(isSelfTestLeftoverBlock("demo:bloco", isExtensionLeftoverBlock) && !isSelfTestLeftoverBlock("demo:bloco"));
+  assert.ok(!isSelfTestLeftoverBlock("minecraft:chest", isExtensionLeftoverBlock));
+  available = true;
+  assert.equal(selfTestExtensions()[0].available(), true);
+  clearSelfTestExtensionsForTests();
+  assert.equal(selfTestExtensions().length, 0);
+  // Manifesto: a marca `@selftest-pack` escolhe o pack; sem ela, o base.
+  assert.equal(manifestPackOf("// @selftest-pack OutroPack\nexport const X = 1;"), "OutroPack");
+  assert.equal(manifestPackOf("export const X = 1;"), "CobblemonBedrock");
+  const dir = mkdtempSync(join(tmpdir(), "selftest-ext-"));
+  try {
+    const write = (file: string, data: string) => { mkdirSync(join(file, ".."), { recursive: true }); writeFileSync(file, data); };
+    write(join(dir, "behavior_packs", "OutroPack", "blocks", "b.json"), JSON.stringify({ "minecraft:block": { description: { identifier: "outro:bloco", states: { "outro:fase": [0, 1, 2] } } } }));
+    write(join(dir, "behavior_packs", "OutroPack", "items", "i.json"), JSON.stringify({ "minecraft:item": { description: { identifier: "outro:item" } } }));
+    write(join(dir, "resource_packs", "OutroPack", "particles", "p.json"), JSON.stringify({ particle_effect: { description: { identifier: "outro:faisca" } } }));
+    write(join(dir, "resource_packs", "CobblemonBedrock", "particles", "p.json"), JSON.stringify({ particle_effect: { description: { identifier: "cobblemon:spark" } } }));
+    const other = readSelfTestManifest(dir, "OutroPack");
+    assert.deepEqual(other.particles, ["outro:faisca"]);
+    assert.deepEqual(other.items, ["outro:item"]);
+    assert.deepEqual(blockTargets(other.blocks, "all").map(t => t.states), [{}, { "outro:fase": 1 }, { "outro:fase": 2 }], "as 3 fases do bloco");
+    assert.deepEqual(readSelfTestManifest(dir).particles, ["cobblemon:spark"], "sem pack pedido: o base");
+  }
+  finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
 console.log(`selftest: ${passed} testes ok`);

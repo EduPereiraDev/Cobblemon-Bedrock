@@ -16,7 +16,7 @@ export const MSD_DATA_MODULE = /[\\/]generated[\\/](msd[\\/].*|scripts[\\/](msd|
 /** Qualquer entrada do bundle com cara de MSD que não foi trocada por stub é vazamento. */
 const MSD_INPUT = /(^|[\\/])(scripts[\\/]extensions[\\/]megaShowdown[\\/]|generated[\\/]msd[\\/]|generated[\\/]scripts[\\/](msd|megaShowdown)[^\\/]*$)|mega_?showdown/i;
 /** Textos que não podem aparecer no main.js público (namespace do MSD, exports das tabelas, nome do pack). */
-export const FORBIDDEN_IN_BUNDLE = /mega_showdown|MSD_[A-Z][A-Z_]*|CobblemonMegaShowdown/g;
+export const FORBIDDEN_IN_BUNDLE = /mega_showdown|MSD_[A-Z][A-Z_]*|CobblemonMegaShowdown|Mega Showdown/ig;
 /**
  * Arquivos de texto dos packs públicos que a guarda lê. O `.map` (só no build sem --release) fica de fora: ele embute o
  * fonte público inteiro, comentários inclusive, e o que entra no bundle já é conferido pelo metafile (`leakedInputs`).
