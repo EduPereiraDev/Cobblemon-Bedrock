@@ -2,7 +2,7 @@
 // Os módulos do MSD (megaShowdown.ts, msd*.ts, validateMsd.ts) ficam fora do repositório público (.gitignore). Com eles,
 // este arquivo só os reexporta; num clone sem eles, cada gancho vira no-op e o import gera só o base (igual ao
 // COBBLEMON_MSD=0). Os caminhos dos módulos privados não mudam: as frentes do MSD continuam editando os mesmos arquivos.
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import type { Combo } from "./variants.ts";
 
 /** Módulo irmão, se existir (import dinâmico: um arquivo ausente não quebra o import do base). */
@@ -31,3 +31,39 @@ export const emitMsdScriptsModule: (out: string, ok: boolean) => Promise<{ file:
 	scripts?.emitMsdScriptsModule ?? (async () => ({ file: "", species: 0 }));
 export const requestMsdEffectParticles: () => unknown = effects?.requestMsdEffectParticles ?? (() => []);
 export const preserveBaseAlphaEyes: () => unknown = alphaEyes?.preserveBaseAlphaEyes ?? (() => []);
+
+// ---------------------------------------------------------------------------------------------
+// Extensões privadas de conteúdo: packs próprios (BP + RP), fora do repositório público. Cada pasta
+// tools/private/<nome>/ com import.ts que exporta `emitPrivateContent(ctx)` gera o seu pack em <out>/*_packs/ no fim do
+// import do base (o build monta e empacota pelo build.mjs da mesma pasta). Num clone público a pasta não existe e nada
+// roda; uma falha numa extensão não derruba o base (o import termina com código 1).
+
+export interface PrivateContentContext {
+	/** Raiz da saída do import (pasta temporária que vira generated/). */
+	out: string;
+	/** Estado de bloco Bedrock de um bloco do Cobblemon (BlockBuilder.bedrockStateFor do base). */
+	cobblemonState: (javaId: string, props: Record<string, string>) => { name: string; states: Record<string, string | number | boolean> } | undefined;
+	/** Resolvedor de biomas do base (ids e tags Java → biomas do Bedrock). */
+	biomes: unknown;
+}
+
+export async function runPrivateContentPacks(ctx: PrivateContentContext): Promise<{ ok: boolean; messages: string[] }> {
+	const dir = new URL("../private/", import.meta.url);
+	const messages: string[] = [];
+	let ok = true;
+	if (!existsSync(dir)) return { ok, messages };
+	for (const name of readdirSync(dir).sort()) {
+		const file = new URL(`${name}/import.ts`, dir);
+		if (!existsSync(file)) continue;
+		try {
+			const mod = await import(file.href);
+			const r = await mod.emitPrivateContent(ctx);
+			messages.push(String(r?.message ?? name));
+			if (r && r.ok === false) ok = false;
+		} catch (e) {
+			ok = false;
+			messages.push(`${name}: falhou (${e instanceof Error ? e.message : e})`);
+		}
+	}
+	return { ok, messages };
+}

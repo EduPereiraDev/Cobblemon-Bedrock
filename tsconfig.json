@@ -19,7 +19,8 @@
     // O esbuild lê o mesmo `paths`; o build público força o stub (tools/cleanBuild.mjs).
     "paths": {
       "@private/mega-showdown": ["./scripts/extensions/megaShowdown/index.ts", "./scripts/extensions/privateStub.ts"],
-      "@private/mega-showdown/content": ["./scripts/extensions/megaShowdown/content.ts", "./scripts/extensions/privateStub.ts"]
+      "@private/mega-showdown/content": ["./scripts/extensions/megaShowdown/content.ts", "./scripts/extensions/privateStub.ts"],
+      "@private/extensions": ["./scripts/extensions/private/index.ts", "./scripts/extensions/privateStub.ts"]
     }
   },
   "include": ["scripts/**/*.ts", "generated/scripts/**/*.ts"]

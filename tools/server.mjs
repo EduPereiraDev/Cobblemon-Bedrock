@@ -6,7 +6,7 @@
 //   node tools/server.mjs logs [n]     últimas n linhas do log (padrão 200)
 //   node tools/server.mjs cmd "<cmd>"  envia um comando ao console do servidor
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { OPTIONAL_PACKS, distPacks, manifestRef, selectPacks } from "./packStack.mjs";
+import { distPacks, manifestRef, optionalPacks, selectPacks } from "./packStack.mjs";
 import { execFileSync, spawnSync } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -103,7 +103,8 @@ function setProperty(key, value) {
 /** Packs que o deploy liga, por tipo, na ordem do mundo (topo primeiro). */
 function selectedPacks() {
 	const explicit = process.env.COBBLEMON_BDS_PACKS?.split(",").map((x) => x.trim()).filter(Boolean);
-	const enabled = new Set(Object.values(OPTIONAL_PACKS).filter((flag) => process.argv.includes(`--${flag}`) || process.env[`COBBLEMON_${flag.toUpperCase()}`] === "1"));
+	// Extensões opcionais: as fixas (MSD) e as privadas que o build declarou em DIST/optional-packs.json.
+	const enabled = new Set(Object.values(optionalPacks(DIST)).filter((flag) => process.argv.includes(`--${flag}`) || process.env[`COBBLEMON_${flag.toUpperCase()}`] === "1"));
 	return selectPacks(DIST, { explicit, enabled });
 }
 

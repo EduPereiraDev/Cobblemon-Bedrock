@@ -34,3 +34,25 @@ docs/pesquisa/9-extensao-mega-showdown.md
 docs/pendencias/msd*.md
 behavior_packs/CobblemonMegaShowdown/
 resource_packs/CobblemonMegaShowdown/
+
+# Pacote opcional privado (fora do repositório público).
+tools/private/cobblemonAdditions/
+scripts/extensions/cobblemonAdditions/
+tools/bca-version.json
+tests/bca*.test.ts
+tests/e2e/bca/
+docs/pendencias/bca*.md
+behavior_packs/CobblemonAdditions/
+resource_packs/CobblemonAdditions/
+
+# Pacote opcional privado (fora do repositório público).
+tools/private/legendaryMonuments/
+scripts/extensions/legendaryMonuments/
+scripts/extensions/private/
+tools/lm-version.json
+tests/lm*.test.ts
+tests/e2e/lm/
+docs/pendencias/lm*.md
+docs/pesquisa/*legendary-monuments*
+behavior_packs/CobblemonLegendaryMonuments/
+resource_packs/CobblemonLegendaryMonuments/

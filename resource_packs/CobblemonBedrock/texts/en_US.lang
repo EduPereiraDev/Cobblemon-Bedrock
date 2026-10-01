@@ -403,7 +403,7 @@ cobblemon:recipe_group.focus_items=Focus Items
 cobblemon:recipe_group.ev_power_items=Power Items
 cobblemon:recipe_group.evolution_stone_from_block=Evolution Stones
 
-## msd-fase1 (Mega Showdown, Fase 1: botões de gimmick, menu do HUD e itens-chave por comando)
+## msd-fase1 (gimmicks de batalha: botões, menu do HUD e itens-chave)
 cobblemon.port.battle.ui.gimmick.mega=Mega Evolve
 cobblemon.port.battle.ui.gimmick.ultra=Ultra Burst
 cobblemon.port.battle.ui.gimmick.zmove=Z-Power
@@ -414,10 +414,10 @@ cobblemon.port.battle_ui.hud_gimmick=§eHotbar 5: %1$s %2$s
 cobblemon.port.battle_ui.gimmick_on=§a(ON)
 cobblemon.port.battle_ui.gimmick_off=§7(off)
 
-## msd-fase2 (Mega Showdown, Fase 2: Mega/Primal/Z/Ultra; tipo Stellar da mensagem de Tera)
+## msd-fase2 (gimmicks de batalha: Mega/Primal/Z/Ultra; tipo Stellar da mensagem de Tera)
 cobblemon.type.stellar=Stellar
 
-## msd-fase3 (Mega Showdown, Fase 3: tipo Tera na batalha e no resumo)
+## msd-fase3 (gimmicks de batalha: tipo Tera na batalha e no resumo)
 cobblemon.port.battle.ui.tera_type=§eTera: %1$s
 cobblemon.port.summary.tera_type=Tera Type
 

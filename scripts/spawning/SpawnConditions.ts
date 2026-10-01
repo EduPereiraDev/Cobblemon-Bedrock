@@ -101,17 +101,37 @@ export function timedWorldQuery<T>(query: () => T): T {
   }
 }
 
-const nearbyCache = new WeakMap<SpawnContext, Map<string, boolean>>();
+/**
+ * Caches por posição (resposta por lista de blocos e a caixa da consulta), guardados na própria posição em propriedades
+ * não enumeráveis: o `{ ...ctx }` da pesca não as copia (a posição de pesca tem caixa e respostas próprias, como antes).
+ * Frente memoria-script (docs/pendencias/memoria-script.md): antes eram WeakMap<SpawnContext, …>. No QuickJS do Bedrock
+ * o valor de um WeakMap só sai no coletor de ciclos, mesmo com a chave já liberada (medido no BDS: 5 mil chaves
+ * descartáveis com um Map de 20 entradas = +4,5 MB até o GC); milhares de Maps por passe se acumulavam no heap do script.
+ */
+const NEARBY_CACHE = Symbol("cobblemon.nearbyCache");
 /**
  * Frente spawn-multi: a caixa de blocos por perto de uma posição é a mesma para todas as listas; um BlockVolume por
  * posição (não um por consulta: eram até ~900 objetos nativos por passe, pressão no coletor de lixo).
  */
-const nearbyVolumes = new WeakMap<SpawnContext, BlockVolume>();
+const NEARBY_VOLUME = Symbol("cobblemon.nearbyVolume");
+type NearbyHolder = { [NEARBY_CACHE]?: Map<string, boolean>; [NEARBY_VOLUME]?: BlockVolume };
+/** Posição congelada (não extensível): fica no WeakMap, como antes. */
+const frozenNearbyCache = new WeakMap<SpawnContext, Map<string, boolean>>();
+const frozenNearbyVolumes = new WeakMap<SpawnContext, BlockVolume>();
+
+/** Valor guardado na posição (propriedade oculta) ou, se ela não aceitar propriedades novas, no WeakMap. */
+function perPosition<T>(ctx: SpawnContext, key: typeof NEARBY_CACHE | typeof NEARBY_VOLUME, fallback: WeakMap<SpawnContext, T>, make: () => T): T {
+  const held = (ctx as NearbyHolder)[key] as T | undefined ?? fallback.get(ctx);
+  if (held !== undefined) return held;
+  const value = make();
+  if (Object.isExtensible(ctx)) Object.defineProperty(ctx, key, { value });
+  else fallback.set(ctx, value);
+  return value;
+}
 
 function hasNearbyBlock(ctx: SpawnContext, blocks: string[]): boolean {
   if (ctx.nearbyBlocks) return blocks.some(b => ctx.nearbyBlocks!.has(b));
-  let cache = nearbyCache.get(ctx);
-  if (!cache) nearbyCache.set(ctx, cache = new Map());
+  const cache = perPosition(ctx, NEARBY_CACHE, frozenNearbyCache, () => new Map<string, boolean>());
   const key = blocks.join(",");
   const cached = cache.get(key);
   if (cached !== undefined) return cached;
@@ -119,18 +139,16 @@ function hasNearbyBlock(ctx: SpawnContext, blocks: string[]): boolean {
     cache.set(key, false);
     return false;
   }
-  let volume = nearbyVolumes.get(ctx);
-  if (!volume) {
+  const volume = perPosition(ctx, NEARBY_VOLUME, frozenNearbyVolumes, () => {
     const { x, y, z } = ctx.location;
     // Pesca: caixa 10×10×10 em volta da boia (FishingSpawnablePosition.nearbyBlocks).
     const h = ctx.positionType === "fishing" ? 5 : nearbyRange.horizontal;
     const v = ctx.positionType === "fishing" ? 5 : nearbyRange.vertical;
-    volume = new BlockVolume(
+    return new BlockVolume(
       { x: Math.floor(x) - h, y: Math.floor(y) - v, z: Math.floor(z) - h },
       { x: Math.floor(x) + h, y: Math.floor(y) + v, z: Math.floor(z) + h },
     );
-    nearbyVolumes.set(ctx, volume);
-  }
+  });
   let found = false;
   try {
     const box = volume;

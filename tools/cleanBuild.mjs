@@ -15,8 +15,23 @@ export const EXTENSION_MODULE = /[\\/]scripts[\\/]extensions[\\/]megaShowdown[\\
 export const MSD_DATA_MODULE = /[\\/]generated[\\/](msd[\\/].*|scripts[\\/](msd|megaShowdown)[^\\/]*)\.[cm]?[jt]s$/;
 /** Qualquer entrada do bundle com cara de MSD que não foi trocada por stub é vazamento. */
 const MSD_INPUT = /(^|[\\/])(scripts[\\/]extensions[\\/]megaShowdown[\\/]|generated[\\/]msd[\\/]|generated[\\/]scripts[\\/](msd|megaShowdown)[^\\/]*$)|mega_?showdown/i;
+/**
+ * Extensão Cobblemon Additions (BCA, licença All Rights Reserved: uso privado). O pack dela tem script próprio e nunca
+ * entra no main.js do base nem no build público: qualquer módulo dela (ou de tools/private/) no bundle é vazamento.
+ */
+const PRIVATE_PACK_INPUT = /(^|[\\/])(scripts[\\/]extensions[\\/](cobblemonAdditions|legendaryMonuments|private)[\\/]|tools[\\/]private[\\/]|generated[\\/]lm[\\/])/;
+/** Nome de arquivo/pasta e texto (namespace `bca:` em string) do BCA nos packs públicos. */
+const BCA_NAME = /cobblemon_?additions/i;
+const BCA_TEXT = /["'`]bca:[a-z_]/;
+/**
+ * Extensão Cobblemon: Legendary Monuments (LM, pacote privado): o código dela vive no bundle do base só na árvore privada
+ * (`@private/extensions` → scripts/extensions/private/ e legendaryMonuments/; acima, em PRIVATE_PACK_INPUT). Nome de
+ * arquivo/pasta e namespace `legendarymonuments:` nos packs públicos são vazamento.
+ */
+const LM_NAME = /legendary_?monuments/i;
+const LM_TEXT = /legendarymonuments:[a-z_]/;
 /** Textos que não podem aparecer no main.js público (namespace do MSD, exports das tabelas, nome do pack). */
-export const FORBIDDEN_IN_BUNDLE = /mega_showdown|MSD_[A-Z][A-Z_]*|CobblemonMegaShowdown|Mega Showdown/ig;
+export const FORBIDDEN_IN_BUNDLE = /mega_showdown|MSD_[A-Z][A-Z_]*|CobblemonMegaShowdown|Mega Showdown|CobblemonAdditions|Cobblemon Additions|["'`]bca:[a-z_]|legendarymonuments|CobblemonLegendaryMonuments|Legendary Monuments/ig;
 /**
  * Arquivos de texto dos packs públicos que a guarda lê. O `.map` (só no build sem --release) fica de fora: ele embute o
  * fonte público inteiro, comentários inclusive, e o que entra no bundle já é conferido pelo metafile (`leakedInputs`).
@@ -104,12 +119,14 @@ export function forbiddenInBundle(text) {
 
 /** Entradas do metafile com cara de MSD que NÃO foram trocadas por stub (caminhos relativos a `cwd`). */
 export function leakedInputs(metafile, stubbed, cwd = process.cwd()) {
-	return Object.keys(metafile.inputs).filter((p) => MSD_INPUT.test(p) && !stubbed.has(resolve(cwd, p)));
+	return Object.keys(metafile.inputs).filter((p) => (MSD_INPUT.test(p) && !stubbed.has(resolve(cwd, p))) || PRIVATE_PACK_INPUT.test(p));
 }
 
 /**
- * Guarda dos packs do release público: nenhum arquivo/pasta com "mega_showdown"/"MegaShowdown" no nome em `dist` e
- * nenhum "mega_showdown" dentro dos arquivos de texto dos packs. Devolve a lista de problemas (vazia = ok).
+ * Guarda dos packs do release público: nenhum arquivo/pasta com "mega_showdown"/"MegaShowdown" (ou do Cobblemon
+ * Additions ou do Legendary Monuments) no nome em `dist` e nenhum "mega_showdown" (ou namespace "bca:" ou
+ * "legendarymonuments:") dentro dos arquivos de texto dos packs.
+ * Devolve a lista de problemas (vazia = ok).
  */
 export function checkPublicDist(dist) {
 	const problems = [];
@@ -119,8 +136,15 @@ export function checkPublicDist(dist) {
 			const p = join(dir, e.name);
 			const rel = relative(dist, p);
 			if (/mega_?showdown/i.test(e.name)) problems.push(`arquivo do MSD: ${rel}`);
+			if (BCA_NAME.test(e.name)) problems.push(`arquivo do Cobblemon Additions: ${rel}`);
+			if (LM_NAME.test(e.name)) problems.push(`arquivo do Legendary Monuments: ${rel}`);
 			if (e.isDirectory()) walk(p);
-			else if (TEXT_FILE.test(e.name) && readFileSync(p, "utf8").includes("mega_showdown")) problems.push(`"mega_showdown" dentro de ${rel}`);
+			else if (TEXT_FILE.test(e.name)) {
+				const text = readFileSync(p, "utf8");
+				if (/mega_showdown|mega showdown/i.test(text)) problems.push(`"mega_showdown"/"Mega Showdown" dentro de ${rel}`);
+				if (BCA_TEXT.test(text)) problems.push(`namespace "bca:" dentro de ${rel}`);
+				if (LM_TEXT.test(text)) problems.push(`namespace "legendarymonuments:" dentro de ${rel}`);
+			}
 		}
 	};
 	walk(dist);

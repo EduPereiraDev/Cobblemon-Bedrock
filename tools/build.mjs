@@ -17,7 +17,7 @@ import { build } from "esbuild";
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { checkPublicDist, cleanBuildPlugin, forbiddenInBundle, leakedInputs } from "./cleanBuild.mjs";
 import { selfTestManifestPlugin } from "./selftest/manifest.mjs";
 import { moveNameWidthsPlugin } from "./ui/moveNameWidths.mjs"; // frente msd-beta: nomes de golpe longos no tile
@@ -127,12 +127,18 @@ function buildMsdPacks() {
  * por cima do antigo é ignorado). O contador fica em tools/msd-version.json (fora do git): `{ "label": "1.0.0-beta",
  * "build": N }`. Cada build `--private` soma 1 e grava; o nome do pack leva "v1.0.0-beta.N". O manifest só aceita três
  * números, então a série beta vai em [0, 0, N] (abaixo da futura 1.0.0 estável, na ordem do semver). Builds de
- * desenvolvimento (E2E com o MSD) usam o último número, com "-dev" no nome, sem gravar nada.
+ * desenvolvimento (E2E com o MSD) usam o último número, com "-dev" no nome, sem gravar nada. Com `"stable": "X.Y.Z"`
+ * o pack sai como estável (manifest [X, Y, Z], nome "vX.Y.Z") e o contador beta não muda.
  */
 function msdPackVersion() {
 	const file = join(root, "tools", "msd-version.json");
 	let state = { label: "1.0.0-beta", build: 0 };
 	try { state = { ...state, ...JSON.parse(readFileSync(file, "utf8")) }; } catch { }
+	// Versão estável: `"stable": "1.0.0"` no arquivo → nome "v1.0.0" e manifest [1, 0, 0] (acima de toda a série beta).
+	if (typeof state.stable === "string" && /^\d+\.\d+\.\d+$/.test(state.stable)) {
+		const version = state.stable.split(".").map(Number);
+		return { version, label: `v${state.stable}${privateBuild ? "" : "-dev"}` };
+	}
 	let build = Math.max(0, Math.floor(Number(state.build) || 0));
 	if (privateBuild) {
 		build++;
@@ -315,6 +321,19 @@ if (release) {
 		zip(join(dist, "resource_packs", MSD_PACK), join(dist, `${MSD_PACK}_RP.mcpack`));
 		execFileSync("zip", ["-q", "-X", msdAddon, `${MSD_PACK}_BP.mcpack`, `${MSD_PACK}_RP.mcpack`], { cwd: dist });
 		console.log(`pacote gerado: ${msdAddon} (uso privado)`);
+	}
+}
+
+// Extensões privadas de conteúdo (packs próprios, fora do repositório público): cada tools/private/<nome>/build.mjs
+// monta o seu pack em dist/, dependente do base por UUID e versão, e com --release gera o próprio .mcaddon (uso
+// privado). Nunca no build público; num clone público a pasta não existe e nada roda.
+if (!clean) {
+	const privateDir = join(root, "tools", "private");
+	for (const name of existsSync(privateDir) ? readdirSync(privateDir).sort() : []) {
+		const mod = join(privateDir, name, "build.mjs");
+		if (!existsSync(mod)) continue;
+		const { buildPrivatePack } = await import(pathToFileURL(mod).href);
+		await buildPrivatePack({ root, dist, generated, release, privateBuild, base: { bp: readJson(join(bpOut, "manifest.json")), rp: readJson(join(rpOut, "manifest.json")) }, mergeTree, readJson });
 	}
 }
 

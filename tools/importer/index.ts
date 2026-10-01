@@ -58,6 +58,8 @@ import {
 	emitMsdScriptsModule, isMsdChild, msdModulesPresent, msdOrderAspectBits, msdOrderCombos, msdRecordSpecies, msdWriteChildResult,
 	preserveBaseAlphaEyes, removeMsdOutput, requestMsdEffectParticles, runMegaShowdownImport,
 } from "./optionalExtensions.ts";
+import { runPrivateContentPacks } from "./optionalExtensions.ts"; // extensões privadas de conteúdo (packs próprios)
+import type { PrivateContentContext } from "./optionalExtensions.ts";
 
 const started = Date.now();
 
@@ -325,6 +327,7 @@ const contentOnlyPokemon = !!(speciesFilter || gensFilter) && process.argv.inclu
 let wearablesOut: WearableOut[] = []; // frente mundo-detalhes
 let discTextures: string[] = []; // frente mundo-detalhes
 let fetusOut: { names: string[]; yTranslation: Record<string, number> } = { names: [], yTranslation: {} }; // frente mundo-detalhes
+let privateContent: Omit<PrivateContentContext, "out"> | undefined; // extensões privadas de conteúdo (fim do import)
 if (!contentOnlyPokemon) {
 	phase = Date.now();
 	const blockBuilder = new BlockBuilder((id) => (id.startsWith("cobblemon:") ? id : bedrockVanillaItem(id)));
@@ -351,6 +354,7 @@ if (!contentOnlyPokemon) {
 	// Estruturas de molde único (fósseis, habitats, ruínas): .mcstructure + features; a âncora de habitat de cada
 	// molde define o alcance do pool (HABITAT_ANCHOR_RANGES).
 	const structureMapper = new BlockMapper((id, props) => blockBuilder.bedrockStateFor(id, props));
+	privateContent = { cobblemonState: (id, props) => blockBuilder.bedrockStateFor(id, props), biomes };
 	const structureLoot = new StructureLoot();
 	const poolIndex = new Map(habitatPools.map((p) => [p.id, p.index]));
 	const structureStats = buildStructures({ mapper: structureMapper, biomes, poolIndex, loot: structureLoot });
@@ -446,6 +450,14 @@ else {
 	// Frente msd-fase1: tabelas do MSD para o módulo dormente do bundle base (vazio sem o MSD ou com falha).
 	const tables = await emitMsdScriptsModule(OUT, msd.ok); // frente msd-fase2: assíncrono (lê os módulos do filho)
 	console.log(`MSD: tabelas do módulo dormente → ${rel(tables.file)} (${tables.species} espécies com variantes estendidas)`);
+}
+
+// Extensões privadas de conteúdo (packs próprios em tools/private/<nome>/; nada num clone público). Fora do filho do
+// MSD: o pack do MSD é a diferença base → filho e não pode levar o pack de outra extensão.
+if (privateContent && !isMsdChild()) {
+	const extras = await runPrivateContentPacks({ out: OUT, ...privateContent });
+	for (const m of extras.messages) console.log(m);
+	if (!extras.ok) process.exitCode = 1;
 }
 
 // Troca atômica: generated/ nunca fica pela metade para quem está lendo (tsc, testes, build).

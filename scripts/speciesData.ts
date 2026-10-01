@@ -228,6 +228,20 @@ export function getSpeciesData(species: string): SpeciesData | undefined {
 }
 
 /**
+ * Frente memoria-script (docs/pendencias/memoria-script.md): os dados da espécie SEM guardar no cache, para quem lê um
+ * campo de muitas espécies de uma vez (tamanho do hitbox no aquecimento do spawner, que passa por todas as entradas de
+ * spawn). Guardar as ~860 espécies parseadas custava ~13,5 MB do heap do script para sempre. Já no cache: devolve a
+ * mesma instância. Somente leitura (o objeto pode ser o do cache).
+ */
+export function peekSpeciesData(species: string): SpeciesData | undefined {
+  const id = toSpeciesId(species);
+  const cached = speciesCache.get(id);
+  if (cached) return cached;
+  const json = SPECIES[id];
+  return json === undefined ? undefined : JSON.parse(json) as SpeciesData;
+}
+
+/**
  * Forma ativa para um conjunto de aspectos (Species.getForm do Cobblemon): a última forma cujos
  * aspectos estão todos presentes. Undefined = forma padrão (os dados da própria espécie).
  */

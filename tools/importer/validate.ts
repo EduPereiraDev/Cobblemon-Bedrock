@@ -16,7 +16,7 @@ import { HAND_BP, HAND_RP, OUT, OUT_BP, OUT_FINAL, OUT_RP, OUT_SCRIPTS, parseLen
 import { comboKey, loadResolvers, resolveCombo } from "./variants.ts";
 import { validateContent } from "./validateContent.ts";
 import { itemsHiddenFromCommands, mergedDocs } from "./commandVisibility.ts";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 
 const errors: string[] = [];
 const warnings: string[] = [];
@@ -426,6 +426,22 @@ console.log(`Conteúdo: ${contentSummary}`);
 console.log(`Cliente (modelos): ${Object.entries(clientModels).map(([k, v]) => `${k} ${v}`).join(", ")}`);
 console.log(`Cliente (variáveis e planos): ${molangVariables.particles} partículas, ${molangVariables.entities} client entities e ${molangVariables.geometries} geometrias de entidade conferidas`);
 console.log(`Z-fighting (Pokémon, zfight2): ${entityZFight.entities} client entit${entityZFight.entities === 1 ? "y" : "ies"} com risco${Object.keys(entityZFight.summary).length ? ` ${JSON.stringify(entityZFight.summary)}` : ""}`);
+// Extensões privadas de conteúdo (packs próprios, fora do repositório público): cada tools/private/<nome>/validate.ts
+// com `validatePrivateContent(out)` confere o que o import dela gravou. Num clone público a pasta não existe e nada roda.
+{
+	const dir = new URL("../private/", import.meta.url);
+	for (const name of existsSync(dir) ? readdirSync(dir).sort() : []) {
+		const file = new URL(`${name}/validate.ts`, dir);
+		if (!existsSync(file)) continue;
+		try {
+			const r = await (await import(file.href)).validatePrivateContent(OUT);
+			for (const e of r.errors ?? []) err(`${r.name ?? name}: ${e}`);
+			console.log(`Extensão privada ${r.name ?? name}: ${r.summary ?? ""}`);
+		} catch (e) {
+			err(`${name}: validação falhou (${e instanceof Error ? e.message : e})`);
+		}
+	}
+}
 for (const w of warnings.slice(0, 50)) console.log(`  aviso: ${w}`);
 if (errors.length) {
 	// COBBLEMON_VALIDATE_ALL=1 lista todos (frente cliente-teste3-log).

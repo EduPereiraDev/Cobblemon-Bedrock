@@ -23,7 +23,7 @@
 import type { Entity } from "@minecraft/server";
 import { BEST_SPAWNER_CONFIG, HerdMember, SPAWNS, SpawnDrops, SpawnEntry } from "../../generated/scripts/spawns";
 import type { PokemonData } from "../Pokemon";
-import { getFormForAspects, getSpeciesData } from "../speciesData";
+import { getFormForAspects, peekSpeciesData } from "../speciesData";
 import type { SpawnWeightMultiplier } from "../../generated/scripts/spawns";
 import { conditionMatches, entryAllowed, SpawnContext } from "./SpawnConditions";
 
@@ -289,7 +289,8 @@ export function spawnSizeOf(species: string, aspects: readonly string[]): { widt
   const key = `${species}|${aspects.join(",")}`;
   let size = sizeCache.get(key);
   if (size === undefined) {
-    const data = getSpeciesData(species);
+    // Frente memoria-script: só o hitbox; o aquecimento passa por todas as espécies e não guarda os dados delas.
+    const data = peekSpeciesData(species);
     const form = data ? getFormForAspects(data, aspects) : undefined;
     const hitbox = form?.hitbox ?? data?.hitbox;
     const scale = form?.baseScale ?? data?.baseScale ?? 1;
